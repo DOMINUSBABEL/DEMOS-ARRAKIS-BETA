@@ -1,0 +1,181 @@
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+
+const addElementAsImage = async (
+    doc: jsPDF, 
+    el: HTMLElement | null, 
+    title: string, 
+    currentY: number,
+    pageWidth: number,
+    pageHeight: number,
+    margin: number
+): Promise<number> => {
+    if (!el) return currentY;
+    
+    let newY = currentY;
+    const contentWidth = pageWidth - margin * 2;
+
+    doc.setFontSize(14);
+    doc.setTextColor(60);
+    doc.text(title, margin, newY);
+    newY += 20;
+
+    const canvas = await html2canvas(el, {
+        scale: 2,
+        backgroundColor: '#ffffff', // Use white background for PDF
+        useCORS: true,
+    });
+    // Use JPEG for compression and smaller file size
+    const imgData = canvas.toDataURL('image/jpeg', 0.8);
+    const imgProps = doc.getImageProperties(imgData);
+    const imgHeight = (imgProps.height * contentWidth) / imgProps.width;
+
+    if (newY + imgHeight > pageHeight - margin) {
+        doc.addPage();
+        newY = margin;
+    }
+
+    doc.addImage(imgData, 'JPEG', margin, newY, contentWidth, imgHeight);
+    newY += imgHeight + 20;
+
+    return newY;
+};
+
+const addTextContent = (
+    doc: jsPDF, 
+    text: string | null, 
+    title: string, 
+    currentY: number,
+    pageWidth: number,
+    pageHeight: number,
+    margin: number
+): number => {
+    if (!text) return currentY;
+    
+    let newY = currentY;
+    const contentWidth = pageWidth - margin * 2;
+
+    if (newY > pageHeight - margin * 4) {
+        doc.addPage();
+        newY = margin;
+    }
+    doc.setFontSize(14);
+    doc.setTextColor(60);
+    doc.text(title, margin, newY);
+    newY += 20;
+
+    doc.setFontSize(10);
+    doc.setTextColor(80);
+    const splitText = doc.splitTextToSize(text, contentWidth);
+
+    for (let i = 0; i < splitText.length; i++) {
+        if (newY > pageHeight - margin) {
+            doc.addPage();
+            newY = margin;
+        }
+        doc.text(splitText[i], margin, newY);
+        newY += 12; // line height
+    }
+    
+    return newY + 10;
+};
+
+export const generateGeneralAnalysisPDF = async (element: HTMLElement, fileName: string) => {
+  const doc = new jsPDF({ orientation: 'p', unit: 'px', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 20;
+  let currentY = margin;
+
+  doc.setFontSize(18);
+  doc.setTextColor(40);
+  doc.text('Informe de Análisis Electoral - DEMOS ARRAKIS', margin, currentY);
+  currentY += 30;
+
+  const chartElement = element.querySelector<HTMLElement>('#analysis-charts');
+  const tableElement = element.querySelector<HTMLElement>('#analysis-table');
+  const aiText = element.querySelector<HTMLElement>('#ai-analysis-text')?.innerText || null;
+
+  currentY = await addElementAsImage(doc, chartElement, 'Análisis Gráfico', currentY, pageWidth, pageHeight, margin);
+  currentY = addTextContent(doc, aiText, "Análisis Completo del Estratega IA", currentY, pageWidth, pageHeight, margin);
+  currentY = await addElementAsImage(doc, tableElement, 'Ranking Detallado', currentY, pageWidth, pageHeight, margin);
+
+  doc.save(fileName);
+};
+
+export const generateDHondtPDF = async (element: HTMLElement, fileName: string) => {
+    const doc = new jsPDF({ orientation: 'p', unit: 'px', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    let currentY = margin;
+
+    doc.setFontSize(18);
+    doc.setTextColor(40);
+    doc.text('Informe de Simulación D\'Hondt', margin, currentY);
+    currentY += 30;
+
+    const summaryElement = element.querySelector<HTMLElement>('#dhondt-summary');
+    const detailsElement = element.querySelector<HTMLElement>('#dhondt-details');
+    const stepsElement = element.querySelector<HTMLElement>('#dhondt-steps');
+
+    currentY = await addElementAsImage(doc, summaryElement, 'Resumen Gráfico', currentY, pageWidth, pageHeight, margin);
+    currentY = await addElementAsImage(doc, detailsElement, 'Detalles de Asignación', currentY, pageWidth, pageHeight, margin);
+    currentY = await addElementAsImage(doc, stepsElement, 'Cálculo Paso a Paso', currentY, pageWidth, pageHeight, margin);
+
+    doc.save(fileName);
+};
+
+export const generateCoalitionAnalysisPDF = async (element: HTMLElement, fileName: string) => {
+    const doc = new jsPDF({ orientation: 'p', unit: 'px', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    let currentY = margin;
+
+    doc.setFontSize(18);
+    doc.setTextColor(40);
+    doc.text('Informe de Análisis de Coaliciones', margin, currentY);
+    currentY += 30;
+
+    currentY = await addElementAsImage(doc, element, 'Resultados del Desglose', currentY, pageWidth, pageHeight, margin);
+
+    doc.save(fileName);
+};
+
+export const generateStrategicReportPDF = async (element: HTMLElement, fileName: string) => {
+    const doc = new jsPDF({ orientation: 'p', unit: 'px', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    
+    doc.setFontSize(18);
+    doc.setTextColor(40);
+    doc.text('Informe Estratégico Cuantitativo - DEMOS ARRAKIS', margin, margin);
+
+    const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+    });
+    
+    const imgData = canvas.toDataURL('image/jpeg', 0.9);
+    const imgProps = doc.getImageProperties(imgData);
+    const imgHeight = (imgProps.height * (pageWidth - margin * 2)) / imgProps.width;
+    let heightLeft = imgHeight;
+    let position = 45;
+
+    doc.addImage(imgData, 'JPEG', margin, position, pageWidth - margin * 2, imgHeight);
+    heightLeft -= (pageHeight - 65);
+
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      doc.addPage();
+      doc.addImage(imgData, 'JPEG', margin, position, pageWidth - margin * 2, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    doc.save(fileName);
+};
