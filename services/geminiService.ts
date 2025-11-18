@@ -4,7 +4,35 @@ import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { CandidateRanking, ProbabilityResult, SimulationResults, HistoricalDataset, PartyAnalysisData, PartyData, ListAnalysisAIResponse } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-const model = 'gemini-2.5-pro';
+const model = 'gemini-3-pro-preview';
+
+// --- CONTEXTO ESPECÍFICO DEL PDF PROPORCIONADO (CENTRO DEMOCRÁTICO) ---
+const CD_METHODOLOGY_CONTEXT = `
+DATOS ESTRATÉGICOS INTERNOS (CENTRO DEMOCRÁTICO - ANTIOQUIA 2026):
+Utiliza EXCLUSIVAMENTE estos datos base para los siguientes precandidatos si son consultados. No alucines números.
+
+METODOLOGÍA DE CÁLCULO (PROTOCOLOS INTERNOS):
+1.  **Fuente de Datos:** Se toman los votos de la "Unidad Política" (estructura del candidato) en Cámara 2022, Senado 2022 y Asamblea 2023.
+2.  **Factor Cabeza de Lista (K):** Si el candidato fue Cabeza de Lista (cerrada o preferente principal), su votación se divide por 2 (K=2). Si no, K=1.
+3.  **Factor de Dispersión (A):** Los votos se dividen entre la cantidad de unidades políticas que apoyaron al candidato.
+4.  **Resultado Final:** El "Poder Electoral Proyectado" es el PROMEDIO de los resultados ajustados de las tres elecciones: ((Cámara/K) + (Senado/K) + (Asamblea/K)) / 3.
+
+TABLA MAESTRA DE DATOS (PRECANDIDATOS IDENTIFICADOS):
+| Pre-candidato | Unidad Política | Votos Cámara 22 (Base) | Votos Senado 22 (Base) | Votos Asamblea 23 (Base) | Promedio Proyectado (Resultado) |
+|---|---|---|---|---|---|
+| Juan Espinal | Paolos | 41.442 | 49.793 | 65.500 | 41.328 |
+| Jhon Jairo Berrio | Valencia | 30.526 | 22.772 | 51.921 | 26.419 |
+| (Equipo de todos) | Equipo de todos | 50.535 | 62.377 | 23.078 | 21.313 |
+| Bello (esposa exalcalde)| Óscar Andrés | 50.535 | 62.377 | 28.057 | 18.296 |
+| Yulieth Sánchez | Yulieth Sánchez | 50.535 | 62.377 | 28.057 | 18.296 |
+| Andrés Guerra | Siembra | 25.552 | 64.640 | 21.259 | 29.348 |
+| Ana Ligia | Hernán Cadavid | 56.244 | 25.304 | 18.662 | 19.812 |
+| Óscar Darío Pérez | Óscar Darío Pérez | 45.148 | 62.377 | 51.921 | 28.900 |
+| Anderson Duque | C. García / J.L. Noreña | No aplica | No aplica | 23.732 + 10.630 | 23.723 |
+| Cabal | Cabalismo | 6.240 | 34.228 | 9.977 | 16.815 |
+
+INSTRUCCIÓN: Si el informe es sobre el CENTRO DEMOCRÁTICO o uno de estos candidatos, DEBES incorporar estos datos específicos en la sección de "Proyecciones Cuantitativas", citando el "Promedio Proyectado" como su fuerza real estimada.
+`;
 
 const CSV_EXTRACTION_PROMPT_BASE = `
     Eres un asistente experto en extracción de datos electorales. Tu única tarea es convertir el contenido de un documento en una cadena de texto en formato CSV válida.
@@ -336,7 +364,7 @@ export const getGeospatialAnalysis = async (
         }
 
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-pro",
+            model: "gemini-3-pro-preview",
             contents: prompt,
             config: config,
         });
@@ -406,6 +434,8 @@ export const generateStrategicReport = async (
     ROL: Eres un estratega político de élite y analista de datos. Tu cliente es el comando de campaña del candidato "${focus}" del partido "${targetParty}".
     TAREA: Genera un informe estratégico PERSONALIZADO y PROFUNDO para el candidato.
     INSTRUCCIÓN CRÍTICA: Debes usar Google Search para obtener el contexto más reciente: noticias, perfil público, declaraciones, historial político y percepción pública del candidato "${focus}".
+    
+    ${CD_METHODOLOGY_CONTEXT}
 
     DATOS DE CONTEXTO:
     - Elección de Referencia: ${activeDataset.name}
@@ -456,6 +486,8 @@ export const generateStrategicReport = async (
 
     **4. Proyecciones Cuantitativas**
     - Análisis de proyecciones de votos para el candidato.
+    - SI EL CANDIDATO ES DEL CENTRO DEMOCRÁTICO Y APARECE EN LA TABLA MAESTRA, USA ESOS DATOS OBLIGATORIAMENTE.
+    - Presenta la tabla a continuación.
 
     --- TABLE START: Proyecciones de Votos para ${focus} ---
     | Escenario | Votos Proyectados | Probabilidad de Éxito | Supuestos Clave |
@@ -477,6 +509,8 @@ export const generateStrategicReport = async (
     ROL: Eres un estratega político de élite y analista de datos cuantitativos. Tu cliente es el comando de campaña del "${targetParty}".
     TAREA: Genera un informe estratégico exhaustivo y accionable para la próxima elección, donde se disputan ${seatsToContest} curules. Tu análisis debe ser riguroso, basado en datos, y presentado en un formato de informe ejecutivo profesional.
     INSTRUCCIÓN CRÍTICA: Debes usar la búsqueda de Google para obtener el contexto más reciente sobre el panorama político, noticias sobre "${targetParty}" y sus competidores, y opinión pública actual. Integra esta información en tu análisis para que sea relevante y oportuno.
+    
+    ${CD_METHODOLOGY_CONTEXT}
 
     ${focus ? `ENFOQUE ADICIONAL: Concéntrate particularmente en el siguiente tema o candidato: "${focus}".` : ''}
     ${query ? `PREGUNTA ESTRATÉGICA A RESPONDER: "${query}".` : ''}

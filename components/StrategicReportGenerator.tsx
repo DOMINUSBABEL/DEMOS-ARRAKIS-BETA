@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { ElectoralDataset, PartyAnalysisData, HistoricalDataset } from '../types';
 import { generateStrategicReport } from '../services/geminiService';
@@ -16,25 +17,35 @@ interface StrategicReportGeneratorProps {
 const ExportMenu: React.FC<{ onPdf: () => void; onXlsx: () => void, disabled: boolean }> = ({ onPdf, onXlsx, disabled }) => {
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     return (
         <div className="relative" ref={menuRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 disabled={disabled}
-                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="bg-brand-primary/80 hover:bg-brand-secondary text-white font-bold py-2 px-4 rounded-lg transition-all flex items-center gap-2 disabled:opacity-50 backdrop-blur-sm border border-white/10 shadow-[0_0_15px_rgba(217,119,6,0.3)]"
             >
                 Exportar Informe
             </button>
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg z-20">
-                    <button onClick={() => { onPdf(); setIsOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-light-text-primary dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2">
+                <div className="absolute right-0 mt-2 w-48 bg-[#1a1410] border border-brand-primary/30 rounded-md shadow-[0_0_30px_rgba(0,0,0,0.8)] z-20 backdrop-blur-xl">
+                    <button onClick={() => { onPdf(); setIsOpen(false); }} className="w-full text-left px-4 py-3 text-sm text-gray-200 hover:bg-brand-primary/20 flex items-center gap-2 transition-colors">
                         <FilePdfIcon className="w-5 h-5 text-red-500" />
-                        a PDF
+                        Exportar a PDF
                     </button>
-                    <button onClick={() => { onXlsx(); setIsOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-light-text-primary dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2">
+                    <button onClick={() => { onXlsx(); setIsOpen(false); }} className="w-full text-left px-4 py-3 text-sm text-gray-200 hover:bg-brand-primary/20 flex items-center gap-2 transition-colors border-t border-white/5">
                         <FileExcelIcon className="w-5 h-5 text-green-500" />
-                        a Excel
+                        Exportar a Excel
                     </button>
                 </div>
             )}
@@ -60,21 +71,22 @@ const SWOTGrid: React.FC<{ content: string }> = ({ content }) => {
         }
     });
 
-    const Section: React.FC<{ title: string, items: string[], color: string, bgColor: string }> = ({ title, items, color, bgColor }) => (
-        <div className={`p-4 rounded-lg ${bgColor}`}>
-            <h5 className={`font-bold text-lg mb-2 ${color}`}>{title}</h5>
-            <ul className="space-y-2 list-disc pl-5 text-sm">
-                {items.map((item, i) => <li key={i}>{item}</li>)}
+    const Section: React.FC<{ title: string, items: string[], colorClass: string, glowClass: string }> = ({ title, items, colorClass, glowClass }) => (
+        <div className={`glass-panel p-5 rounded-xl border border-white/5 relative overflow-hidden group transition-all duration-300 hover:border-white/20`}>
+             <div className={`absolute top-0 right-0 w-20 h-20 ${glowClass} blur-[40px] opacity-20 group-hover:opacity-40 transition-opacity`}></div>
+            <h5 className={`font-mono font-bold text-sm mb-4 uppercase tracking-widest ${colorClass} border-b border-white/10 pb-2`}>{title}</h5>
+            <ul className="space-y-2 text-xs text-gray-300 font-sans">
+                {items.map((item, i) => <li key={i} className="leading-relaxed">• {item}</li>)}
             </ul>
         </div>
     );
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
-            <Section title="Strengths (Fortalezas)" items={sections.STRENGTHS} color="text-green-300" bgColor="bg-green-900/50" />
-            <Section title="Weaknesses (Debilidades)" items={sections.WEAKNESSES} color="text-red-300" bgColor="bg-red-900/50" />
-            <Section title="Opportunities (Oportunidades)" items={sections.OPPORTUNITIES} color="text-blue-300" bgColor="bg-blue-900/50" />
-            <Section title="Threats (Amenazas)" items={sections.THREATS} color="text-yellow-300" bgColor="bg-yellow-900/50" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-8">
+            <Section title="Strengths (Fortalezas)" items={sections.STRENGTHS} colorClass="text-green-400" glowClass="bg-green-500" />
+            <Section title="Weaknesses (Debilidades)" items={sections.WEAKNESSES} colorClass="text-red-400" glowClass="bg-red-500" />
+            <Section title="Opportunities (Oportunidades)" items={sections.OPPORTUNITIES} colorClass="text-blue-400" glowClass="bg-blue-500" />
+            <Section title="Threats (Amenazas)" items={sections.THREATS} colorClass="text-yellow-400" glowClass="bg-yellow-500" />
         </div>
     );
 };
@@ -107,23 +119,23 @@ const ThemesBarChart: React.FC<{ content: string }> = ({ content }) => {
     if (data.length === 0) return null;
 
     const sentimentColors: Record<string, string> = {
-        'Positivo': 'bg-green-500',
-        'Neutro': 'bg-gray-500',
-        'Negativo': 'bg-red-500',
+        'Positivo': 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]',
+        'Neutro': 'bg-gray-500 shadow-[0_0_10px_rgba(107,114,128,0.5)]',
+        'Negativo': 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]',
     };
 
     return (
-        <div className="space-y-3 my-4 p-4 bg-gray-800/50 rounded-lg">
-             <h4 className="text-md font-semibold mb-4">Temas Clave en la Narrativa</h4>
+        <div className="space-y-4 my-8 p-6 glass-panel rounded-xl border border-white/10">
+             <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-brand-primary mb-6 font-mono">Temas Clave en la Narrativa</h4>
             {data.map((item, index) => (
-                <div key={index}>
-                    <div className="flex justify-between items-center mb-1 text-sm">
-                        <span className="font-semibold">{item.theme}</span>
-                        <span className="text-dark-text-secondary">{item.relevance}% Relevancia</span>
+                <div key={index} className="group">
+                    <div className="flex justify-between items-center mb-2 text-xs">
+                        <span className="font-bold text-gray-200">{item.theme}</span>
+                        <span className="text-gray-400 font-mono">{item.relevance}%</span>
                     </div>
-                    <div className="w-full bg-dark-border rounded-full h-4" title={`Sentimiento: ${item.sentiment}`}>
+                    <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden border border-white/5" title={`Sentimiento: ${item.sentiment}`}>
                         <div
-                            className={`h-4 rounded-full ${sentimentColors[item.sentiment] || 'bg-gray-500'}`}
+                            className={`h-full rounded-full transition-all duration-1000 ease-out ${sentimentColors[item.sentiment] || 'bg-gray-500'}`}
                             style={{ width: `${item.relevance}%` }}
                         ></div>
                     </div>
@@ -148,7 +160,7 @@ const ReportRenderer: React.FC<{ text: string }> = ({ text }) => {
 
         const flushList = () => {
             if (listItems.length > 0) {
-                elements.push(<ul key={`ul-${key}-${elements.length}`} className="list-disc pl-6 my-3 space-y-1">{listItems}</ul>);
+                elements.push(<ul key={`ul-${key}-${elements.length}`} className="list-disc pl-6 my-4 space-y-2 text-gray-300 text-sm marker:text-brand-primary">{listItems}</ul>);
                 listItems = [];
             }
         };
@@ -160,9 +172,15 @@ const ReportRenderer: React.FC<{ text: string }> = ({ text }) => {
                 flushList();
                 if (line.trim()) {
                     if (line.startsWith('**') && line.endsWith('**')) {
-                        elements.push(<h3 key={`h3-${key}-${index}`} className="text-xl font-bold mt-6 mb-3 border-b border-gray-700 pb-2">{line.slice(2, -2)}</h3>);
+                        // Section Header
+                         elements.push(
+                            <h3 key={`h3-${key}-${index}`} className="text-lg font-bold mt-8 mb-4 text-brand-primary font-mono uppercase tracking-widest border-b border-brand-primary/30 pb-2 flex items-center gap-3">
+                                <span className="w-2 h-2 bg-brand-primary rotate-45"></span>
+                                {line.slice(2, -2)}
+                            </h3>
+                        );
                     } else {
-                        elements.push(<p key={`p-${key}-${index}`} className="mb-3 leading-relaxed">{line}</p>);
+                        elements.push(<p key={`p-${key}-${index}`} className="mb-4 leading-7 text-gray-300 text-sm font-sans text-justify">{line}</p>);
                     }
                 }
             }
@@ -192,17 +210,24 @@ const ReportRenderer: React.FC<{ text: string }> = ({ text }) => {
                 const tableHeaders = tableRows[0];
                 const tableBody = tableRows.slice(1);
                  elements.push(
-                    <div key={`table-container-${i}`}>
-                        <h4 key={`h4-${i}`} className="text-md font-semibold mt-6 mb-2">{tableTitle}</h4>
-                        <div className="overflow-x-auto my-4">
-                            <table className="min-w-full text-sm border border-gray-600">
-                                <thead className="bg-gray-700">
-                                    <tr>{tableHeaders.map((h, idx) => <th key={`th-${h}-${idx}`} className="px-3 py-2 text-left font-semibold">{h}</th>)}</tr>
+                    <div key={`table-container-${i}`} className="my-8">
+                         <h4 key={`h4-${i}`} className="text-xs font-bold mb-3 uppercase tracking-[0.2em] text-gray-400 font-mono flex items-center gap-2">
+                            <SparklesIcon className="w-4 h-4 text-brand-secondary"/>
+                            {tableTitle}
+                        </h4>
+                        <div className="overflow-x-auto rounded-xl border border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                            <table className="min-w-full text-sm text-left">
+                                <thead className="bg-white/5 text-brand-primary font-mono text-xs uppercase">
+                                    <tr>{tableHeaders.map((h, idx) => <th key={`th-${h}-${idx}`} className="px-6 py-4 font-bold tracking-wider">{h}</th>)}</tr>
                                 </thead>
-                                <tbody>
+                                <tbody className="divide-y divide-white/5 bg-black/20 backdrop-blur-sm">
                                     {tableBody.map((row, idx) => (
-                                        <tr key={`tr-${idx}`} className="border-t border-gray-600 bg-gray-800 hover:bg-gray-700/50">
-                                            {row.map((cell, j) => <td key={`td-${idx}-${j}`} className="px-3 py-2">{cell}</td>)}
+                                        <tr key={`tr-${idx}`} className="hover:bg-white/5 transition-colors group">
+                                            {row.map((cell, j) => (
+                                                <td key={`td-${idx}-${j}`} className={`px-6 py-4 text-gray-300 font-medium ${j === 0 ? 'text-white group-hover:text-brand-glow' : ''} ${cell.includes('%') || !isNaN(Number(cell.replace(/\./g, ''))) ? 'font-mono' : ''}`}>
+                                                    {cell}
+                                                </td>
+                                            ))}
                                         </tr>
                                     ))}
                                 </tbody>
@@ -285,97 +310,122 @@ const StrategicReportGenerator: React.FC<StrategicReportGeneratorProps> = ({ dat
 
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             <AnalysisCard
                 title="Generador de Informes Estratégicos con IA"
                 explanation="Selecciona un partido y el número de escaños en disputa. La IA analizará todos los datos disponibles y usará Google Search para el contexto actual, generando un informe cuantitativo completo."
                 fullscreenable={false}
             >
-                <div className="p-4 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-6 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1">1. Partido de Interés</label>
-                            <select value={targetParty} onChange={e => setTargetParty(e.target.value)} className="w-full bg-gray-700 border border-gray-600 text-white rounded-md p-2">
+                            <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider font-mono">1. Partido de Interés</label>
+                            <select value={targetParty} onChange={e => setTargetParty(e.target.value)} className="w-full bg-black/40 border border-white/10 text-white rounded-lg p-3 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all">
                                 {partyNames.map(name => <option key={name} value={name}>{name || 'Seleccionar...'}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1">2. Escaños en Disputa</label>
+                            <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider font-mono">2. Escaños en Disputa</label>
                             <input
                                 type="number"
                                 value={seats}
                                 onChange={(e) => setSeats(parseInt(e.target.value, 10) || 1)}
                                 min="1"
-                                className="w-full bg-gray-700 border border-gray-600 text-white rounded-md p-2"
+                                className="w-full bg-black/40 border border-white/10 text-white rounded-lg p-3 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all font-mono"
                             />
                         </div>
                     </div>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1">3. Enfoque Específico (Opcional)</label>
+                            <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider font-mono">3. Enfoque Específico (Opcional)</label>
                             <input
                                 type="text"
                                 value={focus}
                                 onChange={(e) => setFocus(e.target.value)}
                                 placeholder="Ej: Candidato Juan Pérez"
-                                className="w-full bg-gray-700 border border-gray-600 text-white rounded-md p-2"
+                                className="w-full bg-black/40 border border-white/10 text-white rounded-lg p-3 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1">4. Consulta Estratégica Adicional</label>
+                            <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider font-mono">4. Consulta Estratégica Adicional</label>
                             <input
                                 type="text"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 placeholder="Ej: ¿Debilidades frente a jóvenes?"
-                                className="w-full bg-gray-700 border border-gray-600 text-white rounded-md p-2"
+                                className="w-full bg-black/40 border border-white/10 text-white rounded-lg p-3 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
                             />
                         </div>
                     </div>
-                    <div className="flex items-end">
+                    <div className="flex items-end pt-2">
                         <button
                             onClick={handleGenerateReport}
                             disabled={isLoading || !targetParty}
-                            className="w-full bg-brand-primary hover:bg-brand-secondary text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                            className="w-full bg-gradient-to-r from-brand-secondary to-brand-primary hover:from-brand-primary hover:to-brand-glow text-white font-bold py-4 px-6 rounded-xl transition-all shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_30px_rgba(217,119,6,0.5)] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
                         >
-                            {isLoading ? <LoadingSpinner className="w-5 h-5" /> : <SparklesIcon className="w-5 h-5" />}
-                            {isLoading ? 'Analizando...' : 'Generar Informe'}
+                            {isLoading ? <LoadingSpinner className="w-6 h-6" /> : <SparklesIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />}
+                            <span className="tracking-widest font-mono uppercase text-sm">{isLoading ? 'Procesando Datos...' : 'Generar Informe Estratégico'}</span>
                         </button>
                     </div>
                 </div>
             </AnalysisCard>
 
             {isLoading && (
-                <div className="text-center py-10 bg-gray-800 rounded-lg">
-                    <LoadingSpinner className="w-10 h-10 mx-auto text-brand-secondary" />
-                    <p className="mt-4 font-semibold">Generando informe estratégico...</p>
-                    <p className="text-sm text-gray-400">Este proceso puede tardar unos momentos.</p>
+                <div className="flex flex-col items-center justify-center py-16 bg-white/5 rounded-xl border border-white/10 backdrop-blur-sm">
+                    <div className="relative">
+                        <div className="w-16 h-16 rounded-full border-4 border-brand-primary/30 border-t-brand-primary animate-spin"></div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <SparklesIcon className="w-6 h-6 text-brand-glow animate-pulse"/>
+                        </div>
+                    </div>
+                    <p className="mt-6 font-mono font-bold text-lg text-brand-primary tracking-widest animate-pulse">ANALIZANDO VECTORES ELECTORALES</p>
+                    <p className="text-sm text-gray-400 mt-2">Procesando datos históricos y contexto en tiempo real...</p>
                 </div>
             )}
 
             {error && (
-                 <div className="flex items-center p-4 bg-red-900/50 border border-red-500 text-red-300 rounded-lg shadow-lg">
-                    <WarningIcon className="w-6 h-6 mr-3 flex-shrink-0"/>
-                    <p>{error}</p>
+                 <div className="flex items-center p-6 bg-red-900/20 border border-red-500/50 text-red-200 rounded-xl shadow-[0_0_30px_rgba(220,38,38,0.2)] backdrop-blur-md">
+                    <WarningIcon className="w-8 h-8 mr-4 flex-shrink-0 text-red-500"/>
+                    <div>
+                        <h4 className="font-bold text-red-400 uppercase tracking-wider font-mono mb-1">Error en el Sistema</h4>
+                        <p className="text-sm opacity-90">{error}</p>
+                    </div>
                 </div>
             )}
 
             {report && (
-                <AnalysisCard title={`Informe Estratégico para ${targetParty}`} explanation="Informe generado por la IA. Usa los botones para exportar los resultados.">
-                    <div className="flex justify-end mb-4">
+                <AnalysisCard title={`Informe Estratégico: ${targetParty} ${focus ? `(${focus})` : ''}`} explanation="Informe generado por la IA basado en datos históricos y metodologías internas.">
+                    <div className="flex justify-end mb-6">
                         <ExportMenu onPdf={handleExportPdf} onXlsx={handleExportXlsx} disabled={!report} />
                     </div>
-                     <div className="p-6 bg-white dark:bg-gray-900/50 text-light-text-primary dark:text-gray-200 rounded-lg">
-                        <div ref={reportRef} className="prose prose-invert max-w-none">
+                     <div className="p-8 bg-[#0f0a06] text-gray-200 rounded-xl border border-white/10 shadow-2xl relative overflow-hidden">
+                        {/* Watermark-like background element */}
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-brand-primary/5 rounded-full blur-[100px] pointer-events-none"></div>
+                        
+                        <div ref={reportRef} className="relative z-10">
+                             {/* Header of the report */}
+                             <div className="border-b border-white/10 pb-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                                <div>
+                                    <p className="text-brand-primary font-mono text-xs uppercase tracking-[0.3em] mb-2">Documento Confidencial</p>
+                                    <h2 className="text-3xl font-bold text-white font-sans tracking-tight">Informe de Inteligencia Electoral</h2>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-gray-500 text-xs font-mono uppercase">Generado por DEMOS ARRAKIS</p>
+                                    <p className="text-gray-400 text-sm font-mono">{new Date().toLocaleDateString()}</p>
+                                </div>
+                             </div>
+                            
                             <ReportRenderer text={report.text} />
                         </div>
+                        
                         {report.sources && report.sources.length > 0 && (
-                            <div className="mt-8 pt-4 border-t border-gray-700">
-                                <h4 className="text-md font-semibold text-dark-text-secondary mb-3">Fuentes de Google Search</h4>
-                                <ul className="space-y-2 list-disc list-inside">
+                            <div className="mt-12 pt-6 border-t border-white/10">
+                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em] mb-4 font-mono">Fuentes de Inteligencia Externa (Google Search)</h4>
+                                <ul className="space-y-2">
                                     {report.sources.map((source, index) => source.web && (
-                                        <li key={index} className="text-sm">
-                                            <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">
+                                        <li key={index} className="text-xs font-mono flex items-center gap-2 text-gray-400">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-brand-primary"></span>
+                                            <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="hover:text-brand-glow hover:underline truncate max-w-full block transition-colors">
                                                 {source.web.title || source.web.uri}
                                             </a>
                                         </li>

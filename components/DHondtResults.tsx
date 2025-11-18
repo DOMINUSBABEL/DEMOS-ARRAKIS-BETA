@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { DHondtAnalysis, PartyData, PartyAnalysisData } from '../types';
-import { BarChart as RechartsBarChart, PieChart, ResponsiveContainer, Cell, Tooltip, Legend, Bar, XAxis, YAxis, CartesianGrid, Pie, Sector } from 'recharts';
+import { BarChart as RechartsBarChart, PieChart, ResponsiveContainer, Cell, Tooltip, Bar, XAxis, YAxis, CartesianGrid, Pie, Sector } from 'recharts';
 import DataTable from './DataTable';
 import TrendsAnalysis from './TrendsAnalysis';
 
@@ -40,34 +40,35 @@ const shortenPartyName = (name: string): string => {
     return name.length > 12 ? name.substring(0, 9) + '...' : name;
 };
 
-// Active Shape for Pie Chart interaction
+// Active Shape for Donut Chart interaction
 const renderActiveShape = (props: any) => {
-  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
+  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent } = props;
 
   return (
     <g>
-      <text x={cx} y={cy} dy={-8} textAnchor="middle" fill="#f5e5d5" className="text-sm font-bold font-mono">
+      <text x={cx} y={cy} dy={-10} textAnchor="middle" fill="#f5e5d5" className="text-xs font-bold font-mono uppercase tracking-wider drop-shadow-md">
         {payload.name}
       </text>
-      <text x={cx} y={cy} dy={12} textAnchor="middle" fill="#999" className="text-xs font-mono">
+      <text x={cx} y={cy} dy={15} textAnchor="middle" fill="#d97706" className="text-sm font-mono font-bold drop-shadow-[0_0_5px_rgba(217,119,6,0.8)]">
         {`${(percent * 100).toFixed(1)}%`}
       </text>
       <Sector
         cx={cx}
         cy={cy}
         innerRadius={innerRadius}
-        outerRadius={outerRadius + 4}
+        outerRadius={outerRadius + 6}
         startAngle={startAngle}
         endAngle={endAngle}
         fill={fill}
+        className="filter drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]"
       />
       <Sector
         cx={cx}
         cy={cy}
         startAngle={startAngle}
         endAngle={endAngle}
-        innerRadius={outerRadius + 6}
-        outerRadius={outerRadius + 8}
+        innerRadius={outerRadius + 8}
+        outerRadius={outerRadius + 10}
         fill={fill}
         fillOpacity={0.3}
       />
@@ -117,7 +118,7 @@ const DHondtResults: React.FC<DHondtResultsProps> = ({ analysis, parties, partyA
     });
 
     const othersVotes = partiesToGroup.reduce((sum, p) => sum + p.votes, 0);
-    const othersParty: PartyData = { id: -1, name: 'Otros', votes: othersVotes, color: '#6b7280' };
+    const othersParty: PartyData = { id: -1, name: 'Otros', votes: othersVotes, color: '#4b5563' };
     const finalDisplayParties = [...partiesToKeep, othersParty];
     const finalDisplaySeats = [
       ...analysis.seats.filter(s => !partiesToGroupNames.has(s.party)),
@@ -178,7 +179,7 @@ const DHondtResults: React.FC<DHondtResultsProps> = ({ analysis, parties, partyA
     <button
         onClick={() => !disabled && setActiveTab(tabId)}
         disabled={disabled}
-        className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-200 ${activeTab === tabId ? 'bg-brand-primary text-white shadow-[0_0_10px_rgba(217,119,6,0.4)]' : 'text-light-text-secondary dark:text-dark-text-secondary hover:bg-white/5 hover:text-white'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`px-4 py-1.5 text-xs font-medium rounded transition-all duration-300 border uppercase tracking-wider font-mono ${activeTab === tabId ? 'bg-brand-primary/10 border-brand-primary text-brand-primary shadow-[0_0_10px_rgba(217,119,6,0.2)]' : 'border-transparent text-dark-text-secondary hover:bg-white/5 hover:text-white'} ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`}
     >
         {children}
     </button>
@@ -187,9 +188,9 @@ const DHondtResults: React.FC<DHondtResultsProps> = ({ analysis, parties, partyA
   const CustomTooltip = ({ active, payload, label }: any) => {
       if (active && payload && payload.length) {
         return (
-          <div className="bg-[#1c1611]/95 border border-[#4f4235] p-3 rounded-lg shadow-xl backdrop-blur-md">
-             <p className="text-xs text-gray-400 mb-1">{label}</p>
-             <p className="text-brand-primary font-bold">{payload[0].value.toLocaleString('es-CO')}</p>
+          <div className="bg-[#0f0a06]/90 border border-brand-primary/30 p-3 rounded shadow-[0_0_20px_rgba(0,0,0,0.6)] backdrop-blur-xl">
+             <p className="text-[10px] text-gray-400 mb-1 font-mono uppercase">{label}</p>
+             <p className="text-brand-glow font-bold text-lg font-mono">{payload[0].value.toLocaleString('es-CO')}</p>
           </div>
         );
       }
@@ -197,67 +198,74 @@ const DHondtResults: React.FC<DHondtResultsProps> = ({ analysis, parties, partyA
   };
 
   return (
-    <div className="space-y-6">
-        <div className="bg-black/20 p-1 rounded-xl flex flex-wrap gap-1 justify-center border border-white/5 w-fit mx-auto">
-            <TabButton tabId="summary">Resumen</TabButton>
-            <TabButton tabId="details">Detalles</TabButton>
-            <TabButton tabId="efficiency">Eficiencia</TabButton>
-            <TabButton tabId="steps">Pasos</TabButton>
-            <TabButton tabId="trends" disabled={!partyAnalysis}>Tendencias</TabButton>
+    <div className="space-y-8">
+        <div className="flex justify-center">
+             <div className="bg-black/40 p-1 rounded border border-white/5 backdrop-blur-md inline-flex gap-1">
+                <TabButton tabId="summary">Resumen</TabButton>
+                <TabButton tabId="details">Detalles</TabButton>
+                <TabButton tabId="efficiency">Eficiencia</TabButton>
+                <TabButton tabId="steps">Pasos</TabButton>
+                <TabButton tabId="trends" disabled={!partyAnalysis}>Tendencias</TabButton>
+            </div>
         </div>
         
         <div className={activeTab === 'summary' ? 'block animate-fade-in' : 'hidden'}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 text-center">
-                <div className="bg-gradient-to-br from-dark-card to-dark-bg p-6 rounded-xl border border-white/5 relative overflow-hidden group">
-                     <div className="absolute top-0 right-0 w-16 h-16 bg-brand-primary/10 rounded-bl-full transition-transform group-hover:scale-110"></div>
-                    <div className="text-3xl font-bold text-brand-primary font-mono tracking-tight">{analysis.totalVotes.toLocaleString('es-CO')}</div>
-                    <div className="text-xs uppercase tracking-widest text-dark-text-secondary mt-1">Votos Totales</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-center">
+                <div className="glass-panel p-5 rounded border border-brand-primary/20 relative overflow-hidden group">
+                     <div className="absolute -top-10 -right-10 w-24 h-24 bg-brand-primary/10 rounded-full blur-2xl group-hover:bg-brand-primary/20 transition-colors"></div>
+                    <div className="text-3xl font-bold text-brand-glow font-mono tracking-tighter">{analysis.totalVotes.toLocaleString('es-CO')}</div>
+                    <div className="text-[10px] uppercase tracking-[0.2em] text-dark-text-secondary mt-2 font-bold">Votos Totales</div>
                 </div>
-                 <div className="bg-gradient-to-br from-dark-card to-dark-bg p-6 rounded-xl border border-white/5 relative overflow-hidden">
-                    <div className="text-xl font-bold text-brand-glow truncate" title={analysis.lastSeatWinner?.party}>{analysis.lastSeatWinner ? shorten(analysis.lastSeatWinner.party) : 'N/A'}</div>
-                    <div className="text-xs uppercase tracking-widest text-dark-text-secondary mt-1">Ganador Última Curul</div>
+                 <div className="glass-panel p-5 rounded border border-white/5 relative overflow-hidden">
+                    <div className="text-xl font-bold text-white truncate font-mono" title={analysis.lastSeatWinner?.party}>{analysis.lastSeatWinner ? shorten(analysis.lastSeatWinner.party) : 'N/A'}</div>
+                    <div className="text-[10px] uppercase tracking-[0.2em] text-brand-primary mt-2 font-bold">Ganador Última Curul</div>
                 </div>
-                 <div className="bg-gradient-to-br from-dark-card to-dark-bg p-6 rounded-xl border border-white/5 relative overflow-hidden">
-                    <div className="text-xl font-bold text-gray-400 truncate" title={analysis.runnerUp?.party}>{analysis.runnerUp ? shorten(analysis.runnerUp.party) : 'N/A'}</div>
-                    <div className="text-xs uppercase tracking-widest text-dark-text-secondary mt-1">Siguiente en la Fila</div>
+                 <div className="glass-panel p-5 rounded border border-white/5 relative overflow-hidden">
+                    <div className="text-xl font-bold text-dark-text-secondary truncate font-mono" title={analysis.runnerUp?.party}>{analysis.runnerUp ? shorten(analysis.runnerUp.party) : 'N/A'}</div>
+                    <div className="text-[10px] uppercase tracking-[0.2em] text-dark-text-muted mt-2 font-bold">Siguiente en Fila</div>
                 </div>
             </div>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                <div className="w-full bg-dark-card/30 rounded-xl p-4 border border-white/5">
-                    <h4 className="text-sm font-bold text-center mb-4 text-dark-text-primary uppercase tracking-wider">Escaños por Partido</h4>
-                    <ResponsiveContainer width="100%" height={Math.max(isDetailed ? 300 : 250, seatData.length * (isDetailed ? 40 : 32) + 40)}>
+                <div className="w-full glass-panel rounded p-6 border border-white/5 bg-gradient-to-br from-white/5 to-transparent">
+                    <h4 className="text-xs font-bold text-center mb-6 text-dark-text-secondary uppercase tracking-[0.2em]">Escaños por Partido</h4>
+                    <ResponsiveContainer width="100%" height={Math.max(isDetailed ? 350 : 300, seatData.length * (isDetailed ? 40 : 32) + 40)}>
                          <RechartsBarChart data={seatData} layout="vertical" margin={{ top: 5, right: 30, left: 5, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false}/>
-                            <XAxis type="number" stroke="#6b5a4e" tick={{ fontSize: 10, fill: '#a18f7c' }} allowDecimals={false} hide/>
-                            <YAxis type="category" dataKey="name" stroke="#6b5a4e" tick={{ fontSize: isDetailed ? 11 : 10, fill: '#f5e5d5', fontWeight: 500 }} width={isDetailed ? 110 : 85} interval={0} axisLine={false} tickLine={false}/>
-                            <Tooltip cursor={{fill: 'rgba(255, 255, 255, 0.03)'}} content={<CustomTooltip />}/>
-                            <Bar dataKey="value" name="Escaños" barSize={isDetailed ? 20 : 16} radius={[0, 4, 4, 0]}>
+                            <defs>
+                                <linearGradient id="seatGradient" x1="0" y1="0" x2="1" y2="0">
+                                    <stop offset="0%" stopColor="#d97706" stopOpacity={0.4}/>
+                                    <stop offset="100%" stopColor="#fbbf24" stopOpacity={1}/>
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.03)" horizontal={false}/>
+                            <XAxis type="number" stroke="#6b5a4e" tick={{ fontSize: 10, fill: '#6b5a4e' }} allowDecimals={false} hide/>
+                            <YAxis type="category" dataKey="name" stroke="#6b5a4e" tick={{ fontSize: isDetailed ? 11 : 10, fill: '#a18f7c', fontWeight: 600, fontFamily: 'Inter' }} width={isDetailed ? 110 : 85} interval={0} axisLine={false} tickLine={false}/>
+                            <Tooltip cursor={{fill: 'rgba(255, 255, 255, 0.02)'}} content={<CustomTooltip />}/>
+                            <Bar dataKey="value" name="Escaños" barSize={isDetailed ? 16 : 12} radius={[0, 4, 4, 0]}>
                                 {seatData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={partyColorMap.get(entry.name) || '#8884d8'} />
+                                    <Cell key={`cell-${index}`} fill={partyColorMap.get(entry.name) || 'url(#seatGradient)'} strokeWidth={0} />
                                 ))}
                             </Bar>
                         </RechartsBarChart>
                     </ResponsiveContainer>
                 </div>
-                 <div className={`${isDetailed ? "h-96" : "h-80"} bg-dark-card/30 rounded-xl p-4 border border-white/5`}>
-                    <h4 className="text-sm font-bold text-center mb-2 text-dark-text-primary uppercase tracking-wider">Distribución de Votos</h4>
+                 <div className={`${isDetailed ? "h-96" : "h-80"} glass-panel rounded p-6 border border-white/5 bg-gradient-to-bl from-white/5 to-transparent`}>
+                    <h4 className="text-xs font-bold text-center mb-2 text-dark-text-secondary uppercase tracking-[0.2em]">Distribución de Votos</h4>
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
-                            {/* @ts-ignore */}
                             <Pie
-                                activeIndex={activeIndex}
-                                activeShape={renderActiveShape}
+                                activeShape={renderActiveShape as any}
                                 data={voteData}
                                 cx="50%"
                                 cy="50%"
-                                innerRadius={isDetailed ? 70 : 60}
-                                outerRadius={isDetailed ? 100 : 85}
+                                innerRadius={isDetailed ? 70 : 65}
+                                outerRadius={isDetailed ? 100 : 90}
                                 dataKey="value"
                                 onMouseEnter={onPieEnter}
                                 stroke="none"
+                                {...{ activeIndex } as any}
                             >
                                 {voteData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={partyColorMap.get(entry.name) || '#8884d8'} />
+                                    <Cell key={`cell-${index}`} fill={partyColorMap.get(entry.name) || '#333'} />
                                 ))}
                             </Pie>
                         </PieChart>
@@ -268,13 +276,13 @@ const DHondtResults: React.FC<DHondtResultsProps> = ({ analysis, parties, partyA
 
         <div className={activeTab === 'details' ? 'block space-y-6 animate-fade-in' : 'hidden'}>
             <div className={isDetailed ? "h-96" : "h-80"}>
-                <h4 className="text-sm font-bold text-center mb-4 text-dark-text-primary uppercase tracking-wider">Votos Totales por Partido</h4>
+                <h4 className="text-xs font-bold text-center mb-4 text-dark-text-secondary uppercase tracking-[0.2em]">Votos Totales por Partido</h4>
                 <ResponsiveContainer width="100%" height="100%">
                     <RechartsBarChart data={voteDistributionData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                        <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.03)" vertical={false} />
                         <XAxis dataKey="name" stroke="#6b5a4e" tick={{ fontSize: 10, fill: '#a18f7c' }} interval={0} angle={-30} textAnchor="end" height={70} />
-                        <YAxis stroke="#6b5a4e" tick={{ fontSize: 11, fill: '#a18f7c' }} />
-                        <Tooltip cursor={{fill: 'rgba(255, 255, 255, 0.03)'}} content={<CustomTooltip />}/>
+                        <YAxis stroke="#6b5a4e" tick={{ fontSize: 11, fill: '#a18f7c', fontFamily: 'JetBrains Mono' }} />
+                        <Tooltip cursor={{fill: 'rgba(255, 255, 255, 0.02)'}} content={<CustomTooltip />}/>
                         <Bar dataKey="Votos" name="Votos" radius={[4, 4, 0, 0]}>
                             {voteDistributionData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={partyColorMap.get(entry.name) || '#8884d8'} />
@@ -294,16 +302,16 @@ const DHondtResults: React.FC<DHondtResultsProps> = ({ analysis, parties, partyA
 
         <div className={activeTab === 'efficiency' ? 'block space-y-6 animate-fade-in' : 'hidden'}>
             <div className={isDetailed ? "h-96" : "h-80"}>
-                <h4 className="text-sm font-bold text-center mb-4 text-dark-text-primary uppercase tracking-wider">Eficiencia del Voto (Costo por Escaño)</h4>
+                <h4 className="text-xs font-bold text-center mb-4 text-dark-text-secondary uppercase tracking-[0.2em]">Eficiencia del Voto (Costo por Escaño)</h4>
                 <ResponsiveContainer width="100%" height="100%">
                     <RechartsBarChart data={efficiencyChartData} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-                        <XAxis type="number" stroke="#6b5a4e" tick={{ fontSize: 11, fill: '#a18f7c' }} />
+                        <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.03)" horizontal={false} />
+                        <XAxis type="number" stroke="#6b5a4e" tick={{ fontSize: 11, fill: '#a18f7c', fontFamily: 'JetBrains Mono' }} />
                         <YAxis type="category" dataKey="name" stroke="#6b5a4e" tick={{ fontSize: 11, fill: '#f5e5d5' }} width={isDetailed ? 110 : 85} interval={0} />
-                        <Tooltip cursor={{fill: 'rgba(255, 255, 255, 0.03)'}} content={<CustomTooltip />}/>
+                        <Tooltip cursor={{fill: 'rgba(255, 255, 255, 0.02)'}} content={<CustomTooltip />}/>
                         <Bar dataKey="Votos por Escaño" name="Votos por Escaño" radius={[0, 4, 4, 0]}>
                             {efficiencyChartData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={partyColorMap.get(entry.name) || '#8884d8'} />
+                                <Cell key={`cell-${index}`} fill={partyColorMap.get(entry.name) || '#8884d8'} fillOpacity={0.8} />
                             ))}
                         </Bar>
                     </RechartsBarChart>

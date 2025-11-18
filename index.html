@@ -7,7 +7,7 @@
     <title>DEMOS ARRAKIS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -20,24 +20,25 @@
             },
             backgroundImage: {
               'arrakis-gradient': 'linear-gradient(to bottom right, #1c1611, #0f0a06)',
-              'glass-gradient': 'linear-gradient(145deg, rgba(42, 34, 27, 0.6) 0%, rgba(28, 22, 17, 0.4) 100%)',
-              'glow-gradient': 'linear-gradient(to right, rgba(217, 119, 6, 0.1), transparent)',
+              'glass-gradient': 'linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%)',
+              'glow-gradient': 'linear-gradient(to right, rgba(217, 119, 6, 0.2), transparent)',
+              'subtle-grid': 'radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)',
             },
             colors: {
-              // --- ARRAKIS REFINED PALETTE ---
               brand: {
-                primary: '#d97706',   // amber-600 (Spice Orange)
-                secondary: '#b45309', // amber-700
-                glow: '#f59e0b',      // amber-500 (Bright Spice)
+                primary: '#d97706',   // Amber 600 (Spice)
+                secondary: '#b45309', // Amber 700
+                glow: '#fbbf24',      // Amber 400 (Bright Spice)
+                accent: '#0ea5e9',    // Sky 500 (Water/Life)
               },
               dark: {
-                bg: '#0f0a06',       // Void Black/Brown
-                surface: '#1c1611',  // Deep Sietch
-                card: '#2a221b',     // Desert Rock
-                border: '#4f4235',   // Muted Sand
-                'text-primary': '#f5e5d5', // Bleached Bone
-                'text-secondary': '#a18f7c',// Dusty Gray
-                'text-muted': '#6b5a4e',
+                bg: '#050403',       // Deepest Void
+                surface: '#0f0a06',  // Deep Sand
+                card: '#1a1410',     // Rock
+                border: '#2a221b',   // Sandstone
+                'text-primary': '#f5e5d5', // Bone White
+                'text-secondary': '#a18f7c', // Dust
+                'text-muted': '#6b5a4e', // Shadow
               },
               light: {
                   bg: '#f8fafc',
@@ -47,8 +48,13 @@
                   'text-secondary': '#64748b',
               },
             },
+            boxShadow: {
+              'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.5)',
+              'glow': '0 0 20px rgba(217, 119, 6, 0.15)',
+              'inner-light': 'inset 0 0 20px rgba(255, 255, 255, 0.02)',
+            },
             backdropBlur: {
-              xs: '2px',
+              'xs': '2px',
             }
           }
         }
@@ -72,32 +78,63 @@
 }
 </script>
 <style>
-  /* Custom Scrollbar for Webkit */
+  /* Custom Scrollbar - Minimalist */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #0f0a06; 
+    background: transparent; 
   }
   ::-webkit-scrollbar-thumb {
-    background: #2a221b; 
-    border-radius: 4px;
+    background: rgba(79, 66, 53, 0.5); 
+    border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #4f4235; 
+    background: #d97706; 
   }
   
+  /* Glassmorphism Utility */
   .glass-panel {
-    background: rgba(28, 22, 17, 0.6);
+    background: rgba(20, 16, 13, 0.4);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+  }
+  
+  .glass-panel:hover {
+    border-color: rgba(217, 119, 6, 0.3);
+    background: rgba(20, 16, 13, 0.5);
+  }
+
+  .text-shadow-glow {
+    text-shadow: 0 0 15px rgba(217, 119, 6, 0.6);
+  }
+  
+  .chart-gradient-mask {
+    mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+  }
+
+  @keyframes pulse-slow {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.7; }
+  }
+  .animate-pulse-slow {
+    animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
   }
 </style>
 </head>
-  <body class="font-sans bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-dark-text-primary transition-colors duration-300 h-screen overflow-hidden">
-    <div id="root" class="h-full w-full"></div>
+  <body class="font-sans bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-dark-text-primary transition-colors duration-300 h-screen overflow-hidden selection:bg-brand-primary selection:text-white">
+    <div id="root" class="h-full w-full bg-subtle-grid bg-[length:40px_40px]"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>
