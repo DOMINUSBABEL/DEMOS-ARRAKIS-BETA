@@ -1,4 +1,4 @@
-import { RawElectionData, ProcessedElectionData, CandidateRanking, ProbabilityResult, ProcessedDataPayload, InvalidVoteCounts, AnalysisType, PartyData } from '../types';
+import { RawElectionData, ProcessedElectionData, CandidateRanking, ProbabilityResult, ProcessedDataPayload, InvalidVoteCounts, AnalysisType, PartyData, ElectoralDataset, HistoricalDataset, LocalSupportConfig, CampaignStrengthConfig, CoattailEffectConfig } from '../types';
 import Papa from 'papaparse';
 
 const PARTY_COLORS = [
@@ -246,6 +246,71 @@ export const applyGovernmentOppositionFactor = (
     return newRanking.sort((a, b) => b.poderElectoralBase - a.poderElectoralBase);
 };
 
+const LOCAL_SUPPORT_FACTORS = { 'Nulo': 1.0, 'Bajo': 1.05, 'Medio': 1.12, 'Alto': 1.20 };
+export const applyLocalSupportFactor = (
+    baseRanking: CandidateRanking[],
+    localSupport: LocalSupportConfig[]
+): CandidateRanking[] => {
+    if (localSupport.length === 0) return [...baseRanking];
+
+    const supportMap = new Map(localSupport.map(s => [s.unit, LOCAL_SUPPORT_FACTORS[s.level]]));
+    
+    const newRanking = baseRanking.map(c => {
+        const factor = supportMap.get(c.unidadPolitica);
+        if (factor && factor > 1.0) {
+            const newPower = Math.round(c.poderElectoralBase * factor);
+            return { ...c, poderElectoralBase: newPower };
+        }
+        return { ...c };
+    });
+
+    return newRanking.sort((a, b) => b.poderElectoralBase - a.poderElectoralBase);
+};
+
+const CAMPAIGN_STRENGTH_FACTORS = { 'Baja': 0.90, 'Media': 1.0, 'Alta': 1.15 };
+export const applyCampaignStrengthFactor = (
+    baseRanking: CandidateRanking[],
+    campaignStrength: CampaignStrengthConfig[]
+): CandidateRanking[] => {
+    if (campaignStrength.length === 0) return [...baseRanking];
+
+    const strengthMap = new Map(campaignStrength.map(s => [s.unit, CAMPAIGN_STRENGTH_FACTORS[s.level]]));
+
+    const newRanking = baseRanking.map(c => {
+        const factor = strengthMap.get(c.unidadPolitica);
+        if (factor) {
+            const newPower = Math.round(c.poderElectoralBase * factor);
+            return { ...c, poderElectoralBase: newPower };
+        }
+        return { ...c };
+    });
+
+    return newRanking.sort((a, b) => b.poderElectoralBase - a.poderElectoralBase);
+};
+
+const COATTAIL_FACTORS = { 'Nulo': 1.0, 'Moderado': 1.15, 'Fuerte': 1.25 };
+export const applyCoattailEffect = (
+    baseRanking: CandidateRanking[],
+    coattailEffect: CoattailEffectConfig
+): CandidateRanking[] => {
+    if (!coattailEffect.unit || coattailEffect.strength === 'Nulo') {
+        return [...baseRanking];
+    }
+    
+    const factor = COATTAIL_FACTORS[coattailEffect.strength];
+    
+    const newRanking = baseRanking.map(c => {
+        if (c.unidadPolitica === coattailEffect.unit) {
+            const newPower = Math.round(c.poderElectoralBase * factor);
+            return { ...c, poderElectoralBase: newPower };
+        }
+        return { ...c };
+    });
+    
+    return newRanking.sort((a, b) => b.poderElectoralBase - a.poderElectoralBase);
+};
+
+
 // Módulo 5: ProbabilityEngine
 export const runMonteCarloSimulation = (
     ranking: CandidateRanking[],
@@ -278,4 +343,17 @@ export const runMonteCarloSimulation = (
     });
 
     return results.sort((a, b) => b.probabilidad_curul - a.probabilidad_curul);
+};
+
+export const buildHistoricalDataset = (electoralDataset: ElectoralDataset): HistoricalDataset => {
+    const processedData = electoralDataset.processedData;
+    return {
+      id: electoralDataset.id,
+      name: electoralDataset.name,
+      analysisType: electoralDataset.analysisType,
+      invalidVoteCounts: electoralDataset.invalidVoteCounts,
+      processedData,
+      partyData: aggregateVotesByParty(processedData),
+      baseRanking: calculateBaseRanking(processedData),
+    };
 };

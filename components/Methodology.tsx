@@ -45,60 +45,6 @@ const Methodology: React.FC = () => {
       </AnalysisCard>
 
        <AnalysisCard
-        title="Fase 1.B: Formato de Datos TOON (Tabular Object-Oriented Notation)"
-        explanation="TOON es un formato de serialización de texto plano, inspirado en CSV, pero optimizado para la eficiencia y la auto-descripción. Fue diseñado para minimizar el uso de memoria y acelerar los tiempos de carga y procesamiento en la aplicación."
-        collapsible={true}
-        fullscreenable={false}
-        icon={<CodeBracketIcon />}
-      >
-        <div className="prose prose-invert max-w-none">
-            <h4 className="font-semibold text-lg">Estructura General</h4>
-            <p>Un archivo TOON se compone de dos partes principales: una cabecera de una sola línea y un cuerpo de datos.</p>
-            <pre className="bg-dark-bg p-4 rounded-md text-sm"><code>{`NombreDelConjunto[NumeroDeRegistros]{clave1,clave2,clave3,...}:
-valor1A,valor2A,valor3A,...
-valor1B,valor2B,valor3B,...`}</code></pre>
-            
-            <h4 className="font-semibold text-lg mt-6">Desglose de la Estructura</h4>
-            <dl className="mt-2 space-y-4">
-                <div>
-                    <dt className="font-semibold">1. Cabecera (Header):</dt>
-                    <dd className="pl-4 mt-1">La primera línea del archivo. Es auto-descriptiva y contiene tres componentes críticos:</dd>
-                    <dd className="pl-8 mt-2">
-                        <ul className="list-disc space-y-1">
-                            <li><strong>Nombre del Conjunto:</strong> Un identificador legible para el set de datos.</li>
-                            <li><strong>[NumeroDeRegistros]:</strong> Un entero entre corchetes que indica cuántas filas de datos siguen. Esto permite al parser asignar memoria de forma eficiente y validar la integridad del archivo.</li>
-                            <li><strong>{`{clave1,clave2,...}`}:</strong> El esquema de datos. Una lista de nombres de columna separados por comas, encerrados en llaves. El orden de estas claves define el orden de los valores en cada fila de datos.</li>
-                        </ul>
-                    </dd>
-                </div>
-                 <div>
-                    <dt className="font-semibold">2. Cuerpo de Datos (Body):</dt>
-                    <dd className="pl-4 mt-1">
-                        Cada línea después de la cabecera representa un registro. Los valores están separados por comas y siguen estrictamente el orden definido en el esquema de la cabecera. Si un valor contiene una coma, debe ser encerrado entre comillas dobles (`"`), similar al estándar CSV.
-                    </dd>
-                </div>
-            </dl>
-
-            <h4 className="font-semibold text-lg mt-6">Ejemplo Práctico</h4>
-            <p>A continuación, se muestra un ejemplo real de un conjunto de datos en formato TOON:</p>
-            <pre className="bg-dark-bg p-4 rounded-md text-xs"><code>
-                <span className="text-yellow-400">Asamblea 2019</span><span className="text-green-400">[2]</span><span className="text-purple-400">{`{Eleccion,Año,UnidadPolitica,Candidato,Votos,EsCabezaDeLista,votos_calculados}`}</span>:
-                <br />
-                Asamblea,2019,PARTIDO LIBERAL,SOLO POR LA LISTA,304209,true,304209
-                <br />
-                Asamblea,2019,PARTIDO CONSERVADOR,SOLO POR LA LISTA,267515,true,267515
-            </code></pre>
-             <ul className="list-disc pl-6 mt-2 space-y-2 text-sm">
-                <li><span className="text-yellow-400 font-semibold">Nombre:</span> "Asamblea 2019"</li>
-                <li><span className="text-green-400 font-semibold">[Registros]:</span> El archivo contiene 2 filas de datos.</li>
-                <li><span className="text-purple-400 font-semibold">{`{Schema}`}:</span> Define 7 columnas, empezando con 'Eleccion' y terminando con 'votos_calculados'.</li>
-            </ul>
-
-        </div>
-      </AnalysisCard>
-
-
-       <AnalysisCard
         title="Fases Futuras (En Desarrollo)"
         explanation="Las siguientes fases del modelo se implementarán progresivamente para enriquecer el análisis."
         collapsible={true}

@@ -1,14 +1,12 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import FileUpload from './FileUpload';
 import ManualEntryForm, { ManualRow } from './ManualEntryForm';
-import { ToonDataset, HistoricalDataset } from '../types';
-import { getToonRecordCount } from '../services/toonParser';
-import { LoadingSpinner, ChartBarIcon, EditIcon, TrashIcon, MergeIcon, CodeBracketIcon } from './Icons';
+import { ElectoralDataset } from '../types';
+import { LoadingSpinner, ChartBarIcon, EditIcon, TrashIcon, MergeIcon } from './Icons';
 import AnalysisCard from './AnalysisCard';
-import ToonViewerModal from './ToonViewerModal';
 
 interface DataManagerProps {
-    datasets: ToonDataset[];
+    datasets: ElectoralDataset[];
     onFileUpload: (files: File[], datasetName: string) => Promise<void>;
     onManualSubmit: (rows: ManualRow[], datasetName: string) => Promise<void>;
     onDeleteDataset: (datasetId: string) => void;
@@ -35,8 +33,6 @@ const DataManager: React.FC<DataManagerProps> = ({
     const [selectedToMerge, setSelectedToMerge] = useState<Set<string>>(new Set());
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editingName, setEditingName] = useState('');
-    const [toonDataset, setToonDataset] = useState<ToonDataset | null>(null);
-
 
     const handleFileUpload = (files: File[]) => {
         if (!datasetName.trim()) {
@@ -76,7 +72,7 @@ const DataManager: React.FC<DataManagerProps> = ({
         }
     };
     
-    const handleStartEditing = (dataset: ToonDataset) => {
+    const handleStartEditing = (dataset: ElectoralDataset) => {
         setEditingId(dataset.id);
         setEditingName(dataset.name);
     };
@@ -147,11 +143,10 @@ const DataManager: React.FC<DataManagerProps> = ({
                                             </p>
                                         )}
                                             <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">
-                                                {getToonRecordCount(ds.toonData).toLocaleString('es-CO')} registros | {ds.analysisType === 'candidate' ? 'Por Candidato' : 'Por Partido'}
+                                                {ds.processedData.length.toLocaleString('es-CO')} registros | {ds.analysisType === 'candidate' ? 'Por Candidato' : 'Por Partido'}
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button onClick={() => setToonDataset(ds)} className="p-1 text-dark-text-secondary hover:text-purple-400" title="Comparar Formatos (JSON vs TOON)"><CodeBracketIcon className="w-5 h-5" /></button>
                                             <button onClick={() => handleStartEditing(ds)} className="p-1 text-dark-text-secondary hover:text-brand-primary" title="Editar Nombre"><EditIcon className="w-4 h-4" /></button>
                                             <button onClick={() => handleDelete(ds.id, ds.name)} className="p-1 text-dark-text-secondary hover:text-red-500" title="Eliminar Dataset"><TrashIcon className="w-4 h-4" /></button>
                                         </div>
@@ -201,9 +196,6 @@ const DataManager: React.FC<DataManagerProps> = ({
                     </AnalysisCard>
                 </div>
             </div>
-            {toonDataset && (
-                <ToonViewerModal dataset={toonDataset} onClose={() => setToonDataset(null)} />
-            )}
         </>
     );
 };

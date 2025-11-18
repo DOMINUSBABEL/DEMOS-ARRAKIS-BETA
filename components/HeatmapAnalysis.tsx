@@ -1,125 +1,187 @@
 import React, { useState, useEffect } from 'react';
-import { InformationCircleIcon, WarningIcon } from './Icons';
+import { InformationCircleIcon, WarningIcon, LoadingSpinner, MapIcon, SparklesIcon } from './Icons';
 import AnalysisCard from './AnalysisCard';
-import { colombiaPaths } from './ColombiaMapPaths';
+import { getGeospatialAnalysis } from '../services/geminiService';
+import { GenerateContentResponse } from '@google/genai';
 
-// Mock data for demonstration
-const mockPerformanceData: Record<string, number> = {
-    'Antioquia': 0.85, 'Bogotá D.C.': 0.78, 'Valle del Cauca': 0.65,
-    'Cundinamarca': 0.62, 'Atlántico': 0.55, 'Santander': 0.51,
-    'Bolívar': 0.48, 'Boyacá': 0.45, 'Nariño': 0.33, 'Tolima': 0.41,
-    'Córdoba': 0.39, 'Magdalena': 0.38, 'Cauca': 0.25, 'Norte de Santander': 0.49,
-    'Huila': 0.36, 'Meta': 0.42, 'Cesar': 0.37, 'Caldas': 0.50, 'Risaralda': 0.52,
-    'Quindío': 0.47, 'Sucre': 0.35, 'La Guajira': 0.30, 'Chocó': 0.20,
-    'Arauca': 0.28, 'Casanare': 0.32, 'Putumayo': 0.22, 'Caquetá': 0.24,
-    'Guaviare': 0.18, 'Vaupés': 0.15, 'Guainía': 0.16, 'Amazonas': 0.19,
-    'San Andrés y Providencia': 0.40, 'Vichada': 0.12
+// Simple markdown-like renderer for the response
+const ResponseRenderer: React.FC<{ text: string }> = ({ text }) => {
+    const lines = text.split('\n');
+    const elements: React.ReactNode[] = [];
+    let listItems: React.ReactNode[] = [];
+
+    const flushList = () => {
+        if (listItems.length > 0) {
+            elements.push(<ul key={`ul-${elements.length}`} className="list-disc pl-5 space-y-1 my-2">{listItems}</ul>);
+            listItems = [];
+        }
+    };
+
+    lines.forEach((line, index) => {
+        if (line.startsWith('* ') || line.startsWith('- ')) {
+            listItems.push(<li key={index}>{line.slice(2)}</li>);
+        } else {
+            flushList();
+            if (line.trim() !== '') {
+                if (/^#+\s/.test(line)) {
+                    const level = line.match(/^#+/)?.[0].length || 1;
+                    const content = line.replace(/^#+\s/, '');
+                    switch (level) {
+                        case 1: elements.push(<h4 key={index} className="font-bold mt-4 mb-2 text-dark-text-primary">{content}</h4>); break;
+                        case 2: elements.push(<h5 key={index} className="font-bold mt-3 mb-1 text-dark-text-primary">{content}</h5>); break;
+                        default: elements.push(<h6 key={index} className="font-bold mt-2 mb-1 text-dark-text-primary">{content}</h6>); break;
+                    }
+                } else {
+                    elements.push(<p key={index} className="mb-2">{line}</p>);
+                }
+            }
+        }
+    });
+
+    flushList(); // Flush any remaining list items at the end
+
+    return (
+        <div className="prose prose-invert max-w-none text-sm leading-relaxed text-dark-text-primary dark:text-dark-text-primary">
+            {elements}
+        </div>
+    );
 };
-
-const getColorFromPerformance = (performance: number) => {
-    // Arrakis theme: from dark sand to spice orange
-    const clampedPerformance = Math.max(0, Math.min(1, performance));
-    const startColor = { r: 42, g: 34, b: 27 }; // Corresponds to dark-card #2a221b
-    const endColor = { r: 217, g: 119, b: 6 }; // Corresponds to brand-primary #d97706
-
-    const r = startColor.r + (endColor.r - startColor.r) * clampedPerformance;
-    const g = startColor.g + (endColor.g - startColor.g) * clampedPerformance;
-    const b = startColor.b + (endColor.b - startColor.b) * clampedPerformance;
-    return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
-};
-
 
 const HeatmapAnalysis: React.FC = () => {
     const [location, setLocation] = useState<GeolocationCoordinates | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [hoveredDept, setHoveredDept] = useState<string | null>(null);
+    const [geoError, setGeoError] = useState<string | null>(null);
+    const [query, setQuery] = useState<string>('¿Cuáles son las zonas con mayor potencial de crecimiento para el Partido Alianza Verde cerca de mi ubicación actual?');
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [analysisError, setAnalysisError] = useState<string | null>(null);
+    const [apiResponse, setApiResponse] = useState<GenerateContentResponse | null>(null);
 
     useEffect(() => {
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 setLocation(position.coords);
-                setError(null);
+                setGeoError(null);
             },
             (err: GeolocationPositionError) => {
-                setError(err.message);
+                setGeoError(`Error al obtener geolocalización: ${err.message}. El análisis se realizará sin contexto de ubicación.`);
                 setLocation(null);
             }
         );
     }, []);
 
-    const Legend = () => (
-        <div className="flex items-center gap-2">
-            <span className="text-sm text-dark-text-secondary">Bajo</span>
-            <div className="w-32 h-4 rounded-full" style={{ background: 'linear-gradient(to right, #2a221b, #d97706)' }}></div>
-            <span className="text-sm text-dark-text-secondary">Alto</span>
-        </div>
-    );
+    const handleGenerateAnalysis = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!query.trim()) {
+            setAnalysisError("Por favor, ingresa una pregunta para el análisis.");
+            return;
+        }
+
+        setIsLoading(true);
+        setAnalysisError(null);
+        setApiResponse(null);
+
+        try {
+            const locationCoords = location ? { latitude: location.latitude, longitude: location.longitude } : null;
+            const response = await getGeospatialAnalysis(query, locationCoords);
+            setApiResponse(response);
+        } catch (e: any) {
+            setAnalysisError(e.message || "Ocurrió un error desconocido al contactar la IA.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const groundingChunks = apiResponse?.candidates?.[0]?.groundingMetadata?.groundingChunks;
 
     return (
         <div className="space-y-6">
-            {/* FIX: Renamed prop 'expandable' to 'fullscreenable' to match AnalysisCardProps definition. */}
-            <AnalysisCard title="Mapa de Calor de Rendimiento Electoral" explanation="Visualiza el rendimiento electoral geográficamente. Un mayor rendimiento se muestra en cian más brillante, mientras que un menor rendimiento se muestra en un tono más oscuro." fullscreenable={false}>
-                 <div className="p-4 bg-yellow-900/50 border border-yellow-500 text-yellow-300 rounded-lg shadow-lg flex items-start gap-3">
-                    <InformationCircleIcon className="w-8 h-8 flex-shrink-0 mt-1"/>
+            <AnalysisCard 
+                title="Análisis Geoespacial Electoral con IA" 
+                explanation="Realiza preguntas en lenguaje natural sobre datos electorales en un contexto geográfico. La IA utilizará Google Maps y Google Search para obtener información actualizada y relevante. Proporciona tu ubicación para análisis más precisos."
+                icon={<MapIcon />}
+                fullscreenable={false}
+            >
+                <form onSubmit={handleGenerateAnalysis} className="p-4 space-y-4">
                     <div>
-                        <h3 className="font-bold">Funcionalidad en Desarrollo</h3>
-                        <p className="text-sm">
-                            Esta es una demostración conceptual. Para un mapa de calor preciso, es necesario cargar datos electorales que incluyan información regional (departamento o municipio). El mapa actual utiliza datos de ejemplo para ilustrar el potencial de la herramienta.
-                        </p>
+                        <label htmlFor="geospatial-query" className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
+                            Ingresa tu pregunta
+                        </label>
+                        <textarea
+                            id="geospatial-query"
+                            rows={3}
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            placeholder="Ej: ¿Dónde se encuentran los bastiones del Partido Conservador en el Valle de Aburrá?"
+                            className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 focus:ring-brand-primary focus:border-brand-primary"
+                        />
                     </div>
-                </div>
+                    <button type="submit" disabled={isLoading} className="w-full bg-brand-primary text-white font-bold py-3 px-4 rounded-lg hover:bg-brand-secondary transition-colors disabled:opacity-50 flex items-center justify-center">
+                        {isLoading ? <LoadingSpinner className="w-5 h-5 mr-2" /> : <SparklesIcon className="w-5 h-5 mr-2" />}
+                        {isLoading ? 'Analizando...' : 'Generar Análisis Geoespacial'}
+                    </button>
+                </form>
             </AnalysisCard>
             
-            <AnalysisCard title="Rendimiento por Departamento (Ejemplo)" explanation="Pasa el cursor sobre un departamento para ver su rendimiento electoral simulado.">
-                 <div className="flex justify-end mb-4">
-                    <Legend />
+            {analysisError && (
+                 <div className="flex items-center p-4 bg-red-900/50 border border-red-500 text-red-300 rounded-lg shadow-lg">
+                    <WarningIcon className="w-6 h-6 mr-3 flex-shrink-0"/>
+                    <p>{analysisError}</p>
                 </div>
-                 <div className="relative aspect-[4/3] w-full max-w-2xl mx-auto">
-                    <svg viewBox="0 0 1000 1000" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
-                        <g transform="scale(1.2) translate(-100, -50)">
-                            {Object.entries(colombiaPaths).map(([name, path]) => (
-                                <path
-                                    key={name}
-                                    d={path}
-                                    fill={getColorFromPerformance(mockPerformanceData[name] || 0)}
-                                    stroke="#1c1611"
-                                    strokeWidth="2"
-                                    className="transition-all duration-200 cursor-pointer"
-                                    style={{
-                                      opacity: hoveredDept && hoveredDept !== name ? 0.4 : 1,
-                                      transform: hoveredDept === name ? 'scale(1.02)' : 'scale(1)',
-                                      transformOrigin: 'center center'
-                                    }}
-                                    onMouseEnter={() => setHoveredDept(name)}
-                                    onMouseLeave={() => setHoveredDept(null)}
-                                />
-                            ))}
-                        </g>
-                    </svg>
-                     {hoveredDept && (
-                        <div className="absolute top-2 left-2 bg-dark-bg/80 text-white p-2 rounded-lg text-sm pointer-events-none shadow-lg border border-dark-border backdrop-blur-sm">
-                            <p className="font-bold">{hoveredDept}</p>
-                            <p>Rendimiento: <span style={{ color: getColorFromPerformance(mockPerformanceData[hoveredDept] || 0), fontWeight: 600 }}>{((mockPerformanceData[hoveredDept] || 0) * 100).toFixed(1)}%</span></p>
+            )}
+
+            {apiResponse && (
+                <AnalysisCard title="Resultados del Análisis" explanation="Respuesta generada por la IA, enriquecida con datos de Google Maps y Google Search.">
+                    <div className="p-4 space-y-4">
+                        <ResponseRenderer text={apiResponse.text} />
+                        
+                        {groundingChunks && groundingChunks.length > 0 && (
+                            <div className="mt-6 pt-4 border-t border-light-border dark:border-dark-border">
+                                <h4 className="text-md font-semibold text-light-text-secondary dark:text-dark-text-secondary mb-3">Fuentes de Datos</h4>
+                                <ul className="space-y-2 list-disc list-inside">
+                                    {groundingChunks.map((chunk, index) => {
+                                        if (chunk.maps) {
+                                            return (
+                                                <li key={`map-${index}`} className="text-sm">
+                                                    <a href={chunk.maps.uri} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">
+                                                        {chunk.maps.title || 'Ver en Google Maps'}
+                                                    </a>
+                                                </li>
+                                            );
+                                        }
+                                        if (chunk.web) {
+                                            return (
+                                                <li key={`web-${index}`} className="text-sm">
+                                                    <a href={chunk.web.uri} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">
+                                                        {chunk.web.title || 'Ver en Web'}
+                                                    </a>
+                                                </li>
+                                            );
+                                        }
+                                        return null;
+                                    })}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                </AnalysisCard>
+            )}
+
+            <AnalysisCard title="Estado de la Geolocalización" explanation="Para análisis geográficos más precisos, la aplicación puede utilizar tu ubicación actual." fullscreenable={false}>
+                <div className="p-4">
+                    {geoError && (
+                         <div className="flex items-center p-3 bg-yellow-900/50 border border-yellow-500 text-yellow-300 rounded-lg text-sm">
+                            <WarningIcon className="w-5 h-5 mr-2 flex-shrink-0"/>
+                            <span>{geoError}</span>
                         </div>
                     )}
+                    {location && (
+                        <div className="text-sm">
+                            <p className="text-green-400">Ubicación obtenida con éxito.</p>
+                            <p><span className="font-semibold text-light-text-secondary dark:text-dark-text-secondary">Latitud:</span> {location.latitude.toFixed(4)}</p>
+                            <p><span className="font-semibold text-light-text-secondary dark:text-dark-text-secondary">Longitud:</span> {location.longitude.toFixed(4)}</p>
+                        </div>
+                    )}
+                     {!location && !geoError && <p className="text-light-text-secondary dark:text-dark-text-secondary text-sm">Obteniendo ubicación...</p>}
                 </div>
-            </AnalysisCard>
-
-            {/* FIX: Renamed prop 'expandable' to 'fullscreenable' to match AnalysisCardProps definition. */}
-            <AnalysisCard title="Geolocalización del Usuario" explanation="Para análisis geográficos más precisos, la aplicación puede utilizar tu ubicación actual. Has otorgado permiso para acceder a tu ubicación." fullscreenable={false}>
-                {error && (
-                     <div className="flex items-center p-3 bg-red-900/50 border border-red-500 text-red-300 rounded-lg">
-                        <WarningIcon className="w-5 h-5 mr-2"/>
-                        <span>Error de geolocalización: {error}</span>
-                    </div>
-                )}
-                {location && (
-                    <div className="text-sm">
-                        <p><span className="font-semibold">Latitud:</span> {location.latitude.toFixed(4)}</p>
-                        <p><span className="font-semibold">Longitud:</span> {location.longitude.toFixed(4)}</p>
-                    </div>
-                )}
-                 {!location && !error && <p className="text-dark-text-secondary">Obteniendo ubicación...</p>}
             </AnalysisCard>
         </div>
     );

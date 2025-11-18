@@ -1,23 +1,22 @@
 
-
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import { ManualRow } from './components/ManualEntryForm';
-import { ToonDataset, PartyAnalysisData, PartyHistoryPoint, ProcessedDataPayload } from './types';
-import { processData, calculateBaseRanking, aggregateVotesByParty } from './services/electoralProcessor';
+import { ElectoralDataset, PartyAnalysisData, PartyHistoryPoint, ProcessedDataPayload, HistoricalDataset } from './types';
+import { processData, aggregateVotesByParty, buildHistoricalDataset } from './services/electoralProcessor';
 import { classifyPartiesIdeology } from './services/geminiService';
 import { parseFiles } from './services/localFileParser';
-import { serializeToToon, parseToon } from './services/toonParser';
 import { LoadingSpinner, WarningIcon, CheckCircleIcon } from './components/Icons';
 import Papa from 'papaparse';
 import { defaultDatasets } from './services/defaultDatasets';
 
-type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology';
+type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap';
+type DataSource = 'local' | 'remote';
 
 function App() {
-  const [datasets, setDatasets] = useState<ToonDataset[]>([]);
+  const [datasets, setDatasets] = useState<ElectoralDataset[]>([]);
   const [partyAnalysis, setPartyAnalysis] = useState<Map<string, PartyAnalysisData>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
@@ -28,6 +27,10 @@ function App() {
   });
   const [activeTab, setActiveTab] = useState<Tab>('data_manager');
   const defaultsLoaded = useRef(false);
+
+  // New state for hybrid architecture
+  const [dataSource, setDataSource] = useState<DataSource>('local');
+  const [remoteDataset, setRemoteDataset] = useState<HistoricalDataset | null>(null);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -53,8 +56,6 @@ function App() {
         throw new Error("No se encontraron datos válidos en los archivos para procesar.");
       }
       
-      setLoadingMessage('Analizando datos y serializando a TOON...');
-      
       const payloads: ProcessedDataPayload[] = (
         await Promise.all(
           csvTexts.map(csvText => csvText.trim() ? processData(csvText) : Promise.resolve(null))
@@ -78,16 +79,18 @@ function App() {
         throw new Error("El procesamiento no arrojó ningún dato válido. Revisa el formato de los archivos.");
       }
       
-      const toonData = serializeToToon(allProcessedData, datasetName);
       const datasetId = new Date().toISOString() + datasetName;
 
-      const newDataset: ToonDataset = {
+      const newDataset: ElectoralDataset = {
         id: datasetId,
         name: datasetName,
-        toonData: toonData,
+        processedData: allProcessedData,
         invalidVoteCounts: totalInvalidVotes,
         analysisType: finalAnalysisType
       };
+      
+      setDataSource('local'); // Switch to local source upon new data load
+      setRemoteDataset(null);
 
       setDatasets(prev => {
           let updatedDatasets = isMerge ? prev.filter(d => !idsToMerge.includes(d.id)) : prev;
@@ -147,8 +150,12 @@ function App() {
         setActiveTab('general');
       }
 
-    } catch(e: any) {
-        setError(`Error al procesar "${datasetName}": ${e.message}`);
+    } catch(e: unknown) {
+        if (e instanceof Error) {
+            setError(`Error al procesar "${datasetName}": ${e.message}`);
+        } else {
+            setError(`Error desconocido al procesar "${datasetName}"`);
+        }
     } finally {
         setIsLoading(false);
         setLoadingMessage('');
@@ -160,9 +167,12 @@ function App() {
         setIsLoading(true);
         setLoadingMessage('Cargando conjuntos de datos de ejemplo...');
 
-        const newDatasets: ToonDataset[] = defaultDatasets.map((ds, i) => ({
-            ...ds,
+        const newDatasets: ElectoralDataset[] = defaultDatasets.map((ds, i) => ({
             id: `${Date.now()}-${i}-${ds.name}`,
+            name: ds.name,
+            processedData: ds.processedData,
+            invalidVoteCounts: ds.invalidVoteCounts,
+            analysisType: ds.analysisType,
         }));
         
         setDatasets(newDatasets);
@@ -170,8 +180,7 @@ function App() {
         const newPartyAnalysis = new Map<string, PartyAnalysisData>();
 
         newDatasets.forEach(dataset => {
-            const processedData = parseToon(dataset.toonData);
-            const partyDataForDataset = aggregateVotesByParty(processedData);
+            const partyDataForDataset = aggregateVotesByParty(dataset.processedData);
             
             partyDataForDataset.forEach(party => {
                 const normalizedName = party.name;
@@ -203,6 +212,7 @@ function App() {
         });
 
         setPartyAnalysis(newPartyAnalysis);
+        setDataSource('local');
         
         setIsLoading(false);
         setLoadingMessage('');
@@ -271,8 +281,12 @@ function App() {
             return newAnalysis;
         });
 
-    } catch (e: any) {
-        setError(`Error al clasificar ideologías: ${e.message}`);
+    } catch (e: unknown) {
+        if (e instanceof Error) {
+            setError(`Error al clasificar ideologías: ${e.message}`);
+        } else {
+            setError('Error desconocido al clasificar ideologías');
+        }
     } finally {
         setIsLoading(false);
         setLoadingMessage('');
@@ -280,20 +294,23 @@ function App() {
   }, [partyAnalysis]);
 
   const handleDeleteDataset = useCallback((datasetId: string) => {
+    setDataSource('local');
+    setRemoteDataset(null);
     setDatasets(prev => prev.filter(d => d.id !== datasetId));
     setPartyAnalysis(prev => {
       const newAnalysis = new Map<string, PartyAnalysisData>();
-      // FIX: Explicitly type `partyData` to resolve type inference issue where it becomes `unknown`.
-      prev.forEach((partyData: PartyAnalysisData, partyName) => {
+      // FIX: The `for...of` loop was not correctly inferring the type for `partyData`.
+      // Using `forEach` with explicit type annotations for `partyData` and `partyName` resolves the type errors.
+      prev.forEach((partyData: PartyAnalysisData, partyName: string) => {
         const newHistory = partyData.history.filter(h => h.datasetId !== datasetId);
         if (newHistory.length > 0) {
-           const newData: PartyAnalysisData = {
-              name: partyData.name,
-              history: newHistory,
-              color: partyData.color,
-              ideology: partyData.ideology
-           };
-           newAnalysis.set(partyName, newData);
+          const newData: PartyAnalysisData = {
+            name: partyData.name,
+            history: newHistory,
+            color: partyData.color,
+            ideology: partyData.ideology,
+          };
+          newAnalysis.set(partyName, newData);
         }
       });
       return newAnalysis;
@@ -306,7 +323,6 @@ function App() {
     setDatasets(prev => prev.map(d => d.id === datasetId ? { ...d, name: newName } : d));
     setPartyAnalysis(prev => {
         const newAnalysis = new Map<string, PartyAnalysisData>();
-        // FIX: Explicitly type `partyData` for consistency and to prevent potential inference issues.
         prev.forEach((partyData: PartyAnalysisData, partyName) => {
             const newHistory = partyData.history.map(h => {
                 if (h.datasetId === datasetId) {
@@ -332,16 +348,57 @@ function App() {
       setError("Necesitas seleccionar al menos dos conjuntos de datos para fusionar.");
       return;
     }
-    const allProcessedData = datasetsToMerge.flatMap(d => parseToon(d.toonData));
+    const allProcessedData = datasetsToMerge.flatMap(d => d.processedData);
     const combinedCsv = Papa.unparse(allProcessedData);
 
     await processAndSetData([combinedCsv], newName, true, idsToMerge);
   }, [datasets, processAndSetData]);
+
+  const loadRemoteData = useCallback(async (type: 'prediction' | 'historical', year: number) => {
+    setIsLoading(true);
+    setLoadingMessage(`Cargando ${type === 'prediction' ? 'predicción' : 'datos históricos'} de ${year}...`);
+    setError(null);
+    setSuccessMessage(null);
+
+    // MOCK API CALL
+    await new Promise(resolve => setTimeout(resolve, 1500)); 
+    
+    try {
+        // In a real app, this would be a fetch call to a backend
+        const mockDataset = defaultDatasets.find(d => d.name.includes(String(year)));
+        if (!mockDataset) throw new Error(`Mock data for year ${year} not found`);
+
+        const electoralDatasetFromMock: ElectoralDataset = {
+            id: `remote-${type}-${year}`,
+            name: mockDataset.name,
+            processedData: mockDataset.processedData,
+            invalidVoteCounts: mockDataset.invalidVoteCounts,
+            analysisType: mockDataset.analysisType,
+        };
+        
+        const newRemoteDataset = buildHistoricalDataset(electoralDatasetFromMock);
+        
+        setRemoteDataset(newRemoteDataset);
+        setDataSource('remote');
+        setSuccessMessage(`Datos remotos "${newRemoteDataset.name}" cargados correctamente.`);
+        setActiveTab('general');
+
+    } catch (e: unknown) {
+        if (e instanceof Error) {
+            setError(`Error al cargar datos remotos: ${e.message}`);
+        } else {
+             setError('Error desconocido al cargar datos remotos');
+        }
+    } finally {
+        setIsLoading(false);
+        setLoadingMessage('');
+    }
+  }, []);
   
 
   return (
     <div className={`flex h-screen bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-dark-text-primary font-sans transition-colors duration-300 ${theme}`}>
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} loadRemoteData={loadRemoteData} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header theme={theme} onThemeToggle={toggleTheme} />
         <main className="flex-1 overflow-y-auto p-8">
@@ -370,6 +427,9 @@ function App() {
             onMergeDatasets={handleMergeDatasets}
             isLoading={isLoading}
             loadingMessage={loadingMessage}
+            dataSource={dataSource}
+            setDataSource={setDataSource}
+            remoteDataset={remoteDataset}
           />
         </main>
       </div>

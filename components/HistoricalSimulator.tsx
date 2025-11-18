@@ -1,9 +1,9 @@
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
-import { ToonDataset, VoteTransferModel, PartyData, VoteTransferModelResult, PartyAnalysisData, HistoricalDataset } from '../types';
+import { ElectoralDataset, VoteTransferModel, PartyData, VoteTransferModelResult, PartyAnalysisData, HistoricalDataset } from '../types';
 import { calculateTransferModel, applyTransferModel } from '../services/voteTransferService';
-import { aggregateVotesByParty } from '../services/electoralProcessor';
-import { parseToon } from '../services/toonParser';
+import { buildHistoricalDataset } from '../services/electoralProcessor';
 import AnalysisCard from './AnalysisCard';
 import DHondtSimulator from './DHondtSimulator';
 import { WarningIcon, ShareIcon } from './Icons';
@@ -36,7 +36,7 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 
 
 interface HistoricalSimulatorProps {
-    datasets: ToonDataset[];
+    datasets: ElectoralDataset[];
     partyAnalysis: Map<string, PartyAnalysisData>;
     onClassifyIdeologies: (partyNames: string[]) => Promise<void>;
 }
@@ -62,22 +62,21 @@ const HistoricalSimulator: React.FC<HistoricalSimulatorProps> = ({ datasets, par
       model: VoteTransferModel;
       simulatedPartyData: PartyData[];
     } | null>(null);
+    
+    const selectedBaseElection = useMemo(() => {
+        const ds = datasets.find(d => d.id === baseElectionId);
+        return ds ? buildHistoricalDataset(ds) : null;
+    }, [datasets, baseElectionId]);
 
-    const parseDataset = useCallback((datasetId: string): (Omit<HistoricalDataset, 'baseRanking'> & { toonData: string }) | null => {
-        if (!datasetId) return null;
-        const ds = datasets.find(d => d.id === datasetId);
-        if (!ds) return null;
-        const processedData = parseToon(ds.toonData);
-        return {
-            ...ds,
-            processedData,
-            partyData: aggregateVotesByParty(processedData)
-        };
-    }, [datasets]);
+    const preElection = useMemo(() => {
+        const ds = datasets.find(d => d.id === refPreElectionId);
+        return ds ? buildHistoricalDataset(ds) : null;
+    }, [datasets, refPreElectionId]);
 
-    const selectedBaseElection = useMemo(() => parseDataset(baseElectionId), [parseDataset, baseElectionId]);
-    const preElection = useMemo(() => parseDataset(refPreElectionId), [parseDataset, refPreElectionId]);
-    const postElection = useMemo(() => parseDataset(refPostElectionId), [parseDataset, refPostElectionId]);
+    const postElection = useMemo(() => {
+        const ds = datasets.find(d => d.id === refPostElectionId);
+        return ds ? buildHistoricalDataset(ds) : null;
+    }, [datasets, refPostElectionId]);
 
     const potentialNewParties = useMemo(() => {
         if (!preElection || !postElection) return [];
@@ -88,7 +87,6 @@ const HistoricalSimulator: React.FC<HistoricalSimulatorProps> = ({ datasets, par
     }, [preElection, postElection]);
     
     const totalManualPercentage = useMemo(() => {
-        // FIX: Explicitly type the arguments of the reduce function to prevent type inference issues.
         return Object.values(manualTransferModel).reduce((sum: number, val: number) => sum + (val || 0), 0);
     }, [manualTransferModel]);
 
@@ -98,10 +96,10 @@ const HistoricalSimulator: React.FC<HistoricalSimulatorProps> = ({ datasets, par
     
      useEffect(() => {
         if (selectedBaseElection) {
-            const initialModel = selectedBaseElection.partyData.reduce((acc, party) => {
+            const initialModel = selectedBaseElection.partyData.reduce((acc: Record<string, number>, party: PartyData): Record<string, number> => {
                 acc[party.name] = 0;
                 return acc;
-            }, {} as Record<string, number>);
+            }, {});
             setManualTransferModel(initialModel);
         }
     }, [selectedBaseElection]);
@@ -142,7 +140,6 @@ const HistoricalSimulator: React.FC<HistoricalSimulatorProps> = ({ datasets, par
                 }
 
                 const finalModel: VoteTransferModel = {};
-                // FIX: Explicitly type the arguments of the forEach callback to ensure `percentage` is treated as a number.
                 Object.entries(manualTransferModel).forEach(([party, percentage]: [string, number]) => {
                     if (percentage > 0) {
                         finalModel[party] = percentage / 100;
@@ -177,7 +174,6 @@ const HistoricalSimulator: React.FC<HistoricalSimulatorProps> = ({ datasets, par
         
         const { model } = simulationResult;
         
-        // FIX: Explicitly type the arguments of the map callback to ensure `percentage` is treated as a number.
         return Object.entries(model)
             .map(([partyName, percentage]: [string, number]) => ({
                 name: partyName,
@@ -197,7 +193,7 @@ const HistoricalSimulator: React.FC<HistoricalSimulatorProps> = ({ datasets, par
         const topDonors = pieChartData.slice(0, SIMPLIFICATION_THRESHOLD);
         const otherDonors = pieChartData.slice(SIMPLIFICATION_THRESHOLD);
         
-        const othersValue = otherDonors.reduce((sum, donor) => sum + donor.value, 0);
+        const othersValue = otherDonors.reduce((sum: number, donor: { value: number }) => sum + donor.value, 0);
 
         if (othersValue > 0.1) { // Only add "Otros" if it's a meaningful slice
             return [

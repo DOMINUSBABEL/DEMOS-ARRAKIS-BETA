@@ -4,7 +4,7 @@ import { calculateDHondt } from '../services/dHondtCalculations';
 import AnalysisCard from './AnalysisCard';
 import PartySettings from './PartySettings';
 import DHondtResults from './DHondtResults';
-import { PlusIcon, FilePdfIcon, FileExcelIcon } from './Icons';
+import { PlusIcon, FilePdfIcon, FileExcelIcon, WarningIcon } from './Icons';
 import { generateDHondtPDF } from '../services/reportGenerator';
 import { exportDHondtToXLSX } from '../services/spreadsheetGenerator';
 
@@ -14,6 +14,8 @@ interface DHondtSimulatorProps {
   readOnly?: boolean;
   partyAnalysis?: Map<string, PartyAnalysisData>;
   electionType?: string;
+  onReset?: () => void;
+  isOverride?: boolean;
 }
 
 const ExportMenu: React.FC<{ onPdf: () => void; onXlsx: () => void }> = ({ onPdf, onXlsx }) => {
@@ -55,7 +57,7 @@ const ExportMenu: React.FC<{ onPdf: () => void; onXlsx: () => void }> = ({ onPdf
     );
 };
 
-const DHondtSimulator: React.FC<DHondtSimulatorProps> = ({ initialParties, title, readOnly = false, partyAnalysis, electionType }) => {
+const DHondtSimulator: React.FC<DHondtSimulatorProps> = ({ initialParties, title, readOnly = false, partyAnalysis, electionType, onReset, isOverride = false }) => {
   const [parties, setParties] = useState<PartyData[]>(initialParties);
 
   const getDefaultSeats = useCallback((type?: string) => {
@@ -146,6 +148,17 @@ const DHondtSimulator: React.FC<DHondtSimulatorProps> = ({ initialParties, title
   return (
     <div className="space-y-6">
         <h2 className="text-xl font-bold text-center">{title}</h2>
+        {isOverride && onReset && (
+            <div className="bg-yellow-900/50 border border-yellow-500 text-yellow-300 rounded-lg p-3 text-center mb-4 flex items-center justify-center gap-4">
+                <WarningIcon className="w-6 h-6"/>
+                <div>
+                    <p className="font-semibold">Mostrando datos de una proyección del Análisis de Listas.</p>
+                    <button onClick={onReset} className="mt-1 font-semibold underline hover:text-white text-sm">
+                        Volver a los datos originales
+                    </button>
+                </div>
+            </div>
+        )}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-6">
             <AnalysisCard title="Configuración de la Simulación" explanation="Ajusta el número de escaños a repartir. Este valor es fundamental para determinar el umbral efectivo y la distribución de poder." fullscreenable={false}>

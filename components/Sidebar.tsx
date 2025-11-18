@@ -1,11 +1,13 @@
-import React from 'react';
-import { ChartBarIcon, DatabaseIcon, ScaleIcon, BeakerIcon, EyeIcon, ClockIcon, UserGroupIcon, CpuChipIcon, ShareIcon, BookOpenIcon, ListBulletIcon } from './Icons';
 
-type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology';
+import React from 'react';
+import { ChartBarIcon, DatabaseIcon, ScaleIcon, BeakerIcon, EyeIcon, ClockIcon, UserGroupIcon, CpuChipIcon, ShareIcon, BookOpenIcon, ListBulletIcon, MapIcon } from './Icons';
+
+type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap';
 
 interface SidebarProps {
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
+  loadRemoteData: (type: 'prediction' | 'historical', year: number) => Promise<void>;
 }
 
 const NavItem: React.FC<{
@@ -33,7 +35,18 @@ const NavItem: React.FC<{
   );
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
+const RemoteButton: React.FC<{ onClick: () => void; icon: React.ReactNode; children: React.ReactNode; }> = ({ onClick, icon, children }) => (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors text-dark-text-secondary hover:bg-dark-card hover:text-dark-text-primary"
+    >
+      <span className="w-5 h-5">{icon}</span>
+      <span>{children}</span>
+    </button>
+);
+
+
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteData }) => {
   return (
     <aside className="w-64 bg-light-card dark:bg-dark-card border-r border-light-border dark:border-dark-border flex-shrink-0 p-4 flex flex-col">
       <div className="flex items-center gap-2 px-2 mb-8">
@@ -62,12 +75,26 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
         <NavItem tabId="list_analysis" activeTab={activeTab} setActiveTab={setActiveTab} icon={<ListBulletIcon />}>
           Análisis de Listas
         </NavItem>
+         <NavItem tabId="heatmap" activeTab={activeTab} setActiveTab={setActiveTab} icon={<MapIcon />}>
+          Mapa de Calor
+        </NavItem>
         <NavItem tabId="projections" activeTab={activeTab} setActiveTab={setActiveTab} icon={<BeakerIcon />}>
           Proyecciones
         </NavItem>
         <NavItem tabId="strategist" activeTab={activeTab} setActiveTab={setActiveTab} icon={<CpuChipIcon />}>
           Estratega IA
         </NavItem>
+        
+        <div className="!mt-4 pt-4 border-t border-dark-border">
+          <h3 className="px-3 text-xs font-semibold uppercase text-dark-text-secondary tracking-wider mb-2">Fuentes Externas</h3>
+           <RemoteButton onClick={() => loadRemoteData('prediction', 2026)} icon={<ShareIcon />}>
+             Cargar Predicción 2026
+           </RemoteButton>
+            <RemoteButton onClick={() => loadRemoteData('historical', 2022)} icon={<ShareIcon />}>
+             Cargar Histórico 2022
+           </RemoteButton>
+        </div>
+
         <div className="!mt-4 pt-4 border-t border-dark-border">
           <NavItem tabId="methodology" activeTab={activeTab} setActiveTab={setActiveTab} icon={<BookOpenIcon />}>
             Metodología

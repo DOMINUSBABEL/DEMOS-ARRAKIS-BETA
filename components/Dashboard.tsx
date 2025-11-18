@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { SimulationResults } from '../types';
+import { SimulationResults, SimulationParams, PartyData } from '../types';
 import ScenarioControls from './ScenarioControls';
 import AnalysisCard from './AnalysisCard';
 import DataTable from './DataTable';
@@ -18,23 +18,27 @@ import VoteElasticityAnalysis from './VoteElasticityAnalysis';
 import StrategicReportGenerator from './StrategicReportGenerator';
 import Methodology from './Methodology';
 import ListAnalysis from './ListAnalysis';
+import HeatmapAnalysis from './HeatmapAnalysis';
 import { 
   simulateVoteFragmentation,
   applyGovernmentOppositionFactor,
   runMonteCarloSimulation,
-  aggregateVotesByParty,
-  calculateBaseRanking
+  buildHistoricalDataset,
+  applyCoattailEffect,
+  applyLocalSupportFactor,
+  applyCampaignStrengthFactor
 } from '../services/electoralProcessor';
-import { ToonDataset, PartyAnalysisData, HistoricalDataset } from '../types';
-import { parseToon } from '../services/toonParser';
+import { ElectoralDataset, PartyAnalysisData, HistoricalDataset } from '../types';
+import { GenerateContentResponse } from '@google/genai';
 
 
-type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology';
+type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap';
+type DataSource = 'local' | 'remote';
 
 interface DashboardProps {
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
-  datasets: ToonDataset[];
+  datasets: ElectoralDataset[];
   partyAnalysis: Map<string, PartyAnalysisData>;
   onFileUpload: (files: File[], datasetName: string) => Promise<void>;
   onManualSubmit: (rows: ManualRow[], datasetName: string) => Promise<void>;
@@ -44,6 +48,9 @@ interface DashboardProps {
   onMergeDatasets: (idsToMerge: string[], newName: string) => Promise<void>;
   isLoading: boolean;
   loadingMessage: string;
+  dataSource: DataSource;
+  setDataSource: (source: DataSource) => void;
+  remoteDataset: HistoricalDataset | null;
 }
 
 const ExportMenu: React.FC<{ onPdf: () => void; onXlsx: () => void }> = ({ onPdf, onXlsx }) => {
@@ -97,41 +104,41 @@ const Dashboard: React.FC<DashboardProps> = ({
     onEditDatasetName,
     onMergeDatasets, 
     isLoading, 
-    loadingMessage 
+    loadingMessage,
+    dataSource,
+    setDataSource,
+    remoteDataset
 }) => {
   const [simulationResults, setSimulationResults] = useState<SimulationResults | null>(null);
-  const [aiAnalysis, setAiAnalysis] = useState<{ [key: string]: string }>({});
+  const [aiAnalysis, setAiAnalysis] = useState<{ [key: string]: { text: string; sources: any[] } }>({});
   const [isAiLoading, setIsAiLoading] = useState<Partial<{ [key: string]: boolean }>>({});
   const [isSimulating, setIsSimulating] = useState(false);
   const [partyFilter, setPartyFilter] = useState<string>('');
   const [selectedDatasetId, setSelectedDatasetId] = useState<string | null>(null);
+  const [dHondtPartiesOverride, setDHondtPartiesOverride] = useState<PartyData[] | null>(null);
+
 
   const generalAnalysisRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (datasets.length > 0 && (!selectedDatasetId || !datasets.some(d => d.id === selectedDatasetId))) {
+    if (dataSource === 'local' && datasets.length > 0 && (!selectedDatasetId || !datasets.some(d => d.id === selectedDatasetId))) {
       setSelectedDatasetId(datasets[datasets.length - 1].id);
-    } else if (datasets.length === 0) {
+    } else if (dataSource === 'local' && datasets.length === 0) {
       setSelectedDatasetId(null);
     }
-  }, [datasets, selectedDatasetId]);
+  }, [datasets, selectedDatasetId, dataSource]);
   
   const activeDataset = useMemo((): HistoricalDataset | null => {
-    if (!selectedDatasetId) return null;
-    const toonDataset = datasets.find(d => d.id === selectedDatasetId);
-    if (!toonDataset) return null;
+    if (dataSource === 'remote') {
+      return remoteDataset;
+    }
 
-    const processedData = parseToon(toonDataset.toonData);
-    return {
-      id: toonDataset.id,
-      name: toonDataset.name,
-      analysisType: toonDataset.analysisType,
-      invalidVoteCounts: toonDataset.invalidVoteCounts,
-      processedData,
-      partyData: aggregateVotesByParty(processedData),
-      baseRanking: calculateBaseRanking(processedData),
-    };
-  }, [datasets, selectedDatasetId]);
+    if (!selectedDatasetId) return null;
+    const electoralDataset = datasets.find(d => d.id === selectedDatasetId);
+    if (!electoralDataset) return null;
+
+    return buildHistoricalDataset(electoralDataset);
+  }, [datasets, selectedDatasetId, dataSource, remoteDataset]);
 
 
   const baseRanking = activeDataset?.baseRanking ?? [];
@@ -150,37 +157,52 @@ const Dashboard: React.FC<DashboardProps> = ({
     return baseRanking.filter(c => c.unidadPolitica === partyFilter);
   }, [baseRanking, partyFilter]);
 
-  const handleSimulate = useCallback((params: any) => {
+  const handleSimulate = useCallback((params: SimulationParams) => {
     setIsSimulating(true);
-    setSimulationResults(null); 
+    setSimulationResults(null);
     const rankingToSimulate = partyFilter ? filteredRanking : baseRanking;
-    
+
     setTimeout(() => {
         const fragmentedRanking = simulateVoteFragmentation(rankingToSimulate, params.fragmentationUnit, params.numCandidates);
-        const factoredRanking = applyGovernmentOppositionFactor(fragmentedRanking, params.governmentParties);
-        const probabilities = runMonteCarloSimulation(factoredRanking, params.threshold, params.monteCarloIterations);
+        const govFactoredRanking = applyGovernmentOppositionFactor(fragmentedRanking, params.governmentParties);
+        const coattailFactoredRanking = applyCoattailEffect(govFactoredRanking, params.coattailEffect);
+        const supportFactoredRanking = applyLocalSupportFactor(coattailFactoredRanking, params.localSupport);
+        const finalFactoredRanking = applyCampaignStrengthFactor(supportFactoredRanking, params.campaignStrength);
 
-        setSimulationResults({ fragmentedRanking, factoredRanking, probabilities });
+        const probabilities = runMonteCarloSimulation(finalFactoredRanking, params.threshold, params.monteCarloIterations);
+
+        setSimulationResults({ 
+          fragmentedRanking, 
+          factoredRanking: finalFactoredRanking, 
+          probabilities 
+        });
         setIsSimulating(false);
         setActiveTab('projections');
     }, 10);
-  }, [baseRanking, filteredRanking, partyFilter, setActiveTab]);
+}, [baseRanking, filteredRanking, partyFilter, setActiveTab]);
   
   const handleAiAnalysis = useCallback(async (key: 'general' | 'projections') => {
     setIsAiLoading(prev => ({ ...prev, [key]: true }));
-    setAiAnalysis(prev => ({ ...prev, [key]: undefined }));
+    setAiAnalysis(prev => ({ ...prev, [key]: { text: '', sources: [] } }));
 
     try {
-        let analysis = '';
+        let response: GenerateContentResponse;
         if (key === 'general' && activeDataset) {
-            analysis = await getAIAnalysis({ type: 'base_ranking', data: filteredRanking, partyFilter: partyFilter || undefined });
+            response = await getAIAnalysis({ type: 'base_ranking', data: filteredRanking, partyFilter: partyFilter || undefined });
         } else if (key === 'projections' && simulationResults && activeDataset) {
-            analysis = await getAIAnalysis({ type: 'simulation', data: { baseRanking: filteredRanking, results: simulationResults } });
+            response = await getAIAnalysis({ type: 'simulation', data: { baseRanking: filteredRanking, results: simulationResults } });
+        } else {
+          setIsAiLoading(prev => ({ ...prev, [key]: false }));
+          return;
         }
-        setAiAnalysis(prev => ({ ...prev, [key]: analysis }));
+        
+        const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
+        setAiAnalysis(prev => ({ ...prev, [key]: { text: response.text, sources } }));
+
     } catch (error) {
         console.error(error);
-        setAiAnalysis(prev => ({...prev, [key]: "TÍTULO: Error de Análisis\n\nOcurrió un error al generar el análisis de IA."}));
+        const errorMessage = error instanceof Error ? error.message : "Ocurrió un error al generar el análisis de IA.";
+        setAiAnalysis(prev => ({...prev, [key]: { text: errorMessage, sources: [] }}));
     } finally {
         setIsAiLoading(prev => ({ ...prev, [key]: false }));
     }
@@ -219,7 +241,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       : [i + 1, c.unidadPolitica, c.poderElectoralBase]
   ));
 
-  const noDataLoaded = datasets.length === 0;
+  const noDataLoaded = datasets.length === 0 && !remoteDataset;
   
   const handleExportPdf = () => {
     if (generalAnalysisRef.current && activeDataset) {
@@ -232,6 +254,11 @@ const Dashboard: React.FC<DashboardProps> = ({
         exportGeneralAnalysisToXLSX(activeDataset, partyAnalysis, partyFilter);
     }
   };
+
+  const handleProjectAndSimulate = useCallback((projectedParties: PartyData[]) => {
+    setDHondtPartiesOverride(projectedParties);
+    setActiveTab('d_hondt');
+  }, []);
 
   const renderContent = () => {
     if (noDataLoaded && activeTab !== 'data_manager' && activeTab !== 'methodology') {
@@ -259,17 +286,24 @@ const Dashboard: React.FC<DashboardProps> = ({
       case 'general':
         return activeDataset && <div className="space-y-8">
             <div className="bg-light-card dark:bg-dark-card/50 p-4 rounded-lg shadow-lg flex flex-wrap justify-between items-center gap-4 backdrop-blur-sm border border-light-border dark:border-dark-border">
-                <div>
-                    <label htmlFor="datasetSelector" className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-1">Seleccionar Conjunto de Datos</label>
-                    <select
-                        id="datasetSelector"
-                        value={selectedDatasetId ?? ''}
-                        onChange={(e) => setSelectedDatasetId(e.target.value)}
-                        className="w-full md:w-auto bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 focus:ring-brand-primary focus:border-brand-primary"
-                    >
-                        {datasets.map(ds => <option key={ds.id} value={ds.id}>{ds.name}</option>)}
-                    </select>
-                </div>
+                {dataSource === 'local' ? (
+                  <div>
+                      <label htmlFor="datasetSelector" className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-1">Seleccionar Conjunto de Datos Local</label>
+                      <select
+                          id="datasetSelector"
+                          value={selectedDatasetId ?? ''}
+                          onChange={(e) => { setSelectedDatasetId(e.target.value); setDataSource('local'); }}
+                          className="w-full md:w-auto bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 focus:ring-brand-primary focus:border-brand-primary"
+                      >
+                          {datasets.map(ds => <option key={ds.id} value={ds.id}>{ds.name}</option>)}
+                      </select>
+                  </div>
+                ) : (
+                  <div>
+                     <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-1">Fuente de Datos Remota Activa</label>
+                     <p className="font-semibold p-2">{activeDataset.name}</p>
+                  </div>
+                )}
                  <ExportMenu onPdf={handleExportPdf} onXlsx={handleExportXlsx} />
             </div>
             
@@ -292,15 +326,37 @@ const Dashboard: React.FC<DashboardProps> = ({
                             <BarChart data={chartData} />
                         </AnalysisCard>
 
-                        <AnalysisCard title="Análisis del Estratega IA" explanation="Obtén un análisis estratégico instantáneo basado en el Ranking de Poder Electoral Base. La IA identificará fortalezas, debilidades y el panorama competitivo inicial." collapsible>
+                        <AnalysisCard title="Análisis del Estratega IA" explanation="Obtén un análisis estratégico instantáneo basado en el Ranking de Poder Electoral Base. La IA identificará fortalezas, debilidades y el panorama competitivo inicial, enriquecido con datos de Google Search." collapsible>
                             <button onClick={() => handleAiAnalysis('general')} disabled={isAiLoading['general']} className="w-full flex items-center justify-center gap-2 bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-brand-secondary transition-opacity disabled:opacity-50 disabled:cursor-wait">
-                                {isAiLoading['general'] ? <LoadingSpinner className="w-5 h-5" /> : <SparklesIcon className="w-5 h-5" />}
-                                {isAiLoading['general'] ? 'Generando...' : 'Analizar Ranking con IA'}
+                                <SparklesIcon className="w-5 h-5" />
+                                Analizar Ranking con IA
                             </button>
-                            {aiAnalysis['general'] && (
-                                <pre id="ai-analysis-text" className="whitespace-pre-wrap font-sans text-sm max-w-none mt-4 bg-light-bg dark:bg-dark-bg p-4 rounded-md border border-light-border dark:border-dark-border text-light-text-primary dark:text-dark-text-primary">
-                                    {aiAnalysis['general']}
-                                </pre>
+                            {isAiLoading['general'] && (
+                                <div className="mt-4 text-center py-8 bg-dark-bg/30 rounded-lg">
+                                    <LoadingSpinner className="w-8 h-8 mx-auto text-brand-primary" />
+                                    <p className="mt-3 font-semibold text-dark-text-secondary">Generando análisis del ranking...</p>
+                                </div>
+                            )}
+                            {!isAiLoading['general'] && aiAnalysis['general']?.text && (
+                                <>
+                                    <pre id="ai-analysis-text" className="whitespace-pre-wrap font-sans text-sm max-w-none mt-4 bg-light-bg dark:bg-dark-bg p-4 rounded-md border border-light-border dark:border-dark-border text-light-text-primary dark:text-dark-text-primary">
+                                        {aiAnalysis['general'].text}
+                                    </pre>
+                                    {aiAnalysis['general']?.sources && aiAnalysis['general'].sources.length > 0 && (
+                                        <div className="mt-4 p-4 rounded-md bg-dark-bg/50 border border-dark-border">
+                                            <h4 className="text-sm font-semibold text-dark-text-secondary">Fuentes de Google Search:</h4>
+                                            <ul className="list-disc pl-5 mt-2 space-y-1">
+                                                {aiAnalysis['general'].sources.map((source, index) => source.web && (
+                                                    <li key={index} className="text-xs">
+                                                        <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">
+                                                            {source.web.title}
+                                                        </a>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </AnalysisCard>
                     </div>
@@ -375,9 +431,11 @@ const Dashboard: React.FC<DashboardProps> = ({
           <p className="text-center text-light-text-secondary dark:text-dark-text-secondary text-sm mb-4">Análisis para: <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">{activeDataset.name}</span></p>
           <DHondtSimulator
             title="Simulador D'Hondt Interactivo"
-            initialParties={initialPartyData}
+            initialParties={dHondtPartiesOverride || initialPartyData}
             partyAnalysis={partyAnalysis}
             electionType={activeDataset.processedData[0]?.Eleccion}
+            onReset={() => setDHondtPartiesOverride(null)}
+            isOverride={!!dHondtPartiesOverride}
           />
         </div>;
 
@@ -397,13 +455,35 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <div className="space-y-6">
                   <AnalysisCard title="Análisis IA de la Simulación" explanation={`Obtén un análisis estratégico de los resultados de la simulación de ${analysisSubjectPlural.toLowerCase()}.`} collapsible defaultCollapsed>
                     <button onClick={() => handleAiAnalysis('projections')} disabled={isAiLoading['projections']} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-wait">
-                        {isAiLoading['projections'] ? <LoadingSpinner className="w-5 h-5" /> : <SparklesIcon className="w-5 h-5" />}
-                        {isAiLoading['projections'] ? 'Generando...' : 'Obtener Análisis de Simulación con IA'}
+                        <SparklesIcon className="w-5 h-5" />
+                        Obtener Análisis de Simulación con IA
                     </button>
-                    {aiAnalysis['projections'] && (
-                        <pre className="whitespace-pre-wrap font-sans text-sm max-w-none mt-4 bg-dark-bg p-4 rounded-md border border-dark-border">
-                          {aiAnalysis['projections']}
-                        </pre>
+                    {isAiLoading['projections'] && (
+                        <div className="mt-4 text-center py-8 bg-dark-bg/30 rounded-lg">
+                            <LoadingSpinner className="w-8 h-8 mx-auto text-brand-primary" />
+                            <p className="mt-3 font-semibold text-dark-text-secondary">Generando análisis de la simulación...</p>
+                        </div>
+                    )}
+                    {!isAiLoading['projections'] && aiAnalysis['projections']?.text && (
+                        <>
+                            <pre className="whitespace-pre-wrap font-sans text-sm max-w-none mt-4 bg-dark-bg p-4 rounded-md border border-dark-border">
+                              {aiAnalysis['projections'].text}
+                            </pre>
+                             {aiAnalysis['projections']?.sources && aiAnalysis['projections'].sources.length > 0 && (
+                                <div className="mt-4 p-4 rounded-md bg-dark-bg/50 border border-dark-border">
+                                    <h4 className="text-sm font-semibold text-dark-text-secondary">Fuentes de Google Search:</h4>
+                                    <ul className="list-disc pl-5 mt-2 space-y-1">
+                                        {aiAnalysis['projections'].sources.map((source, index) => source.web && (
+                                            <li key={index} className="text-xs">
+                                                <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">
+                                                    {source.web.title}
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </>
                     )}
                   </AnalysisCard>
                   <AnalysisCard title="Oráculo Final (Probabilidad de Curul)" explanation="Resultado de la simulación de Monte Carlo. Muestra la probabilidad de que cada candidato obtenga una curul, basado en miles de micro-elecciones simuladas.">
@@ -413,7 +493,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                         <AnalysisCard title="Impacto: Fragmentación de Votos" explanation="Este ranking muestra cómo quedaría el poder electoral si la unidad política seleccionada se fragmenta entre varios candidatos.">
                             <DataTable title="" headers={['#', 'Candidato', 'Poder Electoral Fragmentado']} data={simulationResults.fragmentedRanking.map((c, i) => [i + 1, c.candidato, c.poderElectoralBase])} />
                         </AnalysisCard>
-                        <AnalysisCard title="Impacto: Posición Política" explanation="Este ranking muestra el resultado después de aplicar una variación negativa a los partidos de gobierno.">
+                        <AnalysisCard title="Ranking Final Simulado (Post-Factores)" explanation="Este es el ranking final después de aplicar todos los factores de simulación: fragmentación, posición política, efecto arrastre, apoyo estructural y fuerza de campaña. Este es el ranking que se usa para la simulación de Monte Carlo.">
                             <DataTable title="" headers={['#', 'Candidato', 'Poder Electoral con Factores']} data={simulationResults.factoredRanking.map((c, i) => [i + 1, c.candidato, c.poderElectoralBase])} />
                         </AnalysisCard>
                     </div>
@@ -428,7 +508,12 @@ const Dashboard: React.FC<DashboardProps> = ({
         return <CoalitionAnalysis datasets={datasets} />;
 
       case 'list_analysis':
-        return <ListAnalysis datasets={datasets} partyAnalysis={partyAnalysis} />;
+        return <ListAnalysis
+          datasets={datasets}
+          partyAnalysis={partyAnalysis}
+          onProjectAndSimulate={handleProjectAndSimulate}
+          activePartyData={initialPartyData}
+        />;
 
       case 'strategist':
         return <StrategicReportGenerator 
@@ -439,6 +524,9 @@ const Dashboard: React.FC<DashboardProps> = ({
       
       case 'methodology':
         return <Methodology />;
+
+      case 'heatmap':
+        return <HeatmapAnalysis />;
 
       default:
         return null;

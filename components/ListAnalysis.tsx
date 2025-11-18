@@ -1,14 +1,14 @@
-
 import React, { useState, useMemo } from 'react';
-import { ToonDataset, PartyAnalysisData, ProcessedElectionData } from '../types';
-import { parseToon } from '../services/toonParser';
+import { ElectoralDataset, PartyAnalysisData, ListAnalysisAIResponse, PartyData } from '../types';
 import { getOpenVsClosedListAnalysis } from '../services/geminiService';
 import AnalysisCard from './AnalysisCard';
-import { LoadingSpinner, SparklesIcon, WarningIcon } from './Icons';
+import { LoadingSpinner, SparklesIcon, WarningIcon, CheckCircleIcon } from './Icons';
 
 interface ListAnalysisProps {
-    datasets: ToonDataset[];
+    datasets: ElectoralDataset[];
     partyAnalysis: Map<string, PartyAnalysisData>;
+    onProjectAndSimulate: (projectedParties: PartyData[]) => void;
+    activePartyData: PartyData[];
 }
 
 interface PartyPerformance {
@@ -17,6 +17,7 @@ interface PartyPerformance {
     listType: 'Abierta' | 'Cerrada';
     votes: number;
     voteConcentration?: number; // Standard deviation of candidate votes for open lists
+    invalidVoteCounts: { blankVotes: number; nullVotes: number };
 }
 
 const calculateStdDev = (arr: number[]): number => {
@@ -67,10 +68,26 @@ const ProjectionInterval: React.FC<{ title: string; data: { baseline: number; lo
     );
 };
 
+const ProsCons: React.FC<{ title: string; pros: string; cons: string; }> = ({ title, pros, cons }) => (
+    <div className="bg-dark-bg p-4 rounded-lg">
+        <h4 className="font-semibold text-md mb-3 text-center text-dark-text-primary">{title}</h4>
+        <div className="space-y-3">
+            <div className="flex items-start gap-2">
+                <CheckCircleIcon className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-dark-text-secondary"><strong className="text-dark-text-primary">Ventaja:</strong> {pros}</p>
+            </div>
+            <div className="flex items-start gap-2">
+                <WarningIcon className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-dark-text-secondary"><strong className="text-dark-text-primary">Desventaja:</strong> {cons}</p>
+            </div>
+        </div>
+    </div>
+);
 
-const ListAnalysis: React.FC<ListAnalysisProps> = ({ datasets, partyAnalysis }) => {
+
+const ListAnalysis: React.FC<ListAnalysisProps> = ({ datasets, partyAnalysis, onProjectAndSimulate, activePartyData }) => {
     const [selectedParty, setSelectedParty] = useState<string>('');
-    const [analysisResult, setAnalysisResult] = useState<any | null>(null);
+    const [analysisResult, setAnalysisResult] = useState<ListAnalysisAIResponse | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -82,9 +99,6 @@ const ListAnalysis: React.FC<ListAnalysisProps> = ({ datasets, partyAnalysis }) 
         const partyData = partyAnalysis.get(selectedParty);
         if (!partyData) return [];
 
-        // FIX: Add an explicit return type `PartyPerformance | null` to the map callback.
-        // This resolves TypeScript's difficulty in inferring the correct complex type,
-        // fixing both the `listType` widening issue and the type predicate error in the subsequent `.filter()`.
         return partyData.history.map((historyPoint): PartyPerformance | null => {
             const dataset = datasets.find(d => d.id === historyPoint.datasetId);
             if (!dataset) return null;
@@ -101,7 +115,7 @@ const ListAnalysis: React.FC<ListAnalysisProps> = ({ datasets, partyAnalysis }) 
             const year = yearMatch ? yearMatch[0] : 'N/A';
 
             if (listType === 'Abierta') {
-                const processedData = parseToon(dataset.toonData);
+                const processedData = dataset.processedData;
                 const candidateVotes = processedData
                     .filter(row => row.UnidadPolitica === selectedParty && row.Candidato.toUpperCase() !== 'SOLO POR LA LISTA')
                     .map(row => row.Votos);
@@ -115,9 +129,8 @@ const ListAnalysis: React.FC<ListAnalysisProps> = ({ datasets, partyAnalysis }) 
                 listType,
                 votes: historyPoint.votes,
                 voteConcentration,
+                invalidVoteCounts: dataset.invalidVoteCounts,
             };
-        // FIX: The type predicate `p is PartyPerformance` is correct, but TypeScript was struggling with
-        // the inferred type from the preceding `map`. The fix above resolves this issue.
         }).filter((p): p is PartyPerformance => p !== null)
           .sort((a, b) => parseInt(a.year) - parseInt(b.year));
     }, [selectedParty, partyAnalysis, datasets]);
@@ -162,6 +175,28 @@ const ListAnalysis: React.FC<ListAnalysisProps> = ({ datasets, partyAnalysis }) 
             setIsLoading(false);
         }
     };
+    
+    const handleSimulateProjection = (strategy: 'open' | 'closed') => {
+        if (!analysisResult || !activePartyData || !selectedParty) return;
+
+        const projection = strategy === 'open' ? analysisResult.projections.openList : analysisResult.projections.closedList;
+
+        if (!projection || projection.baseline === null || projection.baseline === undefined) {
+             setError(`No hay una proyección de línea base para la estrategia de lista ${strategy === 'open' ? 'abierta' : 'cerrada'}.`);
+            return;
+        }
+        
+        const projectedVoteCount = projection.baseline;
+        
+        const newPartyData = activePartyData.map(party => {
+            if (party.name === selectedParty) {
+                return { ...party, votes: projectedVoteCount };
+            }
+            return party;
+        });
+        
+        onProjectAndSimulate(newPartyData);
+    };
 
     return (
         <div className="space-y-6">
@@ -183,12 +218,22 @@ const ListAnalysis: React.FC<ListAnalysisProps> = ({ datasets, partyAnalysis }) 
                             disabled={isLoading}
                             className="w-full bg-brand-primary hover:bg-brand-secondary text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                         >
-                            {isLoading ? <LoadingSpinner className="w-5 h-5" /> : <SparklesIcon className="w-5 h-5" />}
-                            {isLoading ? 'Analizando...' : 'Generar Análisis Estratégico'}
+                            <SparklesIcon className="w-5 h-5" />
+                            Generar Análisis Estratégico
                         </button>
                     )}
                 </div>
             </AnalysisCard>
+
+            {isLoading && (
+                <AnalysisCard title="Procesando Análisis" explanation="La IA está trabajando en su recomendación estratégica.">
+                    <div className="text-center py-10">
+                        <LoadingSpinner className="w-10 h-10 mx-auto text-brand-primary" />
+                        <p className="mt-4 font-semibold">Generando análisis estratégico...</p>
+                        <p className="text-sm text-dark-text-secondary">La IA está procesando datos históricos y proyecciones.</p>
+                    </div>
+                </AnalysisCard>
+            )}
             
             {error && (
                  <div className="flex items-center p-4 bg-red-900/50 border border-red-500 text-red-300 rounded-lg shadow-lg">
@@ -197,7 +242,7 @@ const ListAnalysis: React.FC<ListAnalysisProps> = ({ datasets, partyAnalysis }) 
                 </div>
             )}
             
-            {partyPerformanceHistory.length > 0 && (
+            {!isLoading && partyPerformanceHistory.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <AnalysisCard title="Rendimiento Histórico por Tipo de Lista" explanation="Tabla que muestra el desempeño del partido en elecciones pasadas, diferenciando entre lista abierta y cerrada.">
                         <div className="overflow-x-auto max-h-96">
@@ -254,7 +299,7 @@ const ListAnalysis: React.FC<ListAnalysisProps> = ({ datasets, partyAnalysis }) 
                 </div>
             )}
 
-            {analysisResult && (
+            {!isLoading && analysisResult && (
                  <>
                     <AnalysisCard title="Proyecciones Cuantitativas para 2026" explanation="Estimación de rendimiento electoral con un intervalo de confianza del 5% (-2.5% a +2.5%) basado en la proyección central de la IA.">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -270,10 +315,53 @@ const ListAnalysis: React.FC<ListAnalysisProps> = ({ datasets, partyAnalysis }) 
                             />
                         </div>
                     </AnalysisCard>
-                    <AnalysisCard title="Recomendación del Estratega IA" explanation="Análisis detallado y recomendación final generada por la IA.">
-                        <pre className="whitespace-pre-wrap font-sans text-sm max-w-none bg-dark-bg p-4 rounded-md border border-dark-border text-dark-text-primary">
-                            {analysisResult.analysisText}
-                        </pre>
+                    <AnalysisCard title="Diagnóstico y Análisis Estratégico de la IA" explanation="Análisis detallado de la IA sobre el perfil del partido y las implicaciones de cada tipo de lista.">
+                        <div className="space-y-6">
+                            <div className="text-center bg-dark-bg p-4 rounded-lg">
+                                <p className="text-sm uppercase font-bold tracking-wider text-dark-text-secondary">Perfil de Voto Diagnosticado</p>
+                                <p className="text-2xl font-bold text-brand-primary mt-1">{analysisResult.analysis.voteProfile}</p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <ProsCons 
+                                    title="Evaluación: Lista Abierta"
+                                    pros={analysisResult.analysis.prosOpen}
+                                    cons={analysisResult.analysis.consOpen}
+                                />
+                                <ProsCons 
+                                    title="Evaluación: Lista Cerrada"
+                                    pros={analysisResult.analysis.prosClosed}
+                                    cons={analysisResult.analysis.consClosed}
+                                />
+                            </div>
+                            <div>
+                                <h4 className="font-semibold text-lg mb-2 text-dark-text-primary">Veredicto y Recomendación Estratégica</h4>
+                                <div className="bg-dark-bg p-4 rounded-lg">
+                                    <p className="text-sm text-dark-text-secondary italic leading-relaxed">{analysisResult.analysis.finalVerdict}</p>
+                                    <div className="mt-4 pt-4 border-t border-dark-border text-center">
+                                        <p className="text-sm uppercase font-bold tracking-wider text-dark-text-secondary">Recomendación Final</p>
+                                        <p className="text-3xl font-bold text-brand-primary mt-1">{analysisResult.strategicRecommendation}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </AnalysisCard>
+                    <AnalysisCard title="Simular Proyecciones en D'Hondt" explanation="Lleva estas proyecciones al simulador D'Hondt para ver su impacto en la asignación de escaños. Esto modificará temporalmente los datos en la pestaña 'Simulador D'Hondt'.">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <button 
+                                onClick={() => handleSimulateProjection('open')}
+                                disabled={!analysisResult.projections.openList || analysisResult.projections.openList.baseline === null}
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Simular con Lista Abierta
+                            </button>
+                             <button 
+                                onClick={() => handleSimulateProjection('closed')}
+                                disabled={!analysisResult.projections.closedList || analysisResult.projections.closedList.baseline === null}
+                                className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Simular con Lista Cerrada
+                            </button>
+                        </div>
                     </AnalysisCard>
                 </>
             )}

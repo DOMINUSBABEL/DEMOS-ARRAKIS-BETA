@@ -1,5 +1,7 @@
 {
-  "name": "DEMOS ARRAKIS BETA",
+  "name": "DEMOS ARRAKIS BETA 1.1",
   "description": "A political predictive model to analyze electoral data, run 'what-if' scenarios, and estimate election probabilities for political candidates and units.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "geolocation"
+  ]
 }

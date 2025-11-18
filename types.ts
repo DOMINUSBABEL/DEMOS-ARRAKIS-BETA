@@ -32,12 +32,30 @@ export interface CandidateRanking {
   poderElectoralBase: number;
 }
 
+export interface LocalSupportConfig {
+  unit: string;
+  level: 'Nulo' | 'Bajo' | 'Medio' | 'Alto';
+}
+
+export interface CampaignStrengthConfig {
+  unit: string;
+  level: 'Baja' | 'Media' | 'Alta';
+}
+
+export interface CoattailEffectConfig {
+  unit: string;
+  strength: 'Nulo' | 'Moderado' | 'Fuerte';
+}
+
 export interface SimulationParams {
   fragmentationUnit: string;
   numCandidates: number;
   governmentParties: string[];
   threshold: number;
   monteCarloIterations: number;
+  localSupport: LocalSupportConfig[];
+  campaignStrength: CampaignStrengthConfig[];
+  coattailEffect: CoattailEffectConfig;
 }
 
 export interface ProbabilityResult {
@@ -100,11 +118,11 @@ export interface DHondtAnalysis {
 }
 
 // --- Historical Simulation Types ---
-// NEW: ToonDataset is the primary storage format.
-export interface ToonDataset {
+// REFACTORED: ToonDataset is now ElectoralDataset and stores data as objects.
+export interface ElectoralDataset {
     id: string;
     name: string;
-    toonData: string; // The serialized TOON data
+    processedData: ProcessedElectionData[];
     invalidVoteCounts: InvalidVoteCounts;
     analysisType: AnalysisType;
 }
@@ -152,4 +170,28 @@ export interface VoteElasticityResult {
     inelasticVote: number; // The floor
     elasticVote: number; // The range (ceiling - floor)
     ceiling: number;
+}
+
+export interface ListAnalysisAIResponse {
+  projections: {
+    openList: {
+      baseline: number | null;
+      lowerBound: number | null;
+      upperBound: number | null;
+    } | null;
+    closedList: {
+      baseline: number | null;
+      lowerBound: number | null;
+      upperBound: number | null;
+    } | null;
+  };
+  strategicRecommendation: 'Abierta' | 'Cerrada' | 'Depende del Contexto';
+  analysis: {
+    voteProfile: 'Elástico' | 'Inelástico' | 'Mixto';
+    prosOpen: string;
+    consOpen: string;
+    prosClosed: string;
+    consClosed: string;
+    finalVerdict: string;
+  };
 }

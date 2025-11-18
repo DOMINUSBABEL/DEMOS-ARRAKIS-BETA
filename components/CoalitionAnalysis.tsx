@@ -1,14 +1,13 @@
+
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { ToonDataset, CoalitionBreakdown, HistoricalDataset } from '../types';
+import { ElectoralDataset, CoalitionBreakdown, HistoricalDataset } from '../types';
 import { calculateCoalitionBreakdown } from '../services/coalitionAnalysisService';
 import { generateCoalitionAnalysisPDF } from '../services/reportGenerator';
 import { exportCoalitionAnalysisToXLSX } from '../services/spreadsheetGenerator';
 import { PieChart, ResponsiveContainer, Cell, Tooltip, Legend, Pie } from 'recharts';
 import AnalysisCard from './AnalysisCard';
 import { WarningIcon, FilePdfIcon, FileExcelIcon } from './Icons';
-import { parseToon } from '../services/toonParser';
-// FIX: Import calculateBaseRanking to correctly construct the HistoricalDataset object.
-import { aggregateVotesByParty, calculateBaseRanking } from '../services/electoralProcessor';
+import { buildHistoricalDataset } from '../services/electoralProcessor';
 
 const ExportMenu: React.FC<{ onPdf: () => void; onXlsx: () => void; disabled: boolean }> = ({ onPdf, onXlsx, disabled }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -40,7 +39,7 @@ const ExportMenu: React.FC<{ onPdf: () => void; onXlsx: () => void; disabled: bo
 };
 
 
-const CoalitionAnalysis: React.FC<{ datasets: ToonDataset[] }> = ({ datasets }) => {
+const CoalitionAnalysis: React.FC<{ datasets: ElectoralDataset[] }> = ({ datasets }) => {
     const [coalitionDatasetId, setCoalitionDatasetId] = useState<string>('');
     const [referenceDatasetId, setReferenceDatasetId] = useState<string>('');
     const [selectedCoalition, setSelectedCoalition] = useState<string>('');
@@ -49,24 +48,15 @@ const CoalitionAnalysis: React.FC<{ datasets: ToonDataset[] }> = ({ datasets }) 
 
     const resultsRef = useRef<HTMLDivElement>(null);
 
-    const parseDataset = useCallback((datasetId: string): HistoricalDataset | null => {
-        if (!datasetId) return null;
-        const ds = datasets.find(d => d.id === datasetId);
-        if (!ds) return null;
-        const processedData = parseToon(ds.toonData);
-        // FIX: Construct a complete HistoricalDataset object, including the missing `baseRanking`.
-        return {
-            id: ds.id,
-            name: ds.name,
-            analysisType: ds.analysisType,
-            invalidVoteCounts: ds.invalidVoteCounts,
-            processedData,
-            partyData: aggregateVotesByParty(processedData),
-            baseRanking: calculateBaseRanking(processedData),
-        };
-    }, [datasets]);
+    const coalitionDataset = useMemo(() => {
+        const ds = datasets.find(d => d.id === coalitionDatasetId);
+        return ds ? buildHistoricalDataset(ds) : null;
+    }, [datasets, coalitionDatasetId]);
 
-    const coalitionDataset = useMemo(() => parseDataset(coalitionDatasetId), [parseDataset, coalitionDatasetId]);
+    const referenceDataset = useMemo(() => {
+        const ds = datasets.find(d => d.id === referenceDatasetId);
+        return ds ? buildHistoricalDataset(ds) : null;
+    }, [datasets, referenceDatasetId]);
 
     const coalitionParties = useMemo(() => {
         if (!coalitionDataset) return [];
@@ -77,8 +67,6 @@ const CoalitionAnalysis: React.FC<{ datasets: ToonDataset[] }> = ({ datasets }) 
         setError(null);
         setBreakdown(null);
         try {
-            const referenceDataset = parseDataset(referenceDatasetId);
-
             if (!coalitionDataset || !referenceDataset || !selectedCoalition) {
                 throw new Error("Por favor, selecciona todos los campos requeridos.");
             }
@@ -205,5 +193,4 @@ const CoalitionAnalysis: React.FC<{ datasets: ToonDataset[] }> = ({ datasets }) 
     );
 };
 
-// FIX: Add default export for the component.
 export default CoalitionAnalysis;
