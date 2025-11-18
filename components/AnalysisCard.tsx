@@ -14,15 +14,15 @@ interface AnalysisCardProps {
 
 const FullScreenModal: React.FC<{ title: string; onClose: () => void; children: React.ReactNode }> = ({ title, onClose, children }) => {
     return (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={onClose}>
-            <div className="bg-light-card dark:bg-dark-card rounded-lg shadow-2xl w-full h-full max-w-7xl max-h-[90vh] flex flex-col relative border border-dark-border" onClick={(e) => e.stopPropagation()}>
-                <header className="p-4 border-b border-dark-border flex justify-between items-center flex-shrink-0">
-                    <h3 className="text-lg font-semibold text-light-text-primary dark:text-dark-text-primary">{title}</h3>
-                    <button onClick={onClose} className="text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text-primary dark:hover:text-dark-text-primary transition-colors">
-                        <CloseIcon className="w-6 h-6" />
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-lg flex items-center justify-center z-50 p-4 sm:p-8 animate-fade-in" onClick={onClose}>
+            <div className="glass-panel w-full h-full flex flex-col relative rounded-xl overflow-hidden ring-1 ring-white/10 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                <header className="p-6 border-b border-white/10 flex justify-between items-center flex-shrink-0 bg-gradient-to-r from-white/5 to-transparent">
+                    <h3 className="text-2xl font-bold text-light-text-primary dark:text-white tracking-tight">{title}</h3>
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-white/10 text-light-text-secondary dark:text-gray-400 hover:text-white transition-colors">
+                        <CloseIcon className="w-8 h-8" />
                     </button>
                 </header>
-                <div className="p-6 flex-grow overflow-auto">
+                <div className="p-8 flex-grow overflow-auto bg-dark-bg/50">
                     {children}
                 </div>
             </div>
@@ -36,34 +36,38 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ title, explanation, childre
 
   return (
     <>
-      <div className="bg-light-card dark:bg-dark-card/50 rounded-xl shadow-2xl border border-light-border dark:border-dark-border flex flex-col backdrop-blur-lg">
-        <header className={`flex items-center justify-between p-6 ${collapsible ? 'cursor-pointer' : ''}`} onClick={() => collapsible && setIsCollapsed(!isCollapsed)}>
+      <div className={`glass-panel rounded-xl flex flex-col transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,0,0,0.3)] hover:border-brand-primary/30 ${isCollapsed ? 'h-auto' : ''}`}>
+        <header 
+            className={`flex items-center justify-between p-5 border-b border-white/5 bg-gradient-to-r from-white/5 to-transparent ${collapsible ? 'cursor-pointer select-none' : ''}`} 
+            onClick={() => collapsible && setIsCollapsed(!isCollapsed)}
+        >
             <div className="flex items-center gap-3 flex-grow">
                  {collapsible && (
-                    <ChevronDownIcon className={`w-5 h-5 text-light-text-secondary dark:text-dark-text-secondary transition-transform duration-300 ${isCollapsed ? '-rotate-90' : 'rotate-0'}`} />
+                    <ChevronDownIcon className={`w-4 h-4 text-brand-primary/70 transition-transform duration-300 ${isCollapsed ? '-rotate-90' : 'rotate-0'}`} />
                  )}
-                {icon && <div className="w-6 h-6 text-brand-primary">{icon}</div>}
-                <h3 className="text-lg font-semibold text-light-text-primary dark:text-dark-text-primary">{title}</h3>
+                {icon && <div className="p-1.5 bg-brand-primary/10 rounded-md text-brand-primary">{icon}</div>}
+                <h3 className="text-base font-bold text-light-text-primary dark:text-gray-100 tracking-wide">{title}</h3>
             </div>
           
-            <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                 {fullscreenable && !isCollapsed && (
-                    <button onClick={() => setIsModalOpen(true)} className="text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text-primary dark:hover:text-dark-text-primary" title="Expandir vista">
-                        <ExpandIcon className="w-5 h-5" />
+                    <button onClick={() => setIsModalOpen(true)} className="p-1.5 rounded-md text-dark-text-secondary hover:text-brand-primary hover:bg-white/5 transition-colors" title="Expandir vista">
+                        <ExpandIcon className="w-4 h-4" />
                     </button>
                 )}
                 <div className="group relative">
-                    <InformationCircleIcon className="w-5 h-5 text-light-text-secondary dark:text-dark-text-secondary group-hover:text-light-text-primary dark:group-hover:text-dark-text-primary" />
-                    <div className="absolute bottom-full right-0 mb-2 w-72 p-3 bg-dark-bg border border-dark-border text-dark-text-primary text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
+                    <div className="p-1.5 rounded-md cursor-help text-dark-text-secondary hover:text-brand-primary hover:bg-white/5 transition-colors">
+                        <InformationCircleIcon className="w-4 h-4" />
+                    </div>
+                    <div className="absolute bottom-full right-0 mb-2 w-64 p-3 bg-[#1a1410] border border-brand-primary/20 text-gray-300 text-xs leading-relaxed rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30 backdrop-blur-xl">
                         {explanation}
-                        <div className="absolute top-full right-4 w-0 h-0 border-x-8 border-x-transparent border-t-8 border-t-dark-bg"></div>
                     </div>
                 </div>
             </div>
         </header>
 
         <div className={`transition-[max-height,opacity] duration-500 ease-in-out overflow-hidden ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[5000px] opacity-100'}`}>
-            <div className="px-6 pb-6 pt-0">
+            <div className="p-5">
                 {children}
             </div>
         </div>

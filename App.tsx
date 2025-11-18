@@ -323,7 +323,7 @@ function App() {
     setDatasets(prev => prev.map(d => d.id === datasetId ? { ...d, name: newName } : d));
     setPartyAnalysis(prev => {
         const newAnalysis = new Map<string, PartyAnalysisData>();
-        prev.forEach((partyData: PartyAnalysisData, partyName) => {
+        prev.forEach((partyData: PartyAnalysisData, partyName: string) => {
             const newHistory = partyData.history.map(h => {
                 if (h.datasetId === datasetId) {
                     return { ...h, datasetName: newName };
@@ -354,7 +354,7 @@ function App() {
     await processAndSetData([combinedCsv], newName, true, idsToMerge);
   }, [datasets, processAndSetData]);
 
-  const loadRemoteData = useCallback(async (type: 'prediction' | 'historical', year: number) => {
+  const loadRemoteData = useCallback(async (type: 'prediction' | 'historical', year: number, scenario?: 'A' | 'B') => {
     setIsLoading(true);
     setLoadingMessage(`Cargando ${type === 'prediction' ? 'predicción' : 'datos históricos'} de ${year}...`);
     setError(null);
@@ -365,11 +365,17 @@ function App() {
     
     try {
         // In a real app, this would be a fetch call to a backend
-        const mockDataset = defaultDatasets.find(d => d.name.includes(String(year)));
-        if (!mockDataset) throw new Error(`Mock data for year ${year} not found`);
+        let mockDataset;
+        if (type === 'prediction' && year === 2026 && scenario) {
+            mockDataset = defaultDatasets.find(d => d.name.includes(String(year)) && d.name.includes(`Escenario ${scenario}`));
+        } else {
+            mockDataset = defaultDatasets.find(d => d.name.includes(String(year)) && !d.name.includes('Escenario'));
+        }
+
+        if (!mockDataset) throw new Error(`Mock data for year ${year}${scenario ? ` (Scenario ${scenario})` : ''} not found`);
 
         const electoralDatasetFromMock: ElectoralDataset = {
-            id: `remote-${type}-${year}`,
+            id: `remote-${type}-${year}${scenario ? `-${scenario}` : ''}`,
             name: mockDataset.name,
             processedData: mockDataset.processedData,
             invalidVoteCounts: mockDataset.invalidVoteCounts,
@@ -414,6 +420,7 @@ function App() {
               <span>{error}</span>
             </div>
           )}
+          {/* FIX: Add all required props to the Dashboard component. */}
           <Dashboard 
             activeTab={activeTab} 
             setActiveTab={setActiveTab}
@@ -437,4 +444,5 @@ function App() {
   );
 }
 
+// FIX: Add default export for the App component.
 export default App;

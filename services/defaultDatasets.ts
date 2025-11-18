@@ -667,7 +667,7 @@ export const defaultDatasets: PreloadedElectoralDataset[] = [
         analysisType: 'candidate'
     },
     {
-        name: 'Proyección Cámara Antioquia 2026',
+        name: 'Proyección Cámara Antioquia 2026 - Escenario A',
         processedData: [
             { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "PARTIDO CENTRO DEMOCRATICO", "Candidato": "SOLO POR LA LISTA", "Votos": 464592, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 464592 },
             { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "PARTIDO POLITICO CREEMOS", "Candidato": "SOLO POR LA LISTA", "Votos": 337607, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 337607 },
@@ -679,6 +679,28 @@ export const defaultDatasets: PreloadedElectoralDataset[] = [
             { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "PARTIDO ALIANZA SOCIAL INDEPENDIENTE ASI", "Candidato": "SOLO POR LA LISTA", "Votos": 88251, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 88251 },
             { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "RENACE", "Candidato": "SOLO POR LA LISTA", "Votos": 68043, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 68043 },
             { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "INDEPENDIENTES", "Candidato": "SOLO POR LA LISTA", "Votos": 55886, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 55886 },
+            { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "COALICION ANTIOQUIA TE PERTENECE", "Candidato": "SOLO POR LA LISTA", "Votos": 34362, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 34362 },
+            { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "MOVIMIENTO POLITICO FUERZA CIUDADANA", "Candidato": "SOLO POR LA LISTA", "Votos": 9397, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 9397 },
+            { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "PARTIDO ECOLOGISTA COLOMBIANO", "Candidato": "SOLO POR LA LISTA", "Votos": 8947, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 8947 }
+        ],
+        invalidVoteCounts: { blankVotes: 0, nullVotes: 0 },
+        analysisType: 'party'
+    },
+    {
+        name: 'Proyección Cámara Antioquia 2026 - Escenario B',
+        processedData: [
+            { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "PARTIDO CENTRO DEMOCRATICO", "Candidato": "SOLO POR LA LISTA", "Votos": 511051, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 511051 },
+            { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "PARTIDO POLITICO CREEMOS", "Candidato": "SOLO POR LA LISTA", "Votos": 337607, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 337607 },
+            { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "PARTIDO CONSERVADOR COLOMBIANO", "Candidato": "SOLO POR LA LISTA", "Votos": 258546, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 258546 },
+            { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "PARTIDO LIBERAL COLOMBIANO", "Candidato": "SOLO POR LA LISTA", "Votos": 222427, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 222427 },
+            { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "PARTIDO ALIANZA VERDE", "Candidato": "SOLO POR LA LISTA", "Votos": 190210, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 190210 },
+            { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "JUNTOS", "Candidato": "SOLO POR LA LISTA", "Votos": 102145, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 102145 },
+            { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "PARTIDO ALIANZA SOCIAL INDEPENDIENTE ASI", "Candidato": "SOLO POR LA LISTA", "Votos": 88251, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 88251 },
+            { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "PACTO HISTORICO", "Candidato": "SOLO POR LA LISTA", "Votos": 80760, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 80760 },
+            { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "RENACE", "Candidato": "SOLO POR LA LISTA", "Votos": 68043, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 68043 },
+            { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "DIGNIDAD Y COMPROMISO", "Candidato": "SOLO POR LA LISTA", "Votos": 60000, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 60000 },
+            { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "INDEPENDIENTES", "Candidato": "SOLO POR LA LISTA", "Votos": 55886, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 55886 },
+            { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "FUERZA POR LA PAZ", "Candidato": "SOLO POR LA LISTA", "Votos": 40000, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 40000 },
             { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "COALICION ANTIOQUIA TE PERTENECE", "Candidato": "SOLO POR LA LISTA", "Votos": 34362, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 34362 },
             { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "MOVIMIENTO POLITICO FUERZA CIUDADANA", "Candidato": "SOLO POR LA LISTA", "Votos": 9397, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 9397 },
             { "Eleccion": "CAMARA", "Año": "2026", "UnidadPolitica": "PARTIDO ECOLOGISTA COLOMBIANO", "Candidato": "SOLO POR LA LISTA", "Votos": 8947, "EsCabezaDeLista": true, "AlianzaHistoricaID": "", "votos_calculados": 8947 }

@@ -103,75 +103,129 @@ const TrendsAnalysis: React.FC<TrendsAnalysisProps> = ({ partyAnalysis }) => {
         const lastRsi = chartData[chartData.length - 1]?.rsi;
         if (lastRsi === null || lastRsi === undefined) return null;
 
-        let diagnostic = { text: 'Momentum Estable', color: 'text-dark-text-secondary' };
+        let diagnostic = { text: 'Momentum Estable', color: 'text-gray-400' };
         if (lastRsi > 70) {
-            diagnostic = { text: 'Sobre-expansión', color: 'text-red-400' };
+            diagnostic = { text: 'Sobre-expansión (Riesgo)', color: 'text-red-400' };
         } else if (lastRsi < 30) {
             diagnostic = { text: 'Potencial de Recuperación', color: 'text-green-400' };
         }
         return (
-            <div className="text-center mt-3">
-                <p className="text-sm text-dark-text-secondary">Diagnóstico de Momentum (RSI)</p>
-                <p className={`text-lg font-bold ${diagnostic.color}`}>{lastRsi.toFixed(1)}</p>
-                <p className={`text-sm font-semibold ${diagnostic.color}`}>{diagnostic.text}</p>
+            <div className="text-center mt-3 p-3 bg-white/5 rounded-lg border border-white/5 backdrop-blur-sm">
+                <p className="text-xs text-dark-text-secondary uppercase tracking-wider mb-1">Diagnóstico RSI</p>
+                <p className={`text-2xl font-bold font-mono ${diagnostic.color}`}>{lastRsi.toFixed(1)}</p>
+                <p className={`text-xs font-semibold ${diagnostic.color}`}>{diagnostic.text}</p>
             </div>
         );
     };
 
     const ToggleSwitch: React.FC<{ label: string; isChecked: boolean; onChange: () => void; color: string; }> = ({ label, isChecked, onChange, color }) => (
-        <label className="flex items-center cursor-pointer">
+        <label className="flex items-center cursor-pointer group">
             <div className="relative">
                 <input type="checkbox" className="sr-only" checked={isChecked} onChange={onChange} />
-                <div className={`block w-10 h-6 rounded-full`} style={{backgroundColor: isChecked ? color : '#4f4235'}}></div>
-                <div className="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform"></div>
+                <div className={`block w-8 h-4 rounded-full transition-colors duration-200 ${isChecked ? 'opacity-100' : 'opacity-30'}`} style={{backgroundColor: color}}></div>
+                <div className={`dot absolute left-0.5 top-0.5 bg-white w-3 h-3 rounded-full transition-transform duration-200 ${isChecked ? 'translate-x-4' : 'translate-x-0'}`}></div>
             </div>
-            <div className="ml-3 text-dark-text-primary text-sm font-medium" style={{color}}>
+            <div className="ml-3 text-gray-300 text-xs font-medium group-hover:text-white transition-colors">
                 {label}
             </div>
-            <style>{`.dot { transform: ${isChecked ? 'translateX(100%)' : 'translateX(0)'}; }`}</style>
         </label>
     );
 
+    const CustomTooltip = ({ active, payload, label }: any) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="bg-[#1c1611]/90 border border-[#4f4235] p-3 rounded-lg shadow-xl backdrop-blur-sm">
+                    <p className="text-gray-400 text-xs font-mono mb-2 border-b border-white/10 pb-1">{label}</p>
+                    {payload.map((entry: any, index: number) => (
+                        <div key={index} className="flex items-center gap-2 text-xs mb-1">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></div>
+                            <span className="text-gray-300">{entry.name}:</span>
+                            <span className="font-mono font-bold text-white">
+                                {typeof entry.value === 'number' ? entry.value.toLocaleString('es-CO') : entry.value}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+        return null;
+    };
+
     return (
-        <div className="space-y-4">
-            <select
-                value={selectedParty}
-                onChange={(e) => setSelectedParty(e.target.value)}
-                className="w-full bg-dark-bg border border-dark-border text-dark-text-primary rounded-md p-2 focus:ring-brand-primary focus:border-brand-primary"
-            >
-                {partyNames.map(name => <option key={name} value={name}>{name || 'Seleccionar Partido...'}</option>)}
-            </select>
+        <div className="space-y-6">
+            <div className="relative">
+                <select
+                    value={selectedParty}
+                    onChange={(e) => setSelectedParty(e.target.value)}
+                    className="w-full bg-dark-bg border border-dark-border text-white rounded-lg p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent appearance-none"
+                >
+                    {partyNames.map(name => <option key={name} value={name}>{name || 'Seleccionar Partido...'}</option>)}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+            </div>
             
-            <div style={{ width: '100%', height: 250 }}>
+            <div style={{ width: '100%', height: 300 }}>
                 {selectedParty && chartData.length > 0 ? (
                     <ResponsiveContainer>
-                        <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#4f4235" />
-                            <XAxis dataKey="name" stroke="#f5e5d5" tick={{ fontSize: 10, fill: '#f5e5d5' }} />
-                            <YAxis yAxisId="left" stroke="#f5e5d5" tick={{ fontSize: 10, fill: '#f5e5d5' }} domain={['dataMin - 1000', 'dataMax + 1000']} tickFormatter={(value) => typeof value === 'number' ? value.toLocaleString('es-CO') : value} />
+                        <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                            <XAxis dataKey="name" stroke="#6b5a4e" tick={{ fontSize: 10, fill: '#a18f7c' }} />
+                            <YAxis yAxisId="left" stroke="#6b5a4e" tick={{ fontSize: 10, fill: '#a18f7c' }} domain={['auto', 'auto']} tickFormatter={(value) => value >= 1000 ? `${(value/1000).toFixed(0)}k` : value} />
                             <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" domain={[0, 100]} tick={{ fontSize: 10, fill: '#82ca9d' }} />
-                            <Tooltip
-                                contentStyle={{ backgroundColor: '#2a221b', border: '1px solid #4f4235', color: '#f5e5d5' }}
-                                itemStyle={{ color: '#f5e5d5' }}
-                                formatter={(value: number, name: string) => [value.toLocaleString('es-CO'), name]}
-                            />
-                            <Legend wrapperStyle={{color: '#f5e5d5'}} />
-                            {visibleLines.votes && <Line yAxisId="left" type="monotone" dataKey="votes" name="Votos" stroke={partyColor} strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />}
-                            {visibleLines.ema && <Line yAxisId="left" type="monotone" dataKey="ema" name="Tendencia (EMA)" stroke="#ffc658" strokeWidth={2} strokeDasharray="5 5" dot={false} />}
-                            {visibleLines.rsi && <Line yAxisId="right" type="monotone" dataKey="rsi" name="RSI" stroke="#82ca9d" strokeWidth={2} dot={false}/>}
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend wrapperStyle={{paddingTop: '10px'}} iconType="circle"/>
+                            
+                            {visibleLines.votes && (
+                                <Line 
+                                    yAxisId="left" 
+                                    type="monotone" 
+                                    dataKey="votes" 
+                                    name="Votos Reales" 
+                                    stroke={partyColor} 
+                                    strokeWidth={3} 
+                                    dot={{ r: 4, fill: '#1c1611', strokeWidth: 2 }} 
+                                    activeDot={{ r: 6, fill: partyColor, stroke: '#fff' }} 
+                                />
+                            )}
+                            {visibleLines.ema && (
+                                <Line 
+                                    yAxisId="left" 
+                                    type="monotone" 
+                                    dataKey="ema" 
+                                    name="Tendencia (EMA)" 
+                                    stroke="#f59e0b" 
+                                    strokeWidth={2} 
+                                    strokeDasharray="4 4" 
+                                    dot={false} 
+                                />
+                            )}
+                            {visibleLines.rsi && (
+                                <Line 
+                                    yAxisId="right" 
+                                    type="monotone" 
+                                    dataKey="rsi" 
+                                    name="RSI" 
+                                    stroke="#10b981" 
+                                    strokeWidth={2} 
+                                    dot={false} 
+                                    strokeOpacity={0.7}
+                                />
+                            )}
                         </LineChart>
                     </ResponsiveContainer>
                 ) : (
-                    <div className="flex items-center justify-center h-full text-dark-text-secondary">
-                        {selectedParty ? 'No hay suficientes datos históricos para este partido.' : 'Selecciona un partido para ver su tendencia.'}
+                    <div className="flex flex-col items-center justify-center h-full text-dark-text-secondary bg-white/5 rounded-xl border border-dashed border-white/10">
+                        <p className="text-sm">{selectedParty ? 'No hay suficientes datos históricos para graficar.' : 'Selecciona un partido para analizar su trayectoria.'}</p>
                     </div>
                 )}
             </div>
              {chartData.length > 1 && (
-                <div className="flex justify-center items-center gap-6 p-2 bg-dark-bg/50 rounded-lg">
+                <div className="flex justify-center items-center gap-6 p-3 bg-black/20 rounded-full border border-white/5 w-fit mx-auto">
                     <ToggleSwitch label="Votos" isChecked={visibleLines.votes} onChange={() => handleLineToggle('votes')} color={partyColor}/>
-                    <ToggleSwitch label="EMA" isChecked={visibleLines.ema} onChange={() => handleLineToggle('ema')} color="#ffc658"/>
-                    <ToggleSwitch label="RSI" isChecked={visibleLines.rsi} onChange={() => handleLineToggle('rsi')} color="#82ca9d"/>
+                    <ToggleSwitch label="EMA" isChecked={visibleLines.ema} onChange={() => handleLineToggle('ema')} color="#f59e0b"/>
+                    <ToggleSwitch label="RSI" isChecked={visibleLines.rsi} onChange={() => handleLineToggle('rsi')} color="#10b981"/>
                 </div>
             )}
             {chartData.length > 1 && visibleLines.rsi && <RsiDiagnostic />}
