@@ -39,7 +39,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ title, explanation, childre
 
   return (
     <>
-      <div className={`glass-panel rounded-xl flex flex-col transition-all duration-500 group hover:shadow-glow hover:border-brand-primary/20 ${isCollapsed ? 'h-auto' : ''}`}>
+      <div className={`glass-panel rounded-xl flex flex-col transition-all duration-500 group hover:shadow-glow hover:border-brand-primary/20 hover:scale-[1.005] ${isCollapsed ? 'h-auto' : ''}`}>
         <header 
             className={`flex items-center justify-between p-5 border-b border-white/5 bg-gradient-to-r from-white/5 to-transparent transition-colors duration-300 ${collapsible ? 'cursor-pointer select-none hover:bg-white/10' : ''}`} 
             onClick={() => collapsible && setIsCollapsed(!isCollapsed)}
