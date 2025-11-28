@@ -1,11 +1,12 @@
 
+
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { ElectoralDataset, PartyAnalysisData, HistoricalDataset } from '../types';
 import { generateStrategicReport } from '../services/geminiService';
 import { generateStrategicReportPDF } from '../services/reportGenerator';
 import { exportStrategicReportToXLSX } from '../services/spreadsheetGenerator';
 import AnalysisCard from './AnalysisCard';
-import { LoadingSpinner, SparklesIcon, FilePdfIcon, FileExcelIcon, WarningIcon } from './Icons';
+import { LoadingSpinner, SparklesIcon, FilePdfIcon, FileExcelIcon, WarningIcon, MapIcon } from './Icons';
 import { GenerateContentResponse } from '@google/genai';
 
 interface StrategicReportGeneratorProps {
@@ -91,6 +92,67 @@ const SWOTGrid: React.FC<{ content: string }> = ({ content }) => {
     );
 };
 
+interface GeoData {
+    location: string;
+    intensity: 'Alta' | 'Media' | 'Baja';
+    notes: string;
+}
+
+const GeoTacticalAnalysis: React.FC<{ content: string }> = ({ content }) => {
+    const data: GeoData[] = content
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => (line.startsWith('-') || line.startsWith('*')) && !line.startsWith('#'))
+        .map(line => {
+            const parts = line.slice(1).split('|').map(p => p.trim());
+            if (parts.length === 3) {
+                return {
+                    location: parts[0],
+                    intensity: parts[1] as 'Alta' | 'Media' | 'Baja',
+                    notes: parts[2]
+                };
+            }
+            return null;
+        })
+        .filter((item): item is GeoData => item !== null);
+
+    if (data.length === 0) return null;
+
+    const intensityStyles = {
+        'Alta': { color: 'text-emerald-400', bg: 'bg-emerald-500', width: 'w-full' },
+        'Media': { color: 'text-amber-400', bg: 'bg-amber-500', width: 'w-2/3' },
+        'Baja': { color: 'text-red-400', bg: 'bg-red-500', width: 'w-1/3' },
+    };
+
+    return (
+        <div className="my-8 p-6 glass-panel rounded-xl border border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.05)]">
+            <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400 mb-6 font-mono flex items-center gap-2">
+                <MapIcon className="w-4 h-4"/>
+                Inteligencia Geo-Táctica (Bastiones)
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {data.map((item, index) => {
+                    const style = intensityStyles[item.intensity] || intensityStyles['Media'];
+                    return (
+                        <div key={index} className="flex flex-col p-3 bg-black/40 rounded-lg border border-white/5 hover:border-emerald-500/30 transition-colors group">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="font-bold text-gray-200 text-sm font-mono">{item.location}</span>
+                                <span className={`text-[10px] uppercase font-bold tracking-wider ${style.color}`}>
+                                    {item.intensity}
+                                </span>
+                            </div>
+                            <div className="w-full h-1 bg-gray-700 rounded-full mb-2 overflow-hidden">
+                                <div className={`h-full rounded-full ${style.bg} shadow-[0_0_8px_currentColor]`} style={{ width: style.width === 'w-full' ? '100%' : style.width === 'w-2/3' ? '66%' : '33%' }}></div>
+                            </div>
+                            <p className="text-xs text-gray-400 leading-tight italic">{item.notes}</p>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
 interface BarChartData {
     theme: string;
     relevance: number;
@@ -147,7 +209,7 @@ const ThemesBarChart: React.FC<{ content: string }> = ({ content }) => {
 
 
 const ReportRenderer: React.FC<{ text: string }> = ({ text }) => {
-    const parts = text.split(/(---\s*(?:SWOT|BARCHART|TABLE)\s*(?:START|END)\s*---)/g);
+    const parts = text.split(/(---\s*(?:SWOT|BARCHART|TABLE|GEO)\s*(?:START|END)\s*---)/g);
     
     const elements: React.ReactNode[] = [];
     let buffer = '';
@@ -200,6 +262,10 @@ const ReportRenderer: React.FC<{ text: string }> = ({ text }) => {
         } else if (part.startsWith('--- BARCHART START ---')) {
             renderBuffer(`text-${i}`);
             elements.push(<ThemesBarChart key={`barchart-${i}`} content={parts[i+1]} />);
+            i += 3;
+        } else if (part.startsWith('--- GEO START ---')) {
+            renderBuffer(`text-${i}`);
+            elements.push(<GeoTacticalAnalysis key={`geo-${i}`} content={parts[i+1]} />);
             i += 3;
         } else if (part.startsWith('--- TABLE START:')) {
             renderBuffer(`text-${i}`);

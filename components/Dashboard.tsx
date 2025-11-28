@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { SimulationResults, SimulationParams, PartyData } from '../types';
 import ScenarioControls from './ScenarioControls';
@@ -9,7 +10,7 @@ import DataManager from './DataManager';
 import { ManualRow } from './ManualEntryForm';
 import TrendsAnalysis from './TrendsAnalysis';
 import { BarChart } from './Charts';
-import { SparklesIcon, LoadingSpinner, FilePdfIcon, FileExcelIcon } from './Icons';
+import { SparklesIcon, LoadingSpinner, FilePdfIcon, FileExcelIcon, UserGroupIcon, ChartBarIcon, ScaleIcon } from './Icons';
 import { getAIAnalysis } from '../services/geminiService';
 import { generateGeneralAnalysisPDF } from '../services/reportGenerator';
 import { exportGeneralAnalysisToXLSX } from '../services/spreadsheetGenerator';
@@ -284,7 +285,12 @@ const Dashboard: React.FC<DashboardProps> = ({
         />;
       
       case 'general':
-        return activeDataset && <div className="space-y-8">
+        if(!activeDataset) return null;
+        
+        const totalValidVotes = initialPartyData.reduce((sum, p) => sum + p.votes, 0);
+        const grandTotal = totalValidVotes + invalidVoteCounts.blankVotes + invalidVoteCounts.nullVotes;
+
+        return <div className="space-y-8">
             <div className="bg-light-card dark:bg-dark-card/50 p-4 rounded-lg shadow-lg flex flex-wrap justify-between items-center gap-4 backdrop-blur-sm border border-light-border dark:border-dark-border transition-all duration-500 hover:border-brand-primary/30">
                 {dataSource === 'local' ? (
                   <div>
@@ -310,6 +316,32 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div ref={generalAnalysisRef}>
                 <div>
                     <h2 className="text-2xl font-bold mb-4">Análisis de: <span className="text-brand-primary">{activeDataset.name}</span></h2>
+                    
+                    {/* NEW: Total Voting Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div className="glass-panel p-4 rounded-lg border border-brand-primary/20 flex items-center justify-between group">
+                            <div>
+                                <p className="text-[10px] text-dark-text-secondary uppercase tracking-[0.2em] font-mono mb-1 group-hover:text-brand-primary transition-colors">Participación Total</p>
+                                <p className="text-2xl font-bold text-white font-mono">{grandTotal.toLocaleString('es-CO')}</p>
+                            </div>
+                            <UserGroupIcon className="w-8 h-8 text-brand-primary/50 group-hover:text-brand-primary transition-colors" />
+                        </div>
+                        <div className="glass-panel p-4 rounded-lg border border-white/5 flex items-center justify-between group">
+                             <div>
+                                <p className="text-[10px] text-dark-text-secondary uppercase tracking-[0.2em] font-mono mb-1 group-hover:text-brand-glow transition-colors">Votos Válidos</p>
+                                <p className="text-2xl font-bold text-brand-glow font-mono">{totalValidVotes.toLocaleString('es-CO')}</p>
+                            </div>
+                            <ChartBarIcon className="w-8 h-8 text-brand-glow/50 group-hover:text-brand-glow transition-colors" />
+                        </div>
+                        <div className="glass-panel p-4 rounded-lg border border-white/5 flex items-center justify-between group">
+                             <div>
+                                <p className="text-[10px] text-dark-text-secondary uppercase tracking-[0.2em] font-mono mb-1 group-hover:text-gray-300 transition-colors">Votos No Válidos</p>
+                                <p className="text-2xl font-bold text-gray-400 font-mono">{(invalidVoteCounts.blankVotes + invalidVoteCounts.nullVotes).toLocaleString('es-CO')}</p>
+                            </div>
+                             <ScaleIcon className="w-8 h-8 text-gray-600 group-hover:text-gray-400 transition-colors" />
+                        </div>
+                    </div>
+
                     <div className="bg-light-card dark:bg-dark-card/50 backdrop-blur-sm border border-light-border dark:border-dark-border p-4 rounded-lg shadow-lg mb-6 transition-all duration-300 hover:border-brand-primary/30">
                         <label htmlFor="partyFilter" className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-1">Filtrar por Unidad Política</label>
                         <select
@@ -362,14 +394,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                     </div>
                     {(invalidVoteCounts.blankVotes > 0 || invalidVoteCounts.nullVotes > 0) && (
                         <div className="mt-6">
-                        <AnalysisCard title="Votos No Válidos" explanation="Total de votos en blanco y nulos identificados en los datos. Estos votos no se incluyen en los cálculos de asignación de escaños." collapsible>
+                        <AnalysisCard title="Detalle de Votos No Válidos" explanation="Total de votos en blanco y nulos identificados en los datos. Estos votos no se incluyen en los cálculos de asignación de escaños, pero afectan el umbral." collapsible>
                             <div className="flex justify-around text-center p-4">
                                 <div>
-                                    <div className="text-3xl font-bold text-light-text-secondary dark:text-dark-text-secondary">{invalidVoteCounts.blankVotes.toLocaleString('es-CO')}</div>
+                                    <div className="text-3xl font-bold text-light-text-secondary dark:text-dark-text-secondary font-mono">{invalidVoteCounts.blankVotes.toLocaleString('es-CO')}</div>
                                     <div className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">Votos en Blanco</div>
                                 </div>
                                 <div>
-                                    <div className="text-3xl font-bold text-light-text-secondary dark:text-dark-text-secondary">{invalidVoteCounts.nullVotes.toLocaleString('es-CO')}</div>
+                                    <div className="text-3xl font-bold text-light-text-secondary dark:text-dark-text-secondary font-mono">{invalidVoteCounts.nullVotes.toLocaleString('es-CO')}</div>
                                     <div className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">Votos Nulos</div>
                                 </div>
                             </div>

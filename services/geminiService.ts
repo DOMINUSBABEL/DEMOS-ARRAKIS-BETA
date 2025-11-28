@@ -1,7 +1,7 @@
 
 
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
-import { CandidateRanking, ProbabilityResult, SimulationResults, HistoricalDataset, PartyAnalysisData, PartyData, ListAnalysisAIResponse } from '../types';
+import { CandidateRanking, ProbabilityResult, SimulationResults, HistoricalDataset, PartyAnalysisData, PartyData, ListAnalysisAIResponse, ProcessedElectionData } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const model = 'gemini-3-pro-preview';
@@ -94,9 +94,6 @@ export const extractDataFromDocument = async (fileData: { mimeType: string; data
 
 export const extractDataFromText = async (text: string): Promise<string> => {
     try {
-        // The chunking logic has been removed. The Gemini API can handle large contexts natively,
-        // so sending the entire text at once is more efficient and avoids potential errors
-        // from splitting the data incorrectly.
         const response = await ai.models.generateContent({
             model,
             contents: [{
@@ -124,7 +121,7 @@ export const getVoteTransferAnalysis = async (sourceParties: PartyData[], target
     - Total de votos en origen: ${sourceParties.reduce((sum, p) => sum + p.votes, 0)}
     - Total de votos en destino: ${targetParties.reduce((sum, p) => sum + p.votes, 0)}
 
-    INSTRUCCIONES:
+    INSTRUSTRUCCIONES:
     1.  Analiza los partidos y sus resultados en ambas elecciones. Considera la afinidad ideológica, las trayectorias de los partidos y los movimientos políticos comunes en Colombia.
     2.  Estima cómo los votos de cada partido de la elección de origen se distribuyeron entre los partidos de la elección de destino.
     3.  Crea nodos para todos los partidos de origen y de destino. También puedes incluir nodos como 'Nuevos Votantes' o 'Abstención' si lo consideras necesario para que los totales cuadren de forma realista.
@@ -153,7 +150,6 @@ export const getVoteTransferAnalysis = async (sourceParties: PartyData[], target
         const jsonText = response.text.trim();
         const result = JSON.parse(jsonText);
         
-        // Basic validation + index validation
         if (result && Array.isArray(result.nodes) && Array.isArray(result.links)) {
             const nodeCount = result.nodes.length;
             for (const link of result.links) {
@@ -411,6 +407,35 @@ export const classifyPartiesIdeology = async (partyNames: string[]): Promise<Rec
     }
 };
 
+const aggregateVotesByLocation = (data: ProcessedElectionData[], candidateName?: string, partyName?: string): string => {
+    const locations = new Map<string, number>();
+    
+    data.forEach(row => {
+        let shouldCount = false;
+        if (candidateName && row.Candidato.toUpperCase().includes(candidateName.toUpperCase())) {
+            shouldCount = true;
+        } else if (!candidateName && partyName && row.UnidadPolitica.toUpperCase() === partyName.toUpperCase()) {
+            shouldCount = true;
+        }
+
+        if (shouldCount) {
+            // Prioritize Municipio, then Zona, then Comuna
+            const locationName = row.Municipio || row.Zona || row.Comuna || 'Desconocido';
+            if (locationName && locationName !== 'Desconocido') {
+                locations.set(locationName, (locations.get(locationName) || 0) + row.Votos);
+            }
+        }
+    });
+
+    if (locations.size === 0) return "No hay datos geográficos detallados (Municipio/Zona) disponibles en el set de datos.";
+
+    // Sort by votes descending
+    const sortedLocations = Array.from(locations.entries()).sort((a, b) => b[1] - a[1]);
+    
+    // Take top 20
+    return JSON.stringify(sortedLocations.slice(0, 20).map(([loc, votes]) => ({ location: loc, votes })), null, 2);
+};
+
 export const generateStrategicReport = async (
     activeDataset: HistoricalDataset,
     partyAnalysis: Map<string, PartyAnalysisData>,
@@ -425,6 +450,9 @@ export const generateStrategicReport = async (
     })), null, 2);
 
     const activeDataForPrompt = JSON.stringify(activeDataset.partyData, null, 2);
+    
+    // Attempt to aggregate geographical data if fields exist
+    const geoData = aggregateVotesByLocation(activeDataset.processedData, focus, targetParty);
 
     let prompt = '';
 
@@ -442,6 +470,7 @@ export const generateStrategicReport = async (
     - Partido: ${targetParty}
     - Escaños en Disputa: ${seatsToContest}
     - Datos Históricos Agregados: ${historicalDataForPrompt}
+    - Datos Geográficos (Top Ubicaciones en Dataset): ${geoData}
     ${query ? `- PREGUNTA ESTRATÉGICA ADICIONAL: "${query}"` : ''}
 
     FORMATO DE SALIDA REQUERIDO:
@@ -452,8 +481,10 @@ export const generateStrategicReport = async (
     **Informe Estratégico de Candidato: ${focus}**
     **Fecha:** ${new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}
 
-    **1. Perfil del Candidato**
-    - Resumen ejecutivo del perfil del candidato basado en tu búsqueda. Incluye trayectoria, ideología percibida, público objetivo y posicionamiento actual en el panorama político.
+    **1. Pronóstico Electoral y Perfil (Ejecutivo)**
+    - INICIO OBLIGATORIO: Tu primera frase DEBE SER un pronóstico claro del rango de votación estimada (Ej: "Se proyecta una votación estimada entre [X] y [Y] votos...").
+    - Si el candidato "${focus}" aparece en la "TABLA MAESTRA DE DATOS" proporcionada en el contexto, DEBES usar el valor de "Promedio Proyectado" como el centro de tu estimación. Si no, usa la tendencia histórica.
+    - Resumen ejecutivo del perfil del candidato basado en tu búsqueda. Incluye trayectoria, ideología percibida, público objetivo y posicionamiento actual.
 
     **2. Análisis SWOT Visual**
     - Proporciona un análisis SWOT conciso. Cada punto debe ser una frase corta y directa.
@@ -484,9 +515,9 @@ export const generateStrategicReport = async (
     - [Tema 4] | [45] | [Positivo]
     --- BARCHART END ---
 
-    **4. Proyecciones Cuantitativas**
+    **4. Proyecciones Cuantitativas Detalladas**
     - Análisis de proyecciones de votos para el candidato.
-    - SI EL CANDIDATO ES DEL CENTRO DEMOCRÁTICO Y APARECE EN LA TABLA MAESTRA, USA ESOS DATOS OBLIGATORIAMENTE.
+    - SI EL CANDIDATO ES DEL CENTRO DEMOCRÁTICO Y APARECE EN LA TABLA MAESTRA, USA ESOS DATOS OBLIGATORIAMENTE PARA LLENAR LA TABLA.
     - Presenta la tabla a continuación.
 
     --- TABLE START: Proyecciones de Votos para ${focus} ---
@@ -496,8 +527,19 @@ export const generateStrategicReport = async (
     | Realista | [Número] | [Baja/Media/Alta] | [Supuesto clave para este escenario] |
     | Optimista | [Número] | [Baja/Media/Alta] | [Supuesto clave para este escenario] |
     --- TABLE END ---
+    
+    **5. Geografía Electoral (Estimación de Bastiones)**
+    - Identifica los municipios, comunas o zonas donde se concentra históricamente el voto de este candidato o partido.
+    - SI SE PROVEYERON DATOS GEOGRÁFICOS EN EL CONTEXTO, ÚSALOS. Si no, usa Google Search para inferir sus bastiones tradicionales.
+    - Genera la siguiente estructura estrictamente:
 
-    **5. Recomendaciones Estratégicas Accionables**
+    --- GEO START ---
+    # Ubicación | Intensidad (Alta/Media/Baja) | Notas Estratégicas
+    - [Municipio/Zona] | [Alta] | [Razón breve de la fortaleza]
+    - [Municipio/Zona] | [Media] | [Potencial de crecimiento]
+    --- GEO END ---
+
+    **6. Recomendaciones Estratégicas Accionables**
     - Basado en TODO el análisis anterior, proporciona 3 a 5 recomendaciones claras y directas para la campaña del candidato.
     - Recomendación 1: ...
     - Recomendación 2: ...
@@ -521,6 +563,9 @@ export const generateStrategicReport = async (
     
     2.  **Datos Históricos Agregados:**
         ${historicalDataForPrompt}
+        
+    3.  **Datos Geográficos (Top Ubicaciones en Dataset):** 
+        ${geoData}
 
     FORMATO DE SALIDA REQUERIDO:
     Tu respuesta DEBE ser texto plano con formato similar a Markdown. USA TÍTULOS CLAROS para cada sección (ej. **Título de Sección**). Para listas, usa viñetas (* o -). Para tablas, usa delimitadores de pipe (|).
@@ -529,6 +574,7 @@ export const generateStrategicReport = async (
     
     **Fecha:** ${new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}
     **Resumen Ejecutivo:**
+    - INICIO OBLIGATORIO: Tu primer párrafo DEBE incluir el "Pronóstico de Votación Total Estimada" para el partido, basado en la tendencia histórica y el contexto actual. (Ej: "Se proyecta una votación total para la lista entre [X] y [Y]...").
     - Diagnóstico del nuevo paradigma electoral con ${seatsToContest} curules.
     - Análisis de la tendencia del "${targetParty}" y su competidor principal, considerando el contexto actual.
     - Definición de objetivos estratégicos clave (ej. "Alcanzar 5 curules") con los rangos de votos necesarios.
@@ -540,35 +586,43 @@ export const generateStrategicReport = async (
     **Sección 2: Diagnóstico Profundo de la Línea Base**
     - 2.2. Análisis Longitudinal de las Fuerzas Políticas: Analiza la evolución del "${targetParty}", su competidor principal y otros bloques relevantes, incorporando hallazgos recientes de la búsqueda.
     
-    **Sección 3: El Campo de Batalla Central: Un Análisis de la Competencia Directa**
-    - 3.1. Perfil del Votante del Competidor Principal.
-    - 3.2. Vulnerabilidades Estratégicas del Competidor (Puntos de Ataque), basado en datos y noticias actuales.
+    **Sección 3: Geografía Electoral y Bastiones**
+    - 3.1. Mapa de Calor: Identifica las zonas fuertes del partido basándote en los datos geográficos suministrados o en tu conocimiento/búsqueda.
+    - Genera la estructura GEO:
+    --- GEO START ---
+    # Ubicación | Intensidad (Alta/Media/Baja) | Notas Estratégicas
+    - [Municipio/Zona] | [Alta] | [Análisis]
+    --- GEO END ---
     
-    **Sección 4: Proyecciones Cuantitativas para una Batalla a Dos Bandas (${seatsToContest} Curules)**
-    - 4.1. Escenario 1: Estabilidad Competitiva (Tendencial)
+    **Sección 4: El Campo de Batalla Central: Un Análisis de la Competencia Directa**
+    - 4.1. Perfil del Votante del Competidor Principal.
+    - 4.2. Vulnerabilidades Estratégicas del Competidor (Puntos de Ataque), basado en datos y noticias actuales.
+    
+    **Sección 5: Proyecciones Cuantitativas para una Batalla a Dos Bandas (${seatsToContest} Curules)**
+    - 5.1. Escenario 1: Estabilidad Competitiva (Tendencial)
       - Asunciones claras.
       - Objetivo: Alcanzar [N] Curules.
       - Votos Necesarios, Votos Competidor, Cifra Repartidora.
       - Análisis Táctico.
-    - 4.2. Escenario 2: Oportunidad por Desgaste del Adversario
+    - 5.2. Escenario 2: Oportunidad por Desgaste del Adversario
       - Similar al Escenario 1 pero con diferentes asunciones y objetivos.
     
-    **Sección 5: Tablas de Proyección y Análisis de Sensibilidad**
+    **Sección 6: Tablas de Proyección y Análisis de Sensibilidad**
     - Incluye al menos 3 de las siguientes tablas, llenándolas con datos plausibles y proyecciones basadas en la información proporcionada.
-    - Tabla 5.2: Análisis de Sensibilidad del "${targetParty}".
+    - Tabla 6.2: Análisis de Sensibilidad del "${targetParty}".
       --- TABLE START: Análisis de Sensibilidad ---
       | Votación Proyectada CD | Curules Probables | Análisis Táctico |
       |---|---|---|
       | [Votos] | [N] | [Análisis] |
       ...
       --- TABLE END ---
-    - Tabla 5.4: Análisis de Costo Marginal por Curul.
+    - Tabla 6.4: Análisis de Costo Marginal por Curul.
       --- TABLE START: Costo Marginal por Curul ---
       | Curul Objetivo | Votos Totales Requeridos | Votos Adicionales (Costo Marginal) | Análisis Estratégico del Costo-Beneficio |
       |---|---|---|---|
       ...
       --- TABLE END ---
-    - Tabla 5.8: Índice de Eficiencia Electoral (Votos por Curul).
+    - Tabla 6.8: Índice de Eficiencia Electoral (Votos por Curul).
       --- TABLE START: Eficiencia Electoral ---
       | Partido | Votos Proyectados | Curules Obtenidas | Votos por Curul | Análisis |
       |---|---|---|---|---|

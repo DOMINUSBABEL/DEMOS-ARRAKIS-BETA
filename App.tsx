@@ -264,7 +264,7 @@ function App() {
         const classified = await classifyPartiesIdeology(partiesToClassify);
         
         setPartyAnalysis(prev => {
-            const newAnalysis = new Map(prev);
+            const newAnalysis = new Map<string, PartyAnalysisData>(prev);
             Object.entries(classified).forEach(([partyName, ideology]) => {
                 const data = newAnalysis.get(partyName);
                 if (data) {
@@ -297,11 +297,9 @@ function App() {
     setDataSource('local');
     setRemoteDataset(null);
     setDatasets(prev => prev.filter(d => d.id !== datasetId));
-    setPartyAnalysis(prev => {
+    setPartyAnalysis((prev) => {
       const newAnalysis = new Map<string, PartyAnalysisData>();
-      // FIX: The `for...of` loop was not correctly inferring the type for `partyData`.
-      // Using `forEach` with explicit type annotations for `partyData` and `partyName` resolves the type errors.
-      prev.forEach((partyData: PartyAnalysisData, partyName: string) => {
+      prev.forEach((partyData, partyName) => {
         const newHistory = partyData.history.filter(h => h.datasetId !== datasetId);
         if (newHistory.length > 0) {
           const newData: PartyAnalysisData = {
@@ -321,9 +319,9 @@ function App() {
 
   const handleEditDatasetName = useCallback((datasetId: string, newName: string) => {
     setDatasets(prev => prev.map(d => d.id === datasetId ? { ...d, name: newName } : d));
-    setPartyAnalysis(prev => {
+    setPartyAnalysis((prev) => {
         const newAnalysis = new Map<string, PartyAnalysisData>();
-        prev.forEach((partyData: PartyAnalysisData, partyName: string) => {
+        prev.forEach((partyData, partyName) => {
             const newHistory = partyData.history.map(h => {
                 if (h.datasetId === datasetId) {
                     return { ...h, datasetName: newName };
