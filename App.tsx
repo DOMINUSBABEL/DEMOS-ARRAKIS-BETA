@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
@@ -31,6 +30,9 @@ function App() {
   // New state for hybrid architecture
   const [dataSource, setDataSource] = useState<DataSource>('local');
   const [remoteDataset, setRemoteDataset] = useState<HistoricalDataset | null>(null);
+
+  // Mobile sidebar state
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -402,10 +404,32 @@ function App() {
 
   return (
     <div className={`flex h-screen bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-dark-text-primary font-sans transition-colors duration-300 ${theme}`}>
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} loadRemoteData={loadRemoteData} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header theme={theme} onThemeToggle={toggleTheme} />
-        <main className="flex-1 overflow-y-auto p-8">
+      {/* Overlay for mobile sidebar */}
+      {isMobileSidebarOpen && (
+        <div 
+            className="fixed inset-0 bg-black/60 z-30 lg:hidden backdrop-blur-sm transition-opacity duration-300" 
+            onClick={() => setIsMobileSidebarOpen(false)}
+        ></div>
+      )}
+
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={(tab) => {
+            setActiveTab(tab);
+            setIsMobileSidebarOpen(false); // Close sidebar on selection for mobile
+        }} 
+        loadRemoteData={loadRemoteData} 
+        isOpen={isMobileSidebarOpen}
+        onClose={() => setIsMobileSidebarOpen(false)}
+      />
+      
+      <div className="flex-1 flex flex-col overflow-hidden relative">
+        <Header 
+            theme={theme} 
+            onThemeToggle={toggleTheme} 
+            onMenuClick={() => setIsMobileSidebarOpen(true)}
+        />
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
           {successMessage && (
             <div className="mb-4 flex items-center p-4 bg-green-900/50 border border-green-500 text-green-300 rounded-lg">
               <CheckCircleIcon className="w-5 h-5 mr-2"/>
@@ -442,5 +466,4 @@ function App() {
   );
 }
 
-// FIX: Add default export for the App component.
 export default App;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChartBarIcon, DatabaseIcon, ScaleIcon, BeakerIcon, CpuChipIcon, ShareIcon, BookOpenIcon, ListBulletIcon, MapIcon, ClockIcon, UserGroupIcon } from './Icons';
+import { ChartBarIcon, DatabaseIcon, ScaleIcon, BeakerIcon, CpuChipIcon, ShareIcon, BookOpenIcon, ListBulletIcon, MapIcon, ClockIcon, UserGroupIcon, CloseIcon } from './Icons';
 
 type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap';
 
@@ -7,6 +7,8 @@ interface SidebarProps {
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
   loadRemoteData: (type: 'prediction' | 'historical', year: number, scenario?: 'A' | 'B') => Promise<void>;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 interface NavItemProps {
@@ -66,11 +68,15 @@ const RemoteButton: React.FC<RemoteButtonProps> = ({ onClick, icon, children, in
 );
 
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteData }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteData, isOpen, onClose }) => {
   return (
-    <aside className="w-72 bg-[#050403] border-r border-white/5 flex-shrink-0 flex flex-col h-full shadow-[10px_0_40px_rgba(0,0,0,0.8)] z-30 relative backdrop-blur-3xl">
+    <aside className={`
+        fixed inset-y-0 left-0 z-40 w-72 bg-[#050403] border-r border-white/5 flex flex-col h-full shadow-[10px_0_40px_rgba(0,0,0,0.8)] transition-transform duration-300 ease-in-out backdrop-blur-3xl
+        lg:translate-x-0 lg:static lg:shadow-[10px_0_40px_rgba(0,0,0,0.8)]
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+    `}>
       {/* Header */}
-      <div className="p-8 pb-6 border-b border-white/5 relative overflow-hidden">
+      <div className="p-8 pb-6 border-b border-white/5 relative overflow-hidden flex items-center justify-between">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-primary to-transparent opacity-50"></div>
         <div className="flex items-center gap-4 relative z-10">
           <div className="p-2 rounded-lg border border-brand-primary/30 bg-brand-primary/5 shadow-[0_0_20px_rgba(217,119,6,0.2)] hover:shadow-[0_0_30px_rgba(217,119,6,0.4)] transition-shadow duration-500">
@@ -85,6 +91,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteDa
             </span>
           </div>
         </div>
+        <button onClick={onClose} className="lg:hidden text-gray-400 hover:text-white">
+            <CloseIcon className="w-6 h-6" />
+        </button>
       </div>
 
       {/* Navigation Scroll Area */}
@@ -134,13 +143,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteDa
         
         <div className="px-4">
           <h3 className="text-[9px] font-bold uppercase text-dark-text-muted tracking-[0.2em] mb-4 px-2 font-mono animate-fade-in" style={{animationDelay: '500ms'}}>External Feeds</h3>
-           <RemoteButton index={0} onClick={() => loadRemoteData('prediction', 2026, 'A')} icon={<ShareIcon />}>
+           <RemoteButton index={0} onClick={() => { loadRemoteData('prediction', 2026, 'A'); onClose(); }} icon={<ShareIcon />}>
              Cámara 2026 (A)
            </RemoteButton>
-            <RemoteButton index={1} onClick={() => loadRemoteData('prediction', 2026, 'B')} icon={<ShareIcon />}>
+            <RemoteButton index={1} onClick={() => { loadRemoteData('prediction', 2026, 'B'); onClose(); }} icon={<ShareIcon />}>
              Cámara 2026 (B)
            </RemoteButton>
-            <RemoteButton index={2} onClick={() => loadRemoteData('historical', 2022)} icon={<ShareIcon />}>
+            <RemoteButton index={2} onClick={() => { loadRemoteData('historical', 2022); onClose(); }} icon={<ShareIcon />}>
              Histórico 2022
            </RemoteButton>
         </div>

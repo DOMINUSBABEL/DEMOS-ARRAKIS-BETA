@@ -41,7 +41,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ title, explanation, childre
     <>
       <div className={`glass-panel rounded-xl flex flex-col transition-all duration-500 group hover:shadow-glow hover:border-brand-primary/20 hover:scale-[1.005] ${isCollapsed ? 'h-auto' : ''}`}>
         <header 
-            className={`flex items-center justify-between p-5 border-b border-white/5 bg-gradient-to-r from-white/5 to-transparent transition-colors duration-300 ${collapsible ? 'cursor-pointer select-none hover:bg-white/10' : ''}`} 
+            className={`flex items-center justify-between p-4 md:p-5 border-b border-white/5 bg-gradient-to-r from-white/5 to-transparent transition-colors duration-300 ${collapsible ? 'cursor-pointer select-none hover:bg-white/10' : ''}`} 
             onClick={() => collapsible && setIsCollapsed(!isCollapsed)}
         >
             <div className="flex items-center gap-3 flex-grow">
@@ -49,7 +49,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ title, explanation, childre
                     <ChevronDownIcon className={`w-4 h-4 text-brand-primary transition-transform duration-300 ${isCollapsed ? '-rotate-90' : 'rotate-0'}`} />
                  )}
                 {icon && <div className="p-1.5 bg-brand-primary/10 rounded border border-brand-primary/30 text-brand-primary shadow-[0_0_10px_rgba(217,119,6,0.2)]">{icon}</div>}
-                <h3 className="text-sm font-bold text-light-text-primary dark:text-gray-100 tracking-widest uppercase font-mono">{title}</h3>
+                <h3 className="text-xs md:text-sm font-bold text-light-text-primary dark:text-gray-100 tracking-widest uppercase font-mono">{title}</h3>
             </div>
           
             <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -62,7 +62,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ title, explanation, childre
                     <div className="p-1.5 rounded-md cursor-help text-dark-text-secondary hover:text-brand-primary transition-colors">
                         <InformationCircleIcon className="w-4 h-4" />
                     </div>
-                    <div className="absolute bottom-full right-0 mb-2 w-72 p-4 bg-[#1a1410]/95 border border-brand-primary/30 text-gray-300 text-xs leading-relaxed rounded-lg shadow-[0_0_30px_rgba(0,0,0,0.8)] opacity-0 group-hover/tooltip:opacity-100 transition-all duration-300 pointer-events-none z-30 backdrop-blur-xl translate-y-2 group-hover/tooltip:translate-y-0">
+                    <div className="absolute bottom-full right-0 mb-2 w-72 p-4 bg-[#1a1410]/95 border border-brand-primary/30 text-gray-300 text-xs leading-relaxed rounded-lg shadow-[0_0_30px_rgba(0,0,0,0.8)] opacity-0 group-hover/tooltip:opacity-100 transition-all duration-300 pointer-events-none z-30 backdrop-blur-xl translate-y-2 group-hover/tooltip:translate-y-0 hidden sm:block">
                         <div className="text-brand-primary font-bold mb-1 text-[10px] uppercase tracking-widest font-mono border-b border-brand-primary/20 pb-1">Intel Data</div>
                         {explanation}
                     </div>
@@ -71,7 +71,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ title, explanation, childre
         </header>
 
         <div className={`transition-[max-height,opacity] duration-500 ease-in-out overflow-hidden ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[5000px] opacity-100'}`}>
-            <div className="p-6 relative">
+            <div className="p-4 md:p-6 relative">
                 <div className="relative z-10">
                     {children}
                 </div>
