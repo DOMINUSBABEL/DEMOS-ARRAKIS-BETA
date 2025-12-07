@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { DHondtAnalysis, PartyData, PartyAnalysisData } from '../types';
 import { BarChart as RechartsBarChart, PieChart, ResponsiveContainer, Cell, Tooltip, Bar, XAxis, YAxis, CartesianGrid, Pie, Sector } from 'recharts';
@@ -190,7 +191,7 @@ const DHondtResults: React.FC<DHondtResultsProps> = ({ analysis, parties, partyA
         return (
           <div className="bg-[#0f0a06]/90 border border-brand-primary/30 p-3 rounded shadow-[0_0_20px_rgba(0,0,0,0.6)] backdrop-blur-xl">
              <p className="text-[10px] text-gray-400 mb-1 font-mono uppercase">{label}</p>
-             <p className="text-brand-glow font-bold text-lg font-mono">{payload[0].value.toLocaleString('es-CO')}</p>
+             <p className="text-brand-glow font-bold text-lg font-mono">{(payload[0].value ?? 0).toLocaleString('es-CO')}</p>
           </div>
         );
       }
@@ -213,7 +214,7 @@ const DHondtResults: React.FC<DHondtResultsProps> = ({ analysis, parties, partyA
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-center">
                 <div className="glass-panel p-5 rounded border border-brand-primary/20 relative overflow-hidden group">
                      <div className="absolute -top-10 -right-10 w-24 h-24 bg-brand-primary/10 rounded-full blur-2xl group-hover:bg-brand-primary/20 transition-colors"></div>
-                    <div className="text-3xl font-bold text-brand-glow font-mono tracking-tighter">{analysis.totalVotes.toLocaleString('es-CO')}</div>
+                    <div className="text-3xl font-bold text-brand-glow font-mono tracking-tighter">{(analysis.totalVotes ?? 0).toLocaleString('es-CO')}</div>
                     <div className="text-[10px] uppercase tracking-[0.2em] text-dark-text-secondary mt-2 font-bold">Votos Totales</div>
                 </div>
                  <div className="glass-panel p-5 rounded border border-white/5 relative overflow-hidden">

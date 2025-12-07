@@ -62,28 +62,18 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
     };
 
     const handleSimulate = () => {
-        if (!profile) return;
+        if (!profile || !profile.simulationParameters) return;
         
         // Create a PartyData object representing this candidate/list
         // We use the "Suggested Vote Base" from the AI analysis
         const candidateParty: PartyData = {
             id: Date.now(), // Temporary ID
             name: candidateName.toUpperCase(),
-            votes: profile.simulationParameters.suggestedVoteBase,
+            votes: profile.simulationParameters.suggestedVoteBase || 0,
             color: '#d97706' // Brand primary color
         };
 
         // We need to inject this into the D'Hondt simulator.
-        // The most robust way is to pass it as a single-item array or append to existing.
-        // However, onProjectAndSimulate usually overrides the simulator state.
-        // To make it useful, users usually want to see this candidate AGAINST others.
-        // For now, we will create a simulation with JUST this candidate to start, 
-        // OR ideally, we'd append. But `onProjectAndSimulate` in App/Dashboard typically SETS the state.
-        // Let's rely on the user to use the "Manual Entry" or "Party Settings" in D'Hondt to combine.
-        // BUT to be more helpful, we will pass this single entry. 
-        // Ideally, Dashboard should handle merging if we want to "add" to current scenario.
-        // Given the interface, let's pass it and let the simulator render it. 
-        
         onProjectAndSimulate([candidateParty]);
     };
 
@@ -155,7 +145,7 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                         </div>
                         <div className="text-right bg-black/40 p-4 rounded-lg border border-white/5">
                             <p className="text-xs text-dark-text-secondary uppercase tracking-widest mb-1">Proyección Base</p>
-                            <p className="text-3xl font-bold text-brand-glow font-mono">{profile.simulationParameters.suggestedVoteBase.toLocaleString('es-CO')}</p>
+                            <p className="text-3xl font-bold text-brand-glow font-mono">{(profile.simulationParameters?.suggestedVoteBase || 0).toLocaleString('es-CO')}</p>
                             <p className="text-[10px] text-gray-500">Votos Estimados</p>
                         </div>
                     </div>
@@ -193,7 +183,7 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                                     <div className="bg-dark-bg p-3 rounded-lg border border-dark-border">
                                         <div className="flex justify-between items-center mb-2">
                                             <span className="text-xs text-gray-400 uppercase">Techo (Max)</span>
-                                            <span className="text-sm font-bold text-green-400">{profile.simulationParameters.suggestedVoteCeiling.toLocaleString('es-CO')}</span>
+                                            <span className="text-sm font-bold text-green-400">{(profile.simulationParameters?.suggestedVoteCeiling || 0).toLocaleString('es-CO')}</span>
                                         </div>
                                         <div className="w-full bg-gray-700 h-1.5 rounded-full mb-3">
                                             <div className="bg-green-500 h-1.5 rounded-full" style={{width: '80%'}}></div>
@@ -201,7 +191,7 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                                         
                                         <div className="flex justify-between items-center mb-2">
                                             <span className="text-xs text-gray-400 uppercase">Piso (Min)</span>
-                                            <span className="text-sm font-bold text-red-400">{profile.simulationParameters.suggestedVoteFloor.toLocaleString('es-CO')}</span>
+                                            <span className="text-sm font-bold text-red-400">{(profile.simulationParameters?.suggestedVoteFloor || 0).toLocaleString('es-CO')}</span>
                                         </div>
                                         <div className="w-full bg-gray-700 h-1.5 rounded-full">
                                             <div className="bg-red-500 h-1.5 rounded-full" style={{width: '40%'}}></div>
@@ -211,14 +201,14 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="bg-dark-bg p-3 rounded-lg border border-dark-border text-center">
                                             <p className="text-[10px] text-gray-500 uppercase">Volatilidad</p>
-                                            <p className={`text-lg font-bold ${profile.simulationParameters.volatility === 'Alta' ? 'text-red-400' : 'text-blue-400'}`}>
-                                                {profile.simulationParameters.volatility}
+                                            <p className={`text-lg font-bold ${profile.simulationParameters?.volatility === 'Alta' ? 'text-red-400' : 'text-blue-400'}`}>
+                                                {profile.simulationParameters?.volatility || 'N/A'}
                                             </p>
                                         </div>
                                         <div className="bg-dark-bg p-3 rounded-lg border border-dark-border text-center">
                                             <p className="text-[10px] text-gray-500 uppercase">Tendencia</p>
-                                            <p className={`text-lg font-bold ${profile.simulationParameters.growthTrend === 'Positiva' ? 'text-green-400' : 'text-yellow-400'}`}>
-                                                {profile.simulationParameters.growthTrend}
+                                            <p className={`text-lg font-bold ${profile.simulationParameters?.growthTrend === 'Positiva' ? 'text-green-400' : 'text-yellow-400'}`}>
+                                                {profile.simulationParameters?.growthTrend || 'N/A'}
                                             </p>
                                         </div>
                                     </div>
@@ -231,7 +221,7 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                                         Simular en D'Hondt
                                     </button>
                                     <p className="text-[10px] text-center text-gray-500 mt-2">
-                                        Esto llevará al candidato al simulador como una lista independiente con {profile.simulationParameters.suggestedVoteBase.toLocaleString()} votos.
+                                        Esto llevará al candidato al simulador como una lista independiente con {(profile.simulationParameters?.suggestedVoteBase || 0).toLocaleString()} votos.
                                     </p>
                                 </div>
                             </AnalysisCard>

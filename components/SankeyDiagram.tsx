@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { ResponsiveContainer, Sankey, Tooltip, Layer, Rectangle } from 'recharts';
 import { HistoricalDataset, PartyAnalysisData } from '../types';
@@ -89,7 +90,7 @@ const SankeyDiagram: React.FC<{ datasets: HistoricalDataset[]; partyAnalysis: Ma
             return (
                 <div className="bg-dark-card p-3 rounded-md border border-dark-border shadow-lg">
                     <p className="text-dark-text-primary">{`${source.name} → ${target.name}`}</p>
-                    <p className="text-brand-primary font-bold">{`${value.toLocaleString('es-CO')} votos`}</p>
+                    <p className="text-brand-primary font-bold">{`${(value ?? 0).toLocaleString('es-CO')} votos`}</p>
                 </div>
             );
         }
@@ -99,6 +100,7 @@ const SankeyDiagram: React.FC<{ datasets: HistoricalDataset[]; partyAnalysis: Ma
     const SankeyNode = ({ x, y, dx, dy, index, payload, width: chartWidth }: any) => {
         const color = nodeColors[payload.name] || '#8884d8';
         const isRightSide = x > chartWidth / 2;
+        const val = payload.value ?? 0;
     
         return (
             <Layer key={`CustomNode${index}`}>
@@ -135,7 +137,7 @@ const SankeyDiagram: React.FC<{ datasets: HistoricalDataset[]; partyAnalysis: Ma
                         strokeLinejoin: 'miter',
                     }}
                 >
-                    {payload.value.toLocaleString('es-CO')}
+                    {val.toLocaleString('es-CO')}
                 </text>
             </Layer>
         );
