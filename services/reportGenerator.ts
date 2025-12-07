@@ -32,7 +32,7 @@ const addElementAsImage = async (
                 element.style.color = '#000000';
             }
             // Also force specific text classes if needed
-            const texts = clonedDoc.querySelectorAll('.text-white, .text-gray-200, .text-gray-300, .text-gray-400');
+            const texts = clonedDoc.querySelectorAll('.text-white, .text-gray-200, .text-gray-300, .text-gray-400, .text-light-text-primary, .dark\\:text-dark-text-primary');
             texts.forEach((t: any) => t.style.color = '#000000');
         }
     });
@@ -172,13 +172,16 @@ export const generateStrategicReportPDF = async (element: HTMLElement, fileName:
     const allText = clonedElement.querySelectorAll('*');
     allText.forEach((el: any) => {
         const style = window.getComputedStyle(el);
-        if (style.color !== 'rgba(0, 0, 0, 0)') { // Don't change transparent elements
+        // Ensure non-transparent text becomes black
+        if (style.color !== 'rgba(0, 0, 0, 0)' && style.color !== 'transparent') { 
              el.style.color = '#000000';
              el.style.textShadow = 'none';
         }
-        if (el.classList.contains('bg-white/5')) {
+        // Force background of cards to be light gray for contrast
+        if (el.classList.contains('bg-white/5') || el.classList.contains('glass-panel')) {
             el.style.backgroundColor = '#f3f4f6'; // Light gray background for cards
             el.style.borderColor = '#ccc';
+            el.style.boxShadow = 'none';
         }
     });
     // Remove dark backgrounds
