@@ -1,10 +1,11 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import AnalysisCard from './AnalysisCard';
-import { FingerPrintIcon, LoadingSpinner, SparklesIcon, WarningIcon, ChartBarIcon, MapIcon, ShareIcon, BeakerIcon, ClipboardDocumentIcon, TableCellsIcon, ChevronDownIcon, ScaleIcon } from './Icons';
-import { generateCandidateProfile, generateCandidateComparison, CandidateComparisonResult } from '../services/geminiService';
-import { CandidateProfileResult, ElectoralDataset, PartyData, ProcessedElectionData } from '../types';
-import { BarChart } from './Charts';
+import { FingerPrintIcon, LoadingSpinner, SparklesIcon, WarningIcon, ChartBarIcon, MapIcon, ShareIcon, BeakerIcon, ClipboardDocumentIcon, TableCellsIcon, ChevronDownIcon, ScaleIcon, PlusIcon, TrashIcon } from './Icons';
+import { generateCandidateProfile, generateCandidateComparison } from '../services/geminiService';
+import { CandidateProfileResult, ElectoralDataset, PartyData, ProcessedElectionData, CandidateComparisonResult, ComparisonScenario } from '../types';
+import { BarChart as VerticalBarChart } from './Charts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, Cell } from 'recharts';
 
 interface CandidateIntelligenceProps {
     datasets: ElectoralDataset[];
@@ -66,17 +67,76 @@ const CollapsibleNode: React.FC<{ node: LocationNode; level: number; totalVotes:
     );
 };
 
+// New Chart Component for Multi-Candidate Scenarios
+const ScenarioChart: React.FC<{ scenarios: ComparisonScenario[] }> = ({ scenarios }) => {
+    // Generate distinct colors for candidates
+    const candidateColors = ['#d97706', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6'];
+    const candidates = scenarios.length > 0 
+        ? scenarios[0].voteProjections.map(vp => vp.candidateName)
+        : [];
+
+    const data = scenarios.map(s => {
+        const entry: any = { name: s.name, indecisos: s.swingVotes, desc: s.description };
+        s.voteProjections.forEach(vp => {
+            entry[vp.candidateName] = vp.votes;
+        });
+        return entry;
+    });
+
+    return (
+        <div className="h-96 w-full mt-6 bg-black/20 p-4 rounded-xl border border-white/5">
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                    data={data}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
+                    <XAxis dataKey="name" stroke="#9ca3af" tick={{fontSize: 12}} />
+                    <YAxis stroke="#9ca3af" tickFormatter={(val) => `${(val/1000).toFixed(0)}k`} />
+                    <Tooltip 
+                        contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', color: '#f3f4f6' }}
+                        formatter={(value: number) => value.toLocaleString('es-CO')}
+                        labelStyle={{ color: '#d1d5db', fontWeight: 'bold' }}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                    {candidates.map((candidate, idx) => (
+                        <Bar 
+                            key={candidate} 
+                            dataKey={candidate} 
+                            fill={candidateColors[idx % candidateColors.length]} 
+                            name={candidate} 
+                            radius={[4, 4, 0, 0]} 
+                        />
+                    ))}
+                    <Bar dataKey="indecisos" fill="#9ca3af" name="Votos en Disputa" stackId="a" radius={[4, 4, 0, 0]} fillOpacity={0.3} />
+                </BarChart>
+            </ResponsiveContainer>
+        </div>
+    );
+};
+
 const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets, onProjectAndSimulate }) => {
     const [candidateName, setCandidateName] = useState('');
-    const [candidateBName, setCandidateBName] = useState(''); // New for comparison
     const [context, setContext] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [profile, setProfile] = useState<CandidateProfileResult | null>(null);
-    const [comparison, setComparison] = useState<CandidateComparisonResult | null>(null); // New state
+    const [comparison, setComparison] = useState<CandidateComparisonResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [localHistory, setLocalHistory] = useState<{ election: string; votes: number; party: string }[]>([]);
     
+    // Comparison State
+    const [contenders, setContenders] = useState<string[]>(['', '']); // Start with 2 empty slots
+
     const [activeTab, setActiveTab] = useState<'profile' | 'forms' | 'comparison'>('profile');
+
+    // Effect to initialize comparison with profile candidate if available
+    useEffect(() => {
+        if (activeTab === 'comparison' && candidateName && contenders[0] === '' && contenders[1] === '') {
+            const newContenders = [...contenders];
+            newContenders[0] = candidateName;
+            setContenders(newContenders);
+        }
+    }, [activeTab, candidateName]); // Removed contenders dependency to prevent loop
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -85,7 +145,6 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
         setIsLoading(true);
         setError(null);
         setProfile(null);
-        setComparison(null);
         setLocalHistory([]);
         setActiveTab('profile'); 
 
@@ -121,13 +180,35 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
         }
     };
 
+    const handleUpdateContender = (index: number, value: string) => {
+        const newContenders = [...contenders];
+        newContenders[index] = value;
+        setContenders(newContenders);
+    };
+
+    const handleAddContender = () => {
+        if (contenders.length < 5) {
+            setContenders([...contenders, '']);
+        }
+    };
+
+    const handleRemoveContender = (index: number) => {
+        if (contenders.length > 2) {
+            setContenders(contenders.filter((_, i) => i !== index));
+        }
+    };
+
     const handleCompare = async () => {
-        if (!candidateName || !candidateBName) return;
+        const validCandidates = contenders.filter(c => c.trim() !== '');
+        if (validCandidates.length < 2) {
+            setError("Debes ingresar al menos 2 candidatos para comparar.");
+            return;
+        }
         setIsLoading(true);
         setError(null);
         setComparison(null);
         try {
-            const result = await generateCandidateComparison(candidateName, candidateBName, context);
+            const result = await generateCandidateComparison(validCandidates, context);
             setComparison(result);
         } catch (err: any) {
             setError(err.message || "Error al generar la comparación.");
@@ -260,7 +341,7 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                 )}
             </AnalysisCard>
 
-            {(profile || candidateName) && (
+            {(profile || candidateName || activeTab === 'comparison') && (
                 <div className="space-y-6">
                     {/* Header */}
                     {profile && (
@@ -304,7 +385,7 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                             className={`px-4 py-2 text-sm font-bold rounded-md flex items-center gap-2 transition-all ${activeTab === 'comparison' ? 'bg-brand-primary text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                         >
                             <ScaleIcon className="w-4 h-4" />
-                            Comparar Candidatos
+                            Comparar Candidatos (Versus)
                         </button>
                     </div>
 
@@ -436,94 +517,135 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                         </div>
                     )}
 
-                    {/* CONTENT - COMPARISON */}
+                    {/* CONTENT - COMPARISON (VERSUS) */}
                     {activeTab === 'comparison' && (
                         <div className="space-y-6 animate-fade-in">
-                            <AnalysisCard title="Comparador de Candidatos (Versus)" explanation="Enfrenta a dos candidatos para analizar sus probabilidades en un escenario competitivo.">
+                            <AnalysisCard title="Comparador de Candidatos (War Games)" explanation="Simulación de enfrentamiento directo entre múltiples candidatos (máximo 5). Genera escenarios cuantitativos (Pesimista, Base, Optimista) para cada uno.">
                                 <div className="p-4">
-                                    <div className="flex flex-col md:flex-row gap-4 items-end mb-6">
-                                        <div className="flex-1 w-full">
-                                            <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">Candidato A (Principal)</label>
-                                            <div className="w-full bg-black/40 border border-brand-primary/50 text-white rounded-lg p-3 font-mono">
-                                                {candidateName}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                                        {contenders.map((contender, index) => (
+                                            <div key={index} className="flex gap-2 items-end">
+                                                <div className="flex-1">
+                                                    <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">Candidato {index + 1}</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={contender}
+                                                        onChange={(e) => handleUpdateContender(index, e.target.value)}
+                                                        placeholder={`Nombre Candidato ${index + 1}`}
+                                                        className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 focus:ring-brand-primary focus:border-brand-primary"
+                                                    />
+                                                </div>
+                                                {contenders.length > 2 && (
+                                                    <button 
+                                                        onClick={() => handleRemoveContender(index)} 
+                                                        className="p-2 mb-[2px] bg-red-900/30 text-red-400 hover:text-red-200 rounded border border-red-500/30"
+                                                        title="Eliminar candidato"
+                                                    >
+                                                        <TrashIcon className="w-5 h-5"/>
+                                                    </button>
+                                                )}
                                             </div>
-                                        </div>
-                                        <div className="flex items-center justify-center pb-2">
-                                            <span className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">VS</span>
-                                        </div>
-                                        <div className="flex-1 w-full">
-                                            <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">Candidato B (Rival)</label>
-                                            <input 
-                                                type="text" 
-                                                value={candidateBName}
-                                                onChange={(e) => setCandidateBName(e.target.value)}
-                                                placeholder="Nombre del rival..."
-                                                className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-3 focus:ring-red-500 focus:border-red-500"
-                                            />
-                                        </div>
+                                        ))}
+                                        {contenders.length < 5 && (
+                                            <div className="flex items-end">
+                                                <button 
+                                                    onClick={handleAddContender}
+                                                    className="w-full h-[42px] border-2 border-dashed border-gray-600 rounded-md text-gray-400 hover:text-brand-primary hover:border-brand-primary flex items-center justify-center gap-2 transition-colors"
+                                                >
+                                                    <PlusIcon className="w-5 h-5" />
+                                                    <span className="text-sm font-bold">Añadir Candidato</span>
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="flex justify-end">
                                         <button 
                                             onClick={handleCompare}
-                                            disabled={isLoading || !candidateBName}
+                                            disabled={isLoading || contenders.filter(c => c.trim()).length < 2}
                                             className="bg-brand-primary hover:bg-brand-secondary text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
                                         >
                                             {isLoading ? <LoadingSpinner className="w-5 h-5"/> : <ScaleIcon className="w-5 h-5"/>}
-                                            Comparar
+                                            Ejecutar Simulación (Versus)
                                         </button>
                                     </div>
 
                                     {comparison && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 relative">
-                                            {/* Vertical divider */}
-                                            <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-white/10 -ml-px"></div>
-
-                                            {/* Candidate A Column */}
-                                            <div className="space-y-4">
-                                                <div className="text-center pb-4 border-b border-white/5">
-                                                    <h3 className="text-xl font-bold text-brand-primary">{candidateName}</h3>
-                                                    <div className="mt-2 text-4xl font-mono font-bold text-white">{comparison.candidateA.probabilityScore}%</div>
-                                                    <p className="text-xs text-gray-500 uppercase tracking-widest">Probabilidad de Éxito</p>
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-xs font-bold text-green-400 uppercase mb-2">Fortalezas</h4>
-                                                    <ul className="list-disc pl-4 space-y-1 text-sm text-gray-300">
-                                                        {comparison.candidateA.strengths.map((s, i) => <li key={i}>{s}</li>)}
-                                                    </ul>
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-xs font-bold text-red-400 uppercase mb-2">Debilidades</h4>
-                                                    <ul className="list-disc pl-4 space-y-1 text-sm text-gray-300">
-                                                        {comparison.candidateA.weaknesses.map((s, i) => <li key={i}>{s}</li>)}
-                                                    </ul>
-                                                </div>
+                                        <div className="mt-8 relative animate-fade-in">
+                                            {/* Summary Stats Grid */}
+                                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6 border-b border-white/5 pb-6">
+                                                {comparison.candidates.map((cand, idx) => (
+                                                    <div key={idx} className="text-center p-3 bg-black/20 rounded-lg border border-white/5">
+                                                        <h3 className="text-sm font-bold text-gray-300 truncate mb-1" title={cand.name}>{cand.name}</h3>
+                                                        <div className="text-2xl font-mono font-bold text-white">{cand.probabilityScore}%</div>
+                                                        <p className="text-[10px] text-gray-500 uppercase tracking-widest">Prob. Éxito</p>
+                                                    </div>
+                                                ))}
                                             </div>
 
-                                            {/* Candidate B Column */}
-                                            <div className="space-y-4">
-                                                <div className="text-center pb-4 border-b border-white/5">
-                                                    <h3 className="text-xl font-bold text-red-500">{candidateBName}</h3>
-                                                    <div className="mt-2 text-4xl font-mono font-bold text-white">{comparison.candidateB.probabilityScore}%</div>
-                                                    <p className="text-xs text-gray-500 uppercase tracking-widest">Probabilidad de Éxito</p>
+                                            {/* Scenario Chart */}
+                                            {comparison.scenarios && (
+                                                <div className="mb-8">
+                                                    <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                        <ChartBarIcon className="w-4 h-4 text-brand-secondary"/>
+                                                        Proyección de Votos por Escenario
+                                                    </h4>
+                                                    <ScenarioChart scenarios={comparison.scenarios} />
+                                                    
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                                                        {comparison.scenarios.map((scene, i) => (
+                                                            <div key={i} className="bg-black/30 p-4 rounded-lg border border-white/5 text-center">
+                                                                <p className="text-xs font-bold text-brand-secondary uppercase mb-2">{scene.name}</p>
+                                                                <p className="text-xs text-gray-400 mb-3 min-h-[40px]">{scene.description}</p>
+                                                                
+                                                                <div className="space-y-1 mb-3">
+                                                                    {scene.voteProjections.map((vp, j) => (
+                                                                        <div key={j} className="flex justify-between text-xs border-b border-white/5 pb-1 last:border-0">
+                                                                            <span className="text-gray-300 truncate max-w-[60%]">{vp.candidateName}</span>
+                                                                            <span className="font-mono font-bold">{vp.votes.toLocaleString()}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+
+                                                                <div className="pt-2 border-t border-white/10 bg-white/5 rounded p-2 mt-2">
+                                                                    <p className="text-[10px] text-gray-500 uppercase">Ganador Escenario</p>
+                                                                    <p className="text-white font-bold text-sm">{scene.winner}</p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h4 className="text-xs font-bold text-green-400 uppercase mb-2">Fortalezas</h4>
-                                                    <ul className="list-disc pl-4 space-y-1 text-sm text-gray-300">
-                                                        {comparison.candidateB.strengths.map((s, i) => <li key={i}>{s}</li>)}
-                                                    </ul>
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-xs font-bold text-red-400 uppercase mb-2">Debilidades</h4>
-                                                    <ul className="list-disc pl-4 space-y-1 text-sm text-gray-300">
-                                                        {comparison.candidateB.weaknesses.map((s, i) => <li key={i}>{s}</li>)}
-                                                    </ul>
-                                                </div>
+                                            )}
+
+                                            {/* Detailed Analysis Grid */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                {comparison.candidates.map((cand, idx) => (
+                                                    <div key={idx} className="bg-black/20 p-4 rounded-xl border border-white/5">
+                                                        <h4 className="text-sm font-bold text-brand-primary uppercase mb-3 border-b border-brand-primary/20 pb-2">{cand.name}</h4>
+                                                        
+                                                        <div className="mb-4">
+                                                            <p className="text-xs font-bold text-green-400 uppercase mb-1">Fortalezas</p>
+                                                            <ul className="list-disc pl-4 space-y-1 text-xs text-gray-400">
+                                                                {cand.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                                                            </ul>
+                                                        </div>
+                                                        
+                                                        <div>
+                                                            <p className="text-xs font-bold text-red-400 uppercase mb-1">Debilidades</p>
+                                                            <ul className="list-disc pl-4 space-y-1 text-xs text-gray-400">
+                                                                {cand.weaknesses.map((s, i) => <li key={i}>{s}</li>)}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
 
-                                            {/* Winner Summary */}
-                                            <div className="md:col-span-2 mt-6 p-6 bg-gradient-to-r from-brand-primary/10 to-purple-600/10 rounded-xl border border-white/10 text-center">
+                                            {/* Final Verdict */}
+                                            <div className="mt-8 p-6 bg-gradient-to-r from-brand-primary/10 to-purple-600/10 rounded-xl border border-white/10 text-center">
                                                 <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-2">Veredicto de la IA</h4>
-                                                <p className="text-2xl font-bold text-brand-glow mb-2">Ganador Probable: {comparison.winner}</p>
-                                                <p className="text-sm text-gray-300 leading-relaxed max-w-2xl mx-auto">{comparison.winnerReason}</p>
-                                                <div className="mt-4 pt-4 border-t border-white/5">
+                                                <p className="text-3xl font-bold text-brand-glow mb-3">Ganador Probable: {comparison.winner}</p>
+                                                <p className="text-sm text-gray-300 leading-relaxed max-w-3xl mx-auto">{comparison.winnerReason}</p>
+                                                <div className="mt-6 pt-4 border-t border-white/5">
                                                     <span className="text-xs font-bold text-gray-500 uppercase">Factor Diferencial Clave:</span>
                                                     <p className="text-white font-medium mt-1">{comparison.keyDifferentiator}</p>
                                                 </div>

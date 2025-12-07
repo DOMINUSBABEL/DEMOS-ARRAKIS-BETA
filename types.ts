@@ -77,7 +77,8 @@ export interface InvalidVoteCounts {
   nullVotes: number;
 }
 
-export type AnalysisType = 'candidate' | 'party';
+// Updated to include 'executive' for Mayor/Governor/President
+export type AnalysisType = 'candidate' | 'party' | 'executive';
 
 export interface ProcessedDataPayload {
   processedData: ProcessedElectionData[];
@@ -232,4 +233,27 @@ export interface CandidateProfileResult {
         growthTrend: 'Positiva' | 'Estable' | 'Negativa';
     };
     sources: any[];
+}
+
+export interface ComparisonScenario {
+    name: string; // "Escenario Pesimista", "Escenario Base", "Escenario Optimista"
+    description: string;
+    voteProjections: { candidateName: string; votes: number }[]; // Updated for N candidates
+    swingVotes: number; // Votos indecisos en juego
+    winner: string; // Winner name
+}
+
+export interface CandidateAnalysis {
+    name: string;
+    strengths: string[];
+    weaknesses: string[];
+    probabilityScore: number; // 0-100
+}
+
+export interface CandidateComparisonResult {
+    winner: string;
+    winnerReason: string;
+    candidates: CandidateAnalysis[]; // Array of N candidates
+    scenarios: ComparisonScenario[];
+    keyDifferentiator: string;
 }

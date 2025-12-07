@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type, GenerateContentResponse, Schema } from "@google/genai";
-import { CandidateRanking, ProbabilityResult, SimulationResults, HistoricalDataset, PartyAnalysisData, PartyData, ListAnalysisAIResponse, ProcessedElectionData, MarketingStrategyResult, CandidateProfileResult } from '../types';
+import { CandidateRanking, ProbabilityResult, SimulationResults, HistoricalDataset, PartyAnalysisData, PartyData, ListAnalysisAIResponse, ProcessedElectionData, MarketingStrategyResult, CandidateProfileResult, CandidateComparisonResult } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const model = 'gemini-3-pro-preview';
@@ -448,70 +448,71 @@ export const generateCandidateProfile = async (
     }
 };
 
-export interface CandidateComparisonResult {
-    winner: string;
-    winnerReason: string;
-    candidateA: {
-        strengths: string[];
-        weaknesses: string[];
-        probabilityScore: number; // 0-100
-    };
-    candidateB: {
-        strengths: string[];
-        weaknesses: string[];
-        probabilityScore: number; // 0-100
-    };
-    keyDifferentiator: string;
-}
-
 export const generateCandidateComparison = async (
-    candidateA: string,
-    candidateB: string,
+    candidates: string[],
     context: string
 ): Promise<CandidateComparisonResult> => {
     const prompt = `
     ROL: Estratega Político Senior experto en "War Games" electorales.
-    OBJETIVO: Comparar dos candidatos cara a cara y determinar quién tiene mayor probabilidad de éxito electoral en el contexto actual.
+    OBJETIVO: Realizar una simulación cuantitativa de enfrentamiento entre los siguientes candidatos: ${candidates.join(', ')}.
 
-    CANDIDATO A: ${candidateA}
-    CANDIDATO B: ${candidateB}
     CONTEXTO ELECTORAL: ${context}
 
-    INSTRUCCIONES:
-    1.  Utiliza Google Search para investigar la actualidad, trayectoria y escándalos recientes de ambos.
-    2.  Compara sus maquinarias políticas, opinión pública y momentum.
-    3.  Determina un "Probable Ganador" en un enfrentamiento directo o en captación de votos.
-    4.  Asigna un puntaje de probabilidad de éxito (0-100) a cada uno.
+    INSTRUCCIONES CLAVE:
+    1.  Investiga el perfil actual, fortalezas, debilidades y maquinaria de CADA candidato usando Google Search.
+    2.  Genera 3 ESCENARIOS CUANTITATIVOS DISTINTOS (ej: 'Alta Abstención', 'Voto de Opinión Masivo', 'Estructuras vs Opinión').
+    3.  En cada escenario, estima una CIFRA DE VOTOS NUMÉRICA (no porcentajes) para CADA candidato basada en datos históricos o inferencias lógicas.
+    4.  Calcula los 'swing votes' (votos indecisos o en disputa) para cada escenario.
+    5.  Define un ganador probable para cada escenario y un ganador general.
 
-    FORMATO: JSON Estricto.
+    FORMATO DE RESPUESTA: JSON Estricto que coincida con el schema.
     `;
 
     const schema: Schema = {
         type: Type.OBJECT,
         properties: {
-            winner: { type: Type.STRING, description: "Nombre del candidato con mayor probabilidad de éxito." },
-            winnerReason: { type: Type.STRING, description: "Justificación estratégica breve de por qué gana." },
-            candidateA: {
-                type: Type.OBJECT,
-                properties: {
-                    strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    probabilityScore: { type: Type.NUMBER, description: "Puntaje 0-100" }
-                },
-                required: ['strengths', 'weaknesses', 'probabilityScore']
+            winner: { type: Type.STRING, description: "Nombre del ganador global probable" },
+            winnerReason: { type: Type.STRING, description: "Justificación estratégica del ganador" },
+            candidates: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        name: { type: Type.STRING },
+                        strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        probabilityScore: { type: Type.NUMBER, description: "Probabilidad General de Victoria (0-100)" }
+                    },
+                    required: ['name', 'strengths', 'weaknesses', 'probabilityScore']
+                }
             },
-            candidateB: {
-                type: Type.OBJECT,
-                properties: {
-                    strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    probabilityScore: { type: Type.NUMBER, description: "Puntaje 0-100" }
-                },
-                required: ['strengths', 'weaknesses', 'probabilityScore']
+            scenarios: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        name: { type: Type.STRING, description: "Ej: 'Escenario de Alta Participación'" },
+                        description: { type: Type.STRING, description: "Condiciones del escenario." },
+                        voteProjections: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    candidateName: { type: Type.STRING },
+                                    votes: { type: Type.NUMBER }
+                                },
+                                required: ['candidateName', 'votes']
+                            }
+                        },
+                        swingVotes: { type: Type.NUMBER, description: "Votos en disputa/indecisos" },
+                        winner: { type: Type.STRING, description: "Nombre del ganador del escenario" }
+                    },
+                    required: ['name', 'description', 'voteProjections', 'swingVotes', 'winner']
+                }
             },
-            keyDifferentiator: { type: Type.STRING, description: "El factor clave que diferencia al ganador del perdedor." }
+            keyDifferentiator: { type: Type.STRING }
         },
-        required: ['winner', 'winnerReason', 'candidateA', 'candidateB', 'keyDifferentiator']
+        required: ['winner', 'winnerReason', 'candidates', 'scenarios', 'keyDifferentiator']
     };
 
     try {
@@ -529,6 +530,6 @@ export const generateCandidateComparison = async (
         return JSON.parse(jsonText) as CandidateComparisonResult;
     } catch (error) {
         console.error("Error generating comparison:", error);
-        throw new Error("No se pudo generar la comparación.");
+        throw new Error("No se pudo generar la comparación detallada.");
     }
 };
