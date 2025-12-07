@@ -21,6 +21,7 @@ import Methodology from './Methodology';
 import ListAnalysis from './ListAnalysis';
 import HeatmapAnalysis from './HeatmapAnalysis';
 import MarketingStrategy from './MarketingStrategy';
+import CandidateIntelligence from './CandidateIntelligence';
 import { 
   simulateVoteFragmentation,
   applyGovernmentOppositionFactor,
@@ -34,7 +35,7 @@ import { ElectoralDataset, PartyAnalysisData, HistoricalDataset } from '../types
 import { GenerateContentResponse } from '@google/genai';
 
 
-type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap' | 'marketing';
+type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap' | 'marketing' | 'candidate_intelligence';
 type DataSource = 'local' | 'remote';
 
 interface DashboardProps {
@@ -263,7 +264,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, []);
 
   const renderContent = () => {
-    if (noDataLoaded && activeTab !== 'data_manager' && activeTab !== 'methodology' && activeTab !== 'marketing') {
+    if (noDataLoaded && activeTab !== 'data_manager' && activeTab !== 'methodology' && activeTab !== 'marketing' && activeTab !== 'candidate_intelligence') {
         return (
             <div className="text-center py-10 bg-light-card dark:bg-dark-card rounded-lg mt-8 animate-fade-in-up">
                 <h2 className="text-xl font-semibold">Dashboard Vacío</h2>
@@ -563,6 +564,9 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       case 'marketing':
         return <MarketingStrategy />;
+
+      case 'candidate_intelligence':
+        return <CandidateIntelligence datasets={datasets} onProjectAndSimulate={handleProjectAndSimulate} />;
 
       default:
         return null;

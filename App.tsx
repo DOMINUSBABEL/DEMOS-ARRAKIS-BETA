@@ -12,7 +12,7 @@ import { LoadingSpinner, WarningIcon, CheckCircleIcon } from './components/Icons
 import Papa from 'papaparse';
 import { defaultDatasets } from './services/defaultDatasets';
 
-type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap' | 'marketing';
+type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap' | 'marketing' | 'candidate_intelligence';
 type DataSource = 'local' | 'remote';
 
 function App() {

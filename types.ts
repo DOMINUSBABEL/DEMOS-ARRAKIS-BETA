@@ -219,3 +219,17 @@ export interface MarketingStrategyResult {
         target: string;
     }[];
 }
+
+export interface CandidateProfileResult {
+    overview: string;
+    opinionAnalysis: string;
+    managementAnalysis: string;
+    simulationParameters: {
+        suggestedVoteBase: number;
+        suggestedVoteFloor: number;
+        suggestedVoteCeiling: number;
+        volatility: 'Baja' | 'Media' | 'Alta';
+        growthTrend: 'Positiva' | 'Estable' | 'Negativa';
+    };
+    sources: any[];
+}

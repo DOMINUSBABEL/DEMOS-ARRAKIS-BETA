@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
-import { CandidateRanking, ProbabilityResult, SimulationResults, HistoricalDataset, PartyAnalysisData, PartyData, ListAnalysisAIResponse, ProcessedElectionData, MarketingStrategyResult } from '../types';
+import { CandidateRanking, ProbabilityResult, SimulationResults, HistoricalDataset, PartyAnalysisData, PartyData, ListAnalysisAIResponse, ProcessedElectionData, MarketingStrategyResult, CandidateProfileResult } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const model = 'gemini-3-pro-preview';
@@ -817,5 +817,84 @@ export const generateMarketingStrategy = async (
     } catch (error) {
         console.error("Error generating marketing strategy:", error);
         throw new Error("No se pudo generar la estrategia de marketing. Intenta de nuevo.");
+    }
+};
+
+export const generateCandidateProfile = async (
+    candidateName: string,
+    context: string,
+    historicalData: { election: string; votes: number; party: string }[]
+): Promise<CandidateProfileResult> => {
+    const prompt = `
+    ROL: Analista de Inteligencia Política y Electoral.
+    OBJETIVO: Generar un perfil integral de un candidato político para uso en simulaciones electorales.
+    
+    CANDIDATO: ${candidateName}
+    CONTEXTO ADICIONAL: ${context}
+    
+    HISTORIAL ELECTORAL INTERNO (Datos Proporcionados):
+    ${JSON.stringify(historicalData, null, 2)}
+
+    INSTRUCCIONES:
+    1.  **Analiza la Opinión Pública (Google Search):** Busca noticias recientes, polémicas, logros y percepción general. ¿Es favorable? ¿Polarizante?
+    2.  **Analiza la Gestión (Google Search):** Si ha tenido cargos públicos (Alcalde, Concejal, Congresista), resume sus hitos de gestión o proyectos de ley. Si no, analiza su trayectoria profesional.
+    3.  **Proyección Electoral (Simulación):** Basado en su historial y el "momentum" actual (opinión), sugiere un "Poder Electoral Base" para una simulación actual. Define un techo y un piso realistas.
+    4.  **Parámetros de Simulación:** Define la volatilidad de su voto (¿es un voto duro o de opinión volátil?) y su tendencia de crecimiento.
+
+    FORMATO DE RESPUESTA: JSON Estricto.
+
+    STRUCTURE DEL JSON:
+    {
+        "overview": "Resumen ejecutivo del perfil político.",
+        "opinionAnalysis": "Análisis de sentimiento público, fortalezas y debilidades de imagen.",
+        "managementAnalysis": "Resumen de gestión pública o trayectoria profesional relevante.",
+        "simulationParameters": {
+            "suggestedVoteBase": 15000, // Número entero
+            "suggestedVoteFloor": 12000, // Número entero
+            "suggestedVoteCeiling": 20000, // Número entero
+            "volatility": "Alta" | "Media" | "Baja",
+            "growthTrend": "Positiva" | "Estable" | "Negativa"
+        }
+    }
+    `;
+
+    const schema = {
+        type: Type.OBJECT,
+        properties: {
+            overview: { type: Type.STRING },
+            opinionAnalysis: { type: Type.STRING },
+            managementAnalysis: { type: Type.STRING },
+            simulationParameters: {
+                type: Type.OBJECT,
+                properties: {
+                    suggestedVoteBase: { type: Type.INTEGER },
+                    suggestedVoteFloor: { type: Type.INTEGER },
+                    suggestedVoteCeiling: { type: Type.INTEGER },
+                    volatility: { type: Type.STRING, enum: ['Alta', 'Media', 'Baja'] },
+                    growthTrend: { type: Type.STRING, enum: ['Positiva', 'Estable', 'Negativa'] }
+                }
+            }
+        },
+        required: ['overview', 'opinionAnalysis', 'managementAnalysis', 'simulationParameters']
+    };
+
+    try {
+        const response = await ai.models.generateContent({
+            model,
+            contents: [{ parts: [{ text: prompt }] }],
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: schema,
+                tools: [{ googleSearch: {} }]
+            }
+        });
+
+        const jsonText = response.text.trim();
+        const profile = JSON.parse(jsonText) as CandidateProfileResult;
+        profile.sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
+        return profile;
+    } catch (error) {
+        console.error("Error generating candidate profile:", error);
+        throw new Error("No se pudo generar el perfil del candidato.");
     }
 };
