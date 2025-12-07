@@ -1,7 +1,7 @@
 
 # DEMOS ARRAKIS - Sistema de Inteligencia y Predicción Electoral
 
-**Versión:** Beta 1.1
+**Versión:** Beta 1.2
 **Motor:** React + TypeScript + Google Gemini AI
 
 ## 📋 Descripción General
@@ -21,6 +21,7 @@ El sistema combina **modelos matemáticos determinísticos** (Cifra Repartidora 
 5.  **Auditoría Electoral (Simulación de Formularios):** Desglose jerárquico de votos (Municipio -> Zona -> Puesto) para simular la estructura de formularios E-26 y E-24.
 6.  **Marketing de Guerra:** Generación de estrategias de campaña y perfiles de votante (Buyer Persona) enfocados en el voto elástico.
 7.  **Análisis de Listas:** Recomendación estratégica basada en datos para decidir entre Listas Abiertas o Cerradas.
+8.  **Comparador de Candidatos (Versus):** Herramienta de "War Games" para simular enfrentamientos directos y calcular probabilidades de victoria relativas entre dos oponentes.
 
 ---
 
@@ -62,6 +63,7 @@ Entienda de dónde vienen y hacia dónde van los votos.
 Módulo de investigación profunda sobre individuos.
 *   **Pestaña Perfil Estratégico:** Resumen generado por IA sobre la opinión pública, trayectoria y escándalos del candidato (usando Google Search).
 *   **Pestaña Rastro Electoral (Formularios):** Auditoría de datos pura. Muestra un árbol colapsable de votos: `Elección -> Municipio -> Zona -> Puesto`. Ideal para identificar bastiones territoriales.
+*   **Pestaña Comparar Candidatos (Versus):** Simulación de enfrentamiento directo. Seleccione un rival y la IA generará un análisis comparativo de fortalezas, debilidades y probabilidad de éxito (0-100%).
 *   **Botón "Simular en D'Hondt":** Inyecta al candidato buscado (con su proyección de votos) directamente en el simulador de curules.
 
 ### 7. Coaliciones y Listas
@@ -106,9 +108,9 @@ Módulo de investigación profunda sobre individuos.
 ### Estructura de Archivos Clave
 *   `components/Dashboard.tsx`: Orquestador principal de la interfaz.
 *   `components/DHondtSimulator.tsx`: Lógica matemática de asignación de escaños.
-*   `components/CandidateIntelligence.tsx`: Módulo de perfiles y desglose de formularios.
+*   `components/CandidateIntelligence.tsx`: Módulo de perfiles, desglose de formularios y comparación de candidatos.
 *   `services/geminiService.ts`: Todas las llamadas a la IA (Prompts, extracción de datos, análisis).
-*   `services/electoralProcessor.ts`: Lógica de normalización de datos y cálculos estadísticos.
+*   `services/reportGenerator.ts`: Generación de informes PDF optimizados para impresión (texto negro de alto contraste).
 
 ---
 

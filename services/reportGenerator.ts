@@ -1,3 +1,4 @@
+
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -16,7 +17,7 @@ const addElementAsImage = async (
     const contentWidth = pageWidth - margin * 2;
 
     doc.setFontSize(14);
-    doc.setTextColor(60);
+    doc.setTextColor(0, 0, 0); // BLACK TEXT
     doc.text(title, margin, newY);
     newY += 20;
 
@@ -24,9 +25,19 @@ const addElementAsImage = async (
         scale: 2,
         backgroundColor: '#ffffff', // Use white background for PDF
         useCORS: true,
+        // Force text color to black for the capture to ensure contrast on white background
+        onclone: (clonedDoc) => {
+            const element = clonedDoc.querySelector(`[data-pdf-target="true"]`) as HTMLElement; 
+            if (element) {
+                element.style.color = '#000000';
+            }
+            // Also force specific text classes if needed
+            const texts = clonedDoc.querySelectorAll('.text-white, .text-gray-200, .text-gray-300, .text-gray-400');
+            texts.forEach((t: any) => t.style.color = '#000000');
+        }
     });
     // Use JPEG for compression and smaller file size
-    const imgData = canvas.toDataURL('image/jpeg', 0.8);
+    const imgData = canvas.toDataURL('image/jpeg', 0.9);
     const imgProps = doc.getImageProperties(imgData);
     const imgHeight = (imgProps.height * contentWidth) / imgProps.width;
 
@@ -60,12 +71,12 @@ const addTextContent = (
         newY = margin;
     }
     doc.setFontSize(14);
-    doc.setTextColor(60);
+    doc.setTextColor(0, 0, 0); // BLACK TEXT
     doc.text(title, margin, newY);
     newY += 20;
 
     doc.setFontSize(10);
-    doc.setTextColor(80);
+    doc.setTextColor(0, 0, 0); // BLACK TEXT
     const splitText = doc.splitTextToSize(text, contentWidth);
 
     for (let i = 0; i < splitText.length; i++) {
@@ -88,7 +99,7 @@ export const generateGeneralAnalysisPDF = async (element: HTMLElement, fileName:
   let currentY = margin;
 
   doc.setFontSize(18);
-  doc.setTextColor(40);
+  doc.setTextColor(0, 0, 0); // BLACK TEXT
   doc.text('Informe de Análisis Electoral - DEMOS ARRAKIS', margin, currentY);
   currentY += 30;
 
@@ -111,7 +122,7 @@ export const generateDHondtPDF = async (element: HTMLElement, fileName: string) 
     let currentY = margin;
 
     doc.setFontSize(18);
-    doc.setTextColor(40);
+    doc.setTextColor(0, 0, 0); // BLACK TEXT
     doc.text('Informe de Simulación D\'Hondt', margin, currentY);
     currentY += 30;
 
@@ -134,7 +145,7 @@ export const generateCoalitionAnalysisPDF = async (element: HTMLElement, fileNam
     let currentY = margin;
 
     doc.setFontSize(18);
-    doc.setTextColor(40);
+    doc.setTextColor(0, 0, 0); // BLACK TEXT
     doc.text('Informe de Análisis de Coaliciones', margin, currentY);
     currentY += 30;
 
@@ -150,17 +161,42 @@ export const generateStrategicReportPDF = async (element: HTMLElement, fileName:
     const margin = 20;
     
     doc.setFontSize(18);
-    doc.setTextColor(40);
-    doc.text('Informe Estratégico Cuantitativo - DEMOS ARRAKIS', margin, margin);
+    doc.setTextColor(0, 0, 0); // BLACK TEXT
+    doc.text('Informe Estratégico Cuantitativo - DEMOS ARRAKIS', margin, margin + 10);
 
-    const canvas = await html2canvas(element, {
+    // Clone element to modify styles for PDF capture without affecting UI
+    const clonedElement = element.cloneNode(true) as HTMLElement;
+    clonedElement.style.width = `${element.scrollWidth}px`;
+    clonedElement.style.padding = '20px';
+    // Force text colors to black for the PDF capture
+    const allText = clonedElement.querySelectorAll('*');
+    allText.forEach((el: any) => {
+        const style = window.getComputedStyle(el);
+        if (style.color !== 'rgba(0, 0, 0, 0)') { // Don't change transparent elements
+             el.style.color = '#000000';
+             el.style.textShadow = 'none';
+        }
+        if (el.classList.contains('bg-white/5')) {
+            el.style.backgroundColor = '#f3f4f6'; // Light gray background for cards
+            el.style.borderColor = '#ccc';
+        }
+    });
+    // Remove dark backgrounds
+    clonedElement.style.backgroundColor = '#ffffff';
+    clonedElement.style.backgroundImage = 'none';
+
+    document.body.appendChild(clonedElement); // Append to body to render
+
+    const canvas = await html2canvas(clonedElement, {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
+        windowWidth: clonedElement.scrollWidth,
+        windowHeight: clonedElement.scrollHeight,
     });
     
+    document.body.removeChild(clonedElement); // Clean up
+
     const imgData = canvas.toDataURL('image/jpeg', 0.9);
     const imgProps = doc.getImageProperties(imgData);
     const imgHeight = (imgProps.height * (pageWidth - margin * 2)) / imgProps.width;

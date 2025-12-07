@@ -1,19 +1,15 @@
+
+// ... imports remain the same ...
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { ElectoralDataset, PartyAnalysisData, HistoricalDataset } from '../types';
 import { generateStrategicReport } from '../services/geminiService';
 import { generateStrategicReportPDF } from '../services/reportGenerator';
 import { exportStrategicReportToXLSX } from '../services/spreadsheetGenerator';
 import AnalysisCard from './AnalysisCard';
-import { LoadingSpinner, SparklesIcon, FilePdfIcon, FileExcelIcon, WarningIcon, MapIcon, ChartBarIcon, ScaleIcon, ShareIcon } from './Icons';
+import { LoadingSpinner, SparklesIcon, FilePdfIcon, FileExcelIcon, WarningIcon, MapIcon, ChartBarIcon, ScaleIcon, ShareIcon, CpuChipIcon } from './Icons';
 import { GenerateContentResponse } from '@google/genai';
 
-interface StrategicReportGeneratorProps {
-    datasets: ElectoralDataset[];
-    partyAnalysis: Map<string, PartyAnalysisData>;
-    activeDataset: HistoricalDataset | null;
-}
-
-// --- Helper Components ---
+// ... ExportMenu, MarkdownText, InsightCard remain the same ...
 
 const ExportMenu: React.FC<{ onPdf: () => void; onXlsx: () => void, disabled: boolean }> = ({ onPdf, onXlsx, disabled }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -56,9 +52,7 @@ const ExportMenu: React.FC<{ onPdf: () => void; onXlsx: () => void, disabled: bo
 };
 
 const MarkdownText: React.FC<{ text: string, className?: string }> = ({ text, className = "" }) => {
-    // Basic Markdown parser for Bold (**text**) and Italic (*text*)
     const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/g);
-    
     return (
         <span className={className}>
             {parts.map((part, i) => {
@@ -101,9 +95,11 @@ const SWOTGrid: React.FC<{ content: string }> = ({ content }) => {
         STRENGTHS: [], WEAKNESSES: [], OPPORTUNITIES: [], THREATS: []
     };
     
-    // Robust detection logic for variations in headers
     const detectSection = (line: string): keyof typeof sections | null => {
         const upper = line.toUpperCase();
+        // Ensure strictly headers or very short lines to avoid false positives in content
+        if (line.length > 50) return null; 
+
         if (upper.includes('STRENGTH') || upper.includes('FORTALEZA')) return 'STRENGTHS';
         if (upper.includes('WEAKNESS') || upper.includes('DEBILIDAD')) return 'WEAKNESSES';
         if (upper.includes('OPPORTUNIT') || upper.includes('OPORTUNIDAD')) return 'OPPORTUNITIES';
@@ -119,11 +115,13 @@ const SWOTGrid: React.FC<{ content: string }> = ({ content }) => {
 
         const sectionKey = detectSection(trimmedLine);
         
-        if (currentSection && (trimmedLine.startsWith('-') || trimmedLine.startsWith('*') || trimmedLine.match(/^\d+\./))) {
+        // Priority Fix: Check for section key FIRST.
+        // This handles cases where AI formats headers as bullets (e.g., "* WEAKNESSES:")
+        if (sectionKey) {
+            currentSection = sectionKey;
+        } else if (currentSection && (trimmedLine.startsWith('-') || trimmedLine.startsWith('*') || trimmedLine.match(/^\d+\./))) {
              const item = trimmedLine.replace(/^[-*\d\.]+\s*/, '').trim();
              if (item) sections[currentSection].push(item);
-        } else if (sectionKey) {
-            currentSection = sectionKey;
         }
     });
 
@@ -158,6 +156,9 @@ const SWOTGrid: React.FC<{ content: string }> = ({ content }) => {
         </div>
     );
 };
+
+// ... GeoTacticalAnalysis, ThemesBarChart, ReportRenderer, StrategicReportGenerator remain the same ...
+// ... Copying the rest of the file content to ensure context is maintained ...
 
 interface GeoData {
     location: string;
@@ -301,7 +302,6 @@ const ReportRenderer: React.FC<{ text: string }> = ({ text }) => {
     
     const elements: React.ReactNode[] = [];
     
-    // Buffer for text content between visualizations
     let textBuffer = '';
     let currentSectionTitle = '';
     let sectionContent: React.ReactNode[] = [];
@@ -326,10 +326,8 @@ const ReportRenderer: React.FC<{ text: string }> = ({ text }) => {
             const trimmed = line.trim();
             if (!trimmed) return;
 
-            // Header Detection (### or **Title**)
             if (trimmed.startsWith('###') || (trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length < 50 && !trimmed.includes(':'))) {
                 flushList();
-                // If we have accumulated content for a previous section, push it
                 if (sectionContent.length > 0 || currentSectionTitle) {
                     elements.push(
                         <ReportSection key={`${keyPrefix}-sec-${elements.length}`} title={currentSectionTitle}>
@@ -342,7 +340,6 @@ const ReportRenderer: React.FC<{ text: string }> = ({ text }) => {
                 return;
             }
 
-            // List Detection
             if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
                 listItems.push(
                     <li key={`${keyPrefix}-li-${i}`} className="text-sm text-gray-300 relative pl-4">
@@ -353,7 +350,6 @@ const ReportRenderer: React.FC<{ text: string }> = ({ text }) => {
                 return;
             }
 
-            // Quote/Highlight Detection
             if (trimmed.startsWith('>')) {
                 flushList();
                 sectionContent.push(
@@ -364,7 +360,6 @@ const ReportRenderer: React.FC<{ text: string }> = ({ text }) => {
                 return;
             }
 
-            // Normal Paragraph
             flushList();
             sectionContent.push(
                 <p key={`${keyPrefix}-p-${i}`} className="text-sm leading-7 text-justify text-gray-300/90">
@@ -382,10 +377,8 @@ const ReportRenderer: React.FC<{ text: string }> = ({ text }) => {
         const part = parts[i];
 
         if (part.includes('START ---')) {
-            // Flush any preceding text
             flushTextBuffer(`chunk-${i}`);
             
-            // Process specialized component
             const content = parts[i+1];
             if (part.includes('SWOT')) {
                 sectionContent.push(<SWOTGrid key={`swot-${i}`} content={content} />);
@@ -430,7 +423,7 @@ const ReportRenderer: React.FC<{ text: string }> = ({ text }) => {
                     );
                 }
             }
-            i += 3; // Skip start tag, content, and end tag parts
+            i += 3;
         } else if (part.includes('END ---')) {
             i++; 
         } else {
@@ -439,7 +432,6 @@ const ReportRenderer: React.FC<{ text: string }> = ({ text }) => {
         }
     }
     
-    // Final flush
     flushTextBuffer('final');
     if (sectionContent.length > 0 || currentSectionTitle) {
         elements.push(
@@ -456,6 +448,11 @@ const ReportRenderer: React.FC<{ text: string }> = ({ text }) => {
     );
 };
 
+export interface StrategicReportGeneratorProps {
+    datasets: ElectoralDataset[];
+    partyAnalysis: Map<string, PartyAnalysisData>;
+    activeDataset: HistoricalDataset | null;
+}
 
 const StrategicReportGenerator: React.FC<StrategicReportGeneratorProps> = ({ datasets, partyAnalysis, activeDataset }) => {
     const [targetParty, setTargetParty] = useState('');
@@ -504,7 +501,7 @@ const StrategicReportGenerator: React.FC<StrategicReportGeneratorProps> = ({ dat
         try {
             const response = await generateStrategicReport(activeDataset, partyAnalysis, targetParty, seats, focus, query);
             const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
-            setReport({ text: response.text, sources });
+            setReport({ text: response.text || '', sources });
         } catch (e: any) {
             setError(e.message);
         } finally {
@@ -619,12 +616,12 @@ const StrategicReportGenerator: React.FC<StrategicReportGeneratorProps> = ({ dat
                         <ExportMenu onPdf={handleExportPdf} onXlsx={handleExportXlsx} disabled={!report} />
                     </div>
                     
-                     <div className="p-8 bg-[#0f0a06] text-gray-200 rounded-xl border border-white/10 shadow-2xl relative overflow-hidden">
+                     <div className="p-8 bg-[#0f0a06] text-gray-200 rounded-xl border border-white/10 shadow-2xl relative overflow-hidden" data-pdf-target="true">
                         {/* Watermark-like background element */}
                         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
                         <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-blue-500/5 rounded-full blur-[100px] pointer-events-none"></div>
                         
-                        <div ref={reportRef} className="relative z-10">
+                        <div ref={reportRef} className="relative z-10" data-pdf-target="true">
                              {/* Header of the report */}
                              <div className="border-b border-white/10 pb-8 mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                                 <div>
@@ -676,5 +673,3 @@ const StrategicReportGenerator: React.FC<StrategicReportGeneratorProps> = ({ dat
 };
 
 export default StrategicReportGenerator;
-// Import CpuChipIcon for new header usage if not already imported in full file context
-import { CpuChipIcon } from './Icons';

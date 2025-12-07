@@ -200,7 +200,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         }
         
         const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
-        setAiAnalysis(prev => ({ ...prev, [key]: { text: response.text, sources } }));
+        setAiAnalysis(prev => ({ ...prev, [key]: { text: response.text || '', sources } }));
 
     } catch (error) {
         console.error(error);

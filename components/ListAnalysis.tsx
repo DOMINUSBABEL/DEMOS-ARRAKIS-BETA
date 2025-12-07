@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { ElectoralDataset, PartyAnalysisData, ListAnalysisAIResponse, PartyData } from '../types';
 import { getOpenVsClosedListAnalysis } from '../services/geminiService';

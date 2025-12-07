@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { InformationCircleIcon, WarningIcon, LoadingSpinner, MapIcon, SparklesIcon } from './Icons';
 import AnalysisCard from './AnalysisCard';
@@ -131,7 +132,7 @@ const HeatmapAnalysis: React.FC = () => {
             {apiResponse && (
                 <AnalysisCard title="Resultados del Análisis" explanation="Respuesta generada por la IA, enriquecida con datos de Google Maps y Google Search.">
                     <div className="p-4 space-y-4">
-                        <ResponseRenderer text={apiResponse.text} />
+                        <ResponseRenderer text={apiResponse.text || ''} />
                         
                         {groundingChunks && groundingChunks.length > 0 && (
                             <div className="mt-6 pt-4 border-t border-light-border dark:border-dark-border">

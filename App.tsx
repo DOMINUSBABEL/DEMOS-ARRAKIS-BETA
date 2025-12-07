@@ -325,7 +325,7 @@ function App() {
     setPartyAnalysis((prev) => {
         const newAnalysis = new Map<string, PartyAnalysisData>();
         prev.forEach((partyData, partyName) => {
-            const newHistory = partyData.history.map(h => {
+            const newHistory = partyData.history.map((h: PartyHistoryPoint) => {
                 if (h.datasetId === datasetId) {
                     return { ...h, datasetName: newName };
                 }

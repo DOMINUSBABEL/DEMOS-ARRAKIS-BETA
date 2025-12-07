@@ -1,8 +1,8 @@
 
 import React, { useState, useMemo } from 'react';
 import AnalysisCard from './AnalysisCard';
-import { FingerPrintIcon, LoadingSpinner, SparklesIcon, WarningIcon, ChartBarIcon, MapIcon, ShareIcon, BeakerIcon, ClipboardDocumentIcon, TableCellsIcon, ChevronDownIcon } from './Icons';
-import { generateCandidateProfile } from '../services/geminiService';
+import { FingerPrintIcon, LoadingSpinner, SparklesIcon, WarningIcon, ChartBarIcon, MapIcon, ShareIcon, BeakerIcon, ClipboardDocumentIcon, TableCellsIcon, ChevronDownIcon, ScaleIcon } from './Icons';
+import { generateCandidateProfile, generateCandidateComparison, CandidateComparisonResult } from '../services/geminiService';
 import { CandidateProfileResult, ElectoralDataset, PartyData, ProcessedElectionData } from '../types';
 import { BarChart } from './Charts';
 
@@ -58,7 +58,7 @@ const CollapsibleNode: React.FC<{ node: LocationNode; level: number; totalVotes:
             {isOpen && hasChildren && (
                 <div className="mt-2 pl-4 border-l border-white/10 ml-4">
                     {node.children!.sort((a,b) => b.votes - a.votes).map((child, idx) => (
-                        <CollapsibleNode key={idx} node={child} level={level + 1} totalVotes={node.votes} /> // Recalculate percentage relative to parent? Or grand total? Let's use parent for relative contribution within hierarchy.
+                        <CollapsibleNode key={idx} node={child} level={level + 1} totalVotes={node.votes} /> 
                     ))}
                 </div>
             )}
@@ -68,14 +68,15 @@ const CollapsibleNode: React.FC<{ node: LocationNode; level: number; totalVotes:
 
 const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets, onProjectAndSimulate }) => {
     const [candidateName, setCandidateName] = useState('');
+    const [candidateBName, setCandidateBName] = useState(''); // New for comparison
     const [context, setContext] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [profile, setProfile] = useState<CandidateProfileResult | null>(null);
+    const [comparison, setComparison] = useState<CandidateComparisonResult | null>(null); // New state
     const [error, setError] = useState<string | null>(null);
     const [localHistory, setLocalHistory] = useState<{ election: string; votes: number; party: string }[]>([]);
     
-    // New State for Tabs
-    const [activeTab, setActiveTab] = useState<'profile' | 'forms'>('profile');
+    const [activeTab, setActiveTab] = useState<'profile' | 'forms' | 'comparison'>('profile');
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -84,15 +85,15 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
         setIsLoading(true);
         setError(null);
         setProfile(null);
+        setComparison(null);
         setLocalHistory([]);
-        setActiveTab('profile'); // Reset to profile view on new search
+        setActiveTab('profile'); 
 
         try {
             // 1. Mining Internal Data
             const history: { election: string; votes: number; party: string }[] = [];
             
             datasets.forEach(ds => {
-                // Fuzzy matching for candidate name
                 const matches = ds.processedData.filter(row => 
                     row.Candidato.toLowerCase().includes(candidateName.toLowerCase()) && 
                     !row.Candidato.toLowerCase().includes('solo por la lista')
@@ -115,6 +116,21 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
 
         } catch (err: any) {
             setError(err.message || "Error al analizar el candidato.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleCompare = async () => {
+        if (!candidateName || !candidateBName) return;
+        setIsLoading(true);
+        setError(null);
+        setComparison(null);
+        try {
+            const result = await generateCandidateComparison(candidateName, candidateBName, context);
+            setComparison(result);
+        } catch (err: any) {
+            setError(err.message || "Error al generar la comparación.");
         } finally {
             setIsLoading(false);
         }
@@ -148,7 +164,6 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
         const breakdown: { election: string; totalVotes: number; tree: LocationNode[] }[] = [];
 
         datasets.forEach(ds => {
-            // Filter rows for this candidate/party
             const relevantRows = ds.processedData.filter(row => 
                 row.Candidato.toLowerCase().includes(candidateName.toLowerCase()) || 
                 (row.UnidadPolitica.toLowerCase() === candidateName.toLowerCase() && row.Candidato === 'SOLO POR LA LISTA')
@@ -158,11 +173,10 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
 
             const totalVotes = relevantRows.reduce((sum, r) => sum + r.Votos, 0);
             
-            // Build Hierarchy: Municipio -> Zona -> Puesto
             const munMap = new Map<string, LocationNode>();
 
             relevantRows.forEach(row => {
-                const munName = row.Municipio || row.Departamento || 'Desconocido'; // Fallback if Municipio missing
+                const munName = row.Municipio || row.Departamento || 'Desconocido'; 
                 const zonaName = row.Zona || 'Zona Única';
                 const puestoName = row.Puesto || 'Puesto Único';
 
@@ -172,7 +186,6 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                 const munNode = munMap.get(munName)!;
                 munNode.votes += row.Votos;
 
-                // Find or create Zona node
                 let zonaNode = munNode.children!.find(c => c.name === zonaName);
                 if (!zonaNode) {
                     zonaNode = { name: zonaName, type: 'zona', votes: 0, children: [] };
@@ -180,7 +193,6 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                 }
                 zonaNode.votes += row.Votos;
 
-                // Find or create Puesto node
                 let puestoNode = zonaNode.children!.find(c => c.name === puestoName);
                 if (!puestoNode) {
                     puestoNode = { name: puestoName, type: 'puesto', votes: 0 };
@@ -208,36 +220,38 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                 icon={<FingerPrintIcon />}
                 fullscreenable={false}
             >
-                <form onSubmit={handleSearch} className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                    <div className="md:col-span-1">
-                        <label className="block text-sm font-medium text-dark-text-secondary mb-1">Nombre del Candidato</label>
-                        <input
-                            type="text"
-                            value={candidateName}
-                            onChange={(e) => setCandidateName(e.target.value)}
-                            placeholder="Ej: Fulanito de Tal"
-                            className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 focus:ring-brand-primary focus:border-brand-primary"
-                        />
-                    </div>
-                    <div className="md:col-span-1">
-                        <label className="block text-sm font-medium text-dark-text-secondary mb-1">Contexto (Opcional)</label>
-                        <input
-                            type="text"
-                            value={context}
-                            onChange={(e) => setContext(e.target.value)}
-                            placeholder="Ej: Para Cámara Antioquia 2026"
-                            className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 focus:ring-brand-primary focus:border-brand-primary"
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        disabled={isLoading || !candidateName}
-                        className="w-full bg-brand-primary hover:bg-brand-secondary text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                        {isLoading ? <LoadingSpinner className="w-5 h-5" /> : <SparklesIcon className="w-5 h-5" />}
-                        {isLoading ? 'Analizando...' : 'Generar Perfil'}
-                    </button>
-                </form>
+                <div className="p-4 space-y-4">
+                    <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div className="md:col-span-1">
+                            <label className="block text-sm font-medium text-dark-text-secondary mb-1">Nombre del Candidato Principal</label>
+                            <input
+                                type="text"
+                                value={candidateName}
+                                onChange={(e) => setCandidateName(e.target.value)}
+                                placeholder="Ej: Fulanito de Tal"
+                                className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 focus:ring-brand-primary focus:border-brand-primary"
+                            />
+                        </div>
+                        <div className="md:col-span-1">
+                            <label className="block text-sm font-medium text-dark-text-secondary mb-1">Contexto (Opcional)</label>
+                            <input
+                                type="text"
+                                value={context}
+                                onChange={(e) => setContext(e.target.value)}
+                                placeholder="Ej: Para Cámara Antioquia 2026"
+                                className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 focus:ring-brand-primary focus:border-brand-primary"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={isLoading || !candidateName}
+                            className="w-full bg-brand-primary hover:bg-brand-secondary text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            {isLoading ? <LoadingSpinner className="w-5 h-5" /> : <SparklesIcon className="w-5 h-5" />}
+                            {isLoading ? 'Analizando...' : 'Generar Perfil'}
+                        </button>
+                    </form>
+                </div>
                 {error && (
                     <div className="m-4 flex items-center p-4 bg-red-900/50 border border-red-500 text-red-300 rounded-lg">
                         <WarningIcon className="w-6 h-6 mr-3 flex-shrink-0" />
@@ -246,29 +260,32 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                 )}
             </AnalysisCard>
 
-            {profile && (
+            {(profile || candidateName) && (
                 <div className="space-y-6">
                     {/* Header */}
-                    <div className="glass-panel p-6 rounded-xl border border-brand-primary/30 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-primary/20 border border-brand-primary/50 rounded-full text-brand-primary text-xs font-bold uppercase mb-2">
-                                <FingerPrintIcon className="w-4 h-4"/>
-                                Perfil Verificado
+                    {profile && (
+                        <div className="glass-panel p-6 rounded-xl border border-brand-primary/30 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-primary/20 border border-brand-primary/50 rounded-full text-brand-primary text-xs font-bold uppercase mb-2">
+                                    <FingerPrintIcon className="w-4 h-4"/>
+                                    Perfil Verificado
+                                </div>
+                                <h2 className="text-3xl font-bold text-white font-mono uppercase tracking-tight">{candidateName}</h2>
+                                <p className="text-dark-text-secondary text-sm max-w-2xl mt-2">{profile.overview}</p>
                             </div>
-                            <h2 className="text-3xl font-bold text-white font-mono uppercase tracking-tight">{candidateName}</h2>
-                            <p className="text-dark-text-secondary text-sm max-w-2xl mt-2">{profile.overview}</p>
+                            <div className="text-right bg-black/40 p-4 rounded-lg border border-white/5">
+                                <p className="text-xs text-dark-text-secondary uppercase tracking-widest mb-1">Proyección Base</p>
+                                <p className="text-3xl font-bold text-brand-glow font-mono">{(profile.simulationParameters?.suggestedVoteBase || 0).toLocaleString('es-CO')}</p>
+                                <p className="text-[10px] text-gray-500">Votos Estimados</p>
+                            </div>
                         </div>
-                        <div className="text-right bg-black/40 p-4 rounded-lg border border-white/5">
-                            <p className="text-xs text-dark-text-secondary uppercase tracking-widest mb-1">Proyección Base</p>
-                            <p className="text-3xl font-bold text-brand-glow font-mono">{(profile.simulationParameters?.suggestedVoteBase || 0).toLocaleString('es-CO')}</p>
-                            <p className="text-[10px] text-gray-500">Votos Estimados</p>
-                        </div>
-                    </div>
+                    )}
 
                     {/* Tabs Navigation */}
                     <div className="flex space-x-1 bg-dark-bg/50 p-1 rounded-lg border border-white/5 w-fit">
                         <button
                             onClick={() => setActiveTab('profile')}
+                            disabled={!profile}
                             className={`px-4 py-2 text-sm font-bold rounded-md flex items-center gap-2 transition-all ${activeTab === 'profile' ? 'bg-brand-primary text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                         >
                             <FingerPrintIcon className="w-4 h-4" />
@@ -276,15 +293,23 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                         </button>
                         <button
                             onClick={() => setActiveTab('forms')}
+                            disabled={!profile}
                             className={`px-4 py-2 text-sm font-bold rounded-md flex items-center gap-2 transition-all ${activeTab === 'forms' ? 'bg-brand-primary text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                         >
                             <ClipboardDocumentIcon className="w-4 h-4" />
                             Rastro Electoral (Formularios)
                         </button>
+                        <button
+                            onClick={() => setActiveTab('comparison')}
+                            className={`px-4 py-2 text-sm font-bold rounded-md flex items-center gap-2 transition-all ${activeTab === 'comparison' ? 'bg-brand-primary text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        >
+                            <ScaleIcon className="w-4 h-4" />
+                            Comparar Candidatos
+                        </button>
                     </div>
 
                     {/* CONTENT - STRATEGIC PROFILE */}
-                    {activeTab === 'profile' && (
+                    {activeTab === 'profile' && profile && (
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
                             {/* Left Col: Analysis */}
                             <div className="lg:col-span-2 space-y-6">
@@ -360,22 +385,6 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                                         </p>
                                     </div>
                                 </AnalysisCard>
-
-                                {profile.sources && profile.sources.length > 0 && (
-                                    <div className="p-4 bg-dark-bg/50 rounded-lg border border-dark-border">
-                                        <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">Fuentes de Inteligencia</h4>
-                                        <ul className="space-y-2">
-                                            {profile.sources.map((source, index) => source.web && (
-                                                <li key={index} className="text-xs truncate">
-                                                    <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-cyan-500 hover:underline flex items-center gap-2">
-                                                        <span className="w-1 h-1 bg-cyan-500 rounded-full"></span>
-                                                        {source.web.title}
-                                                    </a>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     )}
@@ -408,17 +417,6 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                                             
                                             <div className="space-y-1">
                                                 {datasetResult.tree.map((munNode, i) => (
-                                                    <CollapsibleNode key={i} node={munNode} level={0} totalVotes={munNode.votes} /> // Using node votes as total for relative % of its children inside the component, but let's pass parent total for relative to global? 
-                                                    // Correction: The component logic uses 'totalVotes' to calculate percentage bar. 
-                                                    // For the Municipality row (level 0), we want % relative to Election Total.
-                                                ))}
-                                                {datasetResult.tree.map((munNode, i) => (
-                                                     // We need to re-render using the correct context for the top level.
-                                                     // React needs a clean return. Let's fix the logic above.
-                                                     null
-                                                ))}
-                                                {/* Actual Render Loop with correct context */}
-                                                {datasetResult.tree.map((munNode, i) => (
                                                     <CollapsibleNode key={i} node={munNode} level={0} totalVotes={datasetResult.totalVotes} />
                                                 ))}
                                             </div>
@@ -435,6 +433,105 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                                     </p>
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* CONTENT - COMPARISON */}
+                    {activeTab === 'comparison' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <AnalysisCard title="Comparador de Candidatos (Versus)" explanation="Enfrenta a dos candidatos para analizar sus probabilidades en un escenario competitivo.">
+                                <div className="p-4">
+                                    <div className="flex flex-col md:flex-row gap-4 items-end mb-6">
+                                        <div className="flex-1 w-full">
+                                            <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">Candidato A (Principal)</label>
+                                            <div className="w-full bg-black/40 border border-brand-primary/50 text-white rounded-lg p-3 font-mono">
+                                                {candidateName}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-center pb-2">
+                                            <span className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">VS</span>
+                                        </div>
+                                        <div className="flex-1 w-full">
+                                            <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">Candidato B (Rival)</label>
+                                            <input 
+                                                type="text" 
+                                                value={candidateBName}
+                                                onChange={(e) => setCandidateBName(e.target.value)}
+                                                placeholder="Nombre del rival..."
+                                                className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-3 focus:ring-red-500 focus:border-red-500"
+                                            />
+                                        </div>
+                                        <button 
+                                            onClick={handleCompare}
+                                            disabled={isLoading || !candidateBName}
+                                            className="bg-brand-primary hover:bg-brand-secondary text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+                                        >
+                                            {isLoading ? <LoadingSpinner className="w-5 h-5"/> : <ScaleIcon className="w-5 h-5"/>}
+                                            Comparar
+                                        </button>
+                                    </div>
+
+                                    {comparison && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 relative">
+                                            {/* Vertical divider */}
+                                            <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-white/10 -ml-px"></div>
+
+                                            {/* Candidate A Column */}
+                                            <div className="space-y-4">
+                                                <div className="text-center pb-4 border-b border-white/5">
+                                                    <h3 className="text-xl font-bold text-brand-primary">{candidateName}</h3>
+                                                    <div className="mt-2 text-4xl font-mono font-bold text-white">{comparison.candidateA.probabilityScore}%</div>
+                                                    <p className="text-xs text-gray-500 uppercase tracking-widest">Probabilidad de Éxito</p>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-xs font-bold text-green-400 uppercase mb-2">Fortalezas</h4>
+                                                    <ul className="list-disc pl-4 space-y-1 text-sm text-gray-300">
+                                                        {comparison.candidateA.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                                                    </ul>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-xs font-bold text-red-400 uppercase mb-2">Debilidades</h4>
+                                                    <ul className="list-disc pl-4 space-y-1 text-sm text-gray-300">
+                                                        {comparison.candidateA.weaknesses.map((s, i) => <li key={i}>{s}</li>)}
+                                                    </ul>
+                                                </div>
+                                            </div>
+
+                                            {/* Candidate B Column */}
+                                            <div className="space-y-4">
+                                                <div className="text-center pb-4 border-b border-white/5">
+                                                    <h3 className="text-xl font-bold text-red-500">{candidateBName}</h3>
+                                                    <div className="mt-2 text-4xl font-mono font-bold text-white">{comparison.candidateB.probabilityScore}%</div>
+                                                    <p className="text-xs text-gray-500 uppercase tracking-widest">Probabilidad de Éxito</p>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-xs font-bold text-green-400 uppercase mb-2">Fortalezas</h4>
+                                                    <ul className="list-disc pl-4 space-y-1 text-sm text-gray-300">
+                                                        {comparison.candidateB.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                                                    </ul>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-xs font-bold text-red-400 uppercase mb-2">Debilidades</h4>
+                                                    <ul className="list-disc pl-4 space-y-1 text-sm text-gray-300">
+                                                        {comparison.candidateB.weaknesses.map((s, i) => <li key={i}>{s}</li>)}
+                                                    </ul>
+                                                </div>
+                                            </div>
+
+                                            {/* Winner Summary */}
+                                            <div className="md:col-span-2 mt-6 p-6 bg-gradient-to-r from-brand-primary/10 to-purple-600/10 rounded-xl border border-white/10 text-center">
+                                                <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-2">Veredicto de la IA</h4>
+                                                <p className="text-2xl font-bold text-brand-glow mb-2">Ganador Probable: {comparison.winner}</p>
+                                                <p className="text-sm text-gray-300 leading-relaxed max-w-2xl mx-auto">{comparison.winnerReason}</p>
+                                                <div className="mt-4 pt-4 border-t border-white/5">
+                                                    <span className="text-xs font-bold text-gray-500 uppercase">Factor Diferencial Clave:</span>
+                                                    <p className="text-white font-medium mt-1">{comparison.keyDifferentiator}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </AnalysisCard>
                         </div>
                     )}
                 </div>
