@@ -1,3 +1,4 @@
+
 export interface RawElectionData {
   Eleccion: string;
   Año: string;
@@ -194,4 +195,27 @@ export interface ListAnalysisAIResponse {
     consClosed: string;
     finalVerdict: string;
   };
+}
+
+export interface MarketingStrategyResult {
+    candidateProfile: string;
+    elasticVoterPersona: {
+        demographics: string;
+        interests: string[];
+        painPoints: string[];
+        mediaHabits: string[];
+    };
+    campaignPillars: {
+        rational: string[];
+        emotional: string[];
+        slogans: string[];
+    };
+    tactics: {
+        digital: string[];
+        territory: string[];
+    };
+    kpis: {
+        metric: string;
+        target: string;
+    }[];
 }

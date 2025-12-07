@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
@@ -11,7 +12,7 @@ import { LoadingSpinner, WarningIcon, CheckCircleIcon } from './components/Icons
 import Papa from 'papaparse';
 import { defaultDatasets } from './services/defaultDatasets';
 
-type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap';
+type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap' | 'marketing';
 type DataSource = 'local' | 'remote';
 
 function App() {

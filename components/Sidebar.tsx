@@ -1,7 +1,8 @@
-import React from 'react';
-import { ChartBarIcon, DatabaseIcon, ScaleIcon, BeakerIcon, CpuChipIcon, ShareIcon, BookOpenIcon, ListBulletIcon, MapIcon, ClockIcon, UserGroupIcon, CloseIcon } from './Icons';
 
-type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap';
+import React from 'react';
+import { ChartBarIcon, DatabaseIcon, ScaleIcon, BeakerIcon, CpuChipIcon, ShareIcon, BookOpenIcon, ListBulletIcon, MapIcon, ClockIcon, UserGroupIcon, CloseIcon, MegaphoneIcon } from './Icons';
+
+type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap' | 'marketing';
 
 interface SidebarProps {
   activeTab: Tab;
@@ -135,7 +136,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteDa
         <NavItem index={7} tabId="projections" activeTab={activeTab} setActiveTab={setActiveTab} icon={<BeakerIcon />}>
           Proyecciones
         </NavItem>
-        <NavItem index={8} tabId="strategist" activeTab={activeTab} setActiveTab={setActiveTab} icon={<CpuChipIcon />}>
+        <NavItem index={8} tabId="marketing" activeTab={activeTab} setActiveTab={setActiveTab} icon={<MegaphoneIcon />}>
+          Marketing de Guerra
+        </NavItem>
+        <NavItem index={9} tabId="strategist" activeTab={activeTab} setActiveTab={setActiveTab} icon={<CpuChipIcon />}>
           Estratega IA
         </NavItem>
         
@@ -156,7 +160,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteDa
 
         <div className="my-6 mx-6 border-t border-white/5"></div>
 
-        <NavItem index={9} tabId="methodology" activeTab={activeTab} setActiveTab={setActiveTab} icon={<BookOpenIcon />}>
+        <NavItem index={10} tabId="methodology" activeTab={activeTab} setActiveTab={setActiveTab} icon={<BookOpenIcon />}>
             Metodología
         </NavItem>
       </nav>

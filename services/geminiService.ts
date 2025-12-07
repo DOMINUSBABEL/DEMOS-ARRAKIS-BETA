@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
-import { CandidateRanking, ProbabilityResult, SimulationResults, HistoricalDataset, PartyAnalysisData, PartyData, ListAnalysisAIResponse, ProcessedElectionData } from '../types';
+import { CandidateRanking, ProbabilityResult, SimulationResults, HistoricalDataset, PartyAnalysisData, PartyData, ListAnalysisAIResponse, ProcessedElectionData, MarketingStrategyResult } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const model = 'gemini-3-pro-preview';
@@ -717,4 +717,105 @@ export const getAIAnalysis = async (analysisType: AnalysisType): Promise<Generat
     console.error("Error llamando a la API de Gemini:", error);
     throw new Error(`TÍTULO: Error de Conexión\n\nOcurrió un error al generar el análisis de IA. Por favor, revisa la consola para más detalles.`);
   }
+};
+
+export const generateMarketingStrategy = async (
+    targetName: string,
+    targetType: 'candidate' | 'party',
+    context: string
+): Promise<MarketingStrategyResult> => {
+    const prompt = `
+    ROL: Estratega Senior de Marketing Político experto en captura de voto elástico y de opinión.
+    OBJETIVO: Crear un plan de marketing de "guerra" para optimizar el voto blando/elástico e incrementar las probabilidades de éxito electoral (más curules o ganar la elección).
+    
+    CLIENTE: ${targetType === 'candidate' ? 'Candidato' : 'Partido'} "${targetName}".
+    CONTEXTO: ${context}
+
+    INSTRUCCIÓN: Genera una estrategia detallada y accionable. No des consejos genéricos. Enfócate en CÓMO persuadir al indeciso.
+    
+    FORMATO DE RESPUESTA: JSON Estricto.
+
+    STRUCTURE DEL JSON:
+    {
+        "candidateProfile": "Resumen ejecutivo de la marca política actual (Arquetipo, Tono, Posicionamiento percibido).",
+        "elasticVoterPersona": {
+            "demographics": "Edad, género, ubicación clave.",
+            "interests": ["Interés 1", "Interés 2", ...],
+            "painPoints": ["Dolor 1 (Miedo/Frustración)", "Dolor 2", ...],
+            "mediaHabits": ["Canal 1", "Canal 2", ...]
+        },
+        "campaignPillars": {
+            "rational": ["Propuesta lógica 1", "Propuesta lógica 2"],
+            "emotional": ["Narrativa emocional 1", "Narrativa emocional 2"],
+            "slogans": ["Slogan principal pegajoso", "Slogan secundario"]
+        },
+        "tactics": {
+            "digital": ["Táctica redes 1 (ej: TikTok challenge)", "Táctica ads 2", ...],
+            "territory": ["Táctica tierra 1 (ej: Activación BTL)", "Táctica tierra 2", ...]
+        },
+        "kpis": [
+            { "metric": "Nombre Métrica", "target": "Objetivo numérico/cualitativo" },
+            { "metric": "Nombre Métrica", "target": "Objetivo numérico/cualitativo" }
+        ]
+    }
+    `;
+
+    const schema = {
+        type: Type.OBJECT,
+        properties: {
+            candidateProfile: { type: Type.STRING },
+            elasticVoterPersona: {
+                type: Type.OBJECT,
+                properties: {
+                    demographics: { type: Type.STRING },
+                    interests: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    painPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    mediaHabits: { type: Type.ARRAY, items: { type: Type.STRING } }
+                }
+            },
+            campaignPillars: {
+                type: Type.OBJECT,
+                properties: {
+                    rational: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    emotional: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    slogans: { type: Type.ARRAY, items: { type: Type.STRING } }
+                }
+            },
+            tactics: {
+                type: Type.OBJECT,
+                properties: {
+                    digital: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    territory: { type: Type.ARRAY, items: { type: Type.STRING } }
+                }
+            },
+            kpis: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        metric: { type: Type.STRING },
+                        target: { type: Type.STRING }
+                    }
+                }
+            }
+        },
+        required: ['candidateProfile', 'elasticVoterPersona', 'campaignPillars', 'tactics', 'kpis']
+    };
+
+    try {
+        const response = await ai.models.generateContent({
+            model,
+            contents: [{ parts: [{ text: prompt }] }],
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: schema
+            }
+        });
+
+        const jsonText = response.text.trim();
+        return JSON.parse(jsonText) as MarketingStrategyResult;
+    } catch (error) {
+        console.error("Error generating marketing strategy:", error);
+        throw new Error("No se pudo generar la estrategia de marketing. Intenta de nuevo.");
+    }
 };
