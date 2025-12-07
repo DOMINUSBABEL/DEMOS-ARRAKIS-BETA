@@ -1,12 +1,10 @@
-
-
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { ElectoralDataset, PartyAnalysisData, HistoricalDataset } from '../types';
 import { generateStrategicReport } from '../services/geminiService';
 import { generateStrategicReportPDF } from '../services/reportGenerator';
 import { exportStrategicReportToXLSX } from '../services/spreadsheetGenerator';
 import AnalysisCard from './AnalysisCard';
-import { LoadingSpinner, SparklesIcon, FilePdfIcon, FileExcelIcon, WarningIcon, MapIcon } from './Icons';
+import { LoadingSpinner, SparklesIcon, FilePdfIcon, FileExcelIcon, WarningIcon, MapIcon, ChartBarIcon, ScaleIcon, ShareIcon } from './Icons';
 import { GenerateContentResponse } from '@google/genai';
 
 interface StrategicReportGeneratorProps {
@@ -14,6 +12,8 @@ interface StrategicReportGeneratorProps {
     partyAnalysis: Map<string, PartyAnalysisData>;
     activeDataset: HistoricalDataset | null;
 }
+
+// --- Helper Components ---
 
 const ExportMenu: React.FC<{ onPdf: () => void; onXlsx: () => void, disabled: boolean }> = ({ onPdf, onXlsx, disabled }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -34,8 +34,9 @@ const ExportMenu: React.FC<{ onPdf: () => void; onXlsx: () => void, disabled: bo
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 disabled={disabled}
-                className="bg-brand-primary/80 hover:bg-brand-secondary text-white font-bold py-2 px-4 rounded-lg transition-all flex items-center gap-2 disabled:opacity-50 backdrop-blur-sm border border-white/10 shadow-[0_0_15px_rgba(217,119,6,0.3)]"
+                className="bg-brand-primary/80 hover:bg-brand-secondary text-white font-bold py-2 px-4 rounded-lg transition-all flex items-center gap-2 disabled:opacity-50 backdrop-blur-sm border border-white/10 shadow-[0_0_15px_rgba(217,119,6,0.3)] text-sm"
             >
+                <ShareIcon className="w-4 h-4"/>
                 Exportar Informe
             </button>
             {isOpen && (
@@ -54,40 +55,106 @@ const ExportMenu: React.FC<{ onPdf: () => void; onXlsx: () => void, disabled: bo
     );
 };
 
+const MarkdownText: React.FC<{ text: string, className?: string }> = ({ text, className = "" }) => {
+    // Basic Markdown parser for Bold (**text**) and Italic (*text*)
+    const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+    
+    return (
+        <span className={className}>
+            {parts.map((part, i) => {
+                if (part.startsWith('**') && part.endsWith('**')) {
+                    return <strong key={i} className="text-white font-bold">{part.slice(2, -2)}</strong>;
+                }
+                if (part.startsWith('*') && part.endsWith('*')) {
+                    return <em key={i} className="text-brand-glow font-medium not-italic">{part.slice(1, -1)}</em>;
+                }
+                return part;
+            })}
+        </span>
+    );
+};
+
+const InsightCard: React.FC<{ title: string, children: React.ReactNode, type?: 'info' | 'alert' | 'success' }> = ({ title, children, type = 'info' }) => {
+    const styles = {
+        info: 'border-brand-primary/30 bg-brand-primary/5',
+        alert: 'border-red-500/30 bg-red-500/5',
+        success: 'border-green-500/30 bg-green-500/5'
+    };
+    
+    return (
+        <div className={`p-4 rounded-xl border ${styles[type]} backdrop-blur-sm my-4 transition-all hover:scale-[1.01]`}>
+            <h5 className="text-xs font-bold uppercase tracking-widest mb-2 opacity-80 flex items-center gap-2">
+                <SparklesIcon className="w-3 h-3"/>
+                {title}
+            </h5>
+            <div className="text-sm text-gray-300 leading-relaxed">
+                {children}
+            </div>
+        </div>
+    );
+};
+
+// --- Visualization Components ---
+
 const SWOTGrid: React.FC<{ content: string }> = ({ content }) => {
     const sections: { [key: string]: string[] } = {
         STRENGTHS: [], WEAKNESSES: [], OPPORTUNITIES: [], THREATS: []
     };
+    
+    // Robust detection logic for variations in headers
+    const detectSection = (line: string): keyof typeof sections | null => {
+        const upper = line.toUpperCase();
+        if (upper.includes('STRENGTH') || upper.includes('FORTALEZA')) return 'STRENGTHS';
+        if (upper.includes('WEAKNESS') || upper.includes('DEBILIDAD')) return 'WEAKNESSES';
+        if (upper.includes('OPPORTUNIT') || upper.includes('OPORTUNIDAD')) return 'OPPORTUNITIES';
+        if (upper.includes('THREAT') || upper.includes('AMENAZA')) return 'THREATS';
+        return null;
+    };
+
     let currentSection: keyof typeof sections | null = null;
 
     content.split('\n').forEach(line => {
         const trimmedLine = line.trim();
-        if (trimmedLine.endsWith(':')) {
-            const sectionName = trimmedLine.slice(0, -1).toUpperCase();
-            if (sectionName in sections) {
-                currentSection = sectionName as keyof typeof sections;
-            }
-        } else if (currentSection && (trimmedLine.startsWith('-') || trimmedLine.startsWith('*'))) {
-            sections[currentSection].push(trimmedLine.slice(1).trim());
+        if (!trimmedLine) return;
+
+        const sectionKey = detectSection(trimmedLine);
+        
+        if (currentSection && (trimmedLine.startsWith('-') || trimmedLine.startsWith('*') || trimmedLine.match(/^\d+\./))) {
+             const item = trimmedLine.replace(/^[-*\d\.]+\s*/, '').trim();
+             if (item) sections[currentSection].push(item);
+        } else if (sectionKey) {
+            currentSection = sectionKey;
         }
     });
 
-    const Section: React.FC<{ title: string, items: string[], colorClass: string, glowClass: string }> = ({ title, items, colorClass, glowClass }) => (
-        <div className={`glass-panel p-5 rounded-xl border border-white/5 relative overflow-hidden group transition-all duration-300 hover:border-white/20`}>
-             <div className={`absolute top-0 right-0 w-20 h-20 ${glowClass} blur-[40px] opacity-20 group-hover:opacity-40 transition-opacity`}></div>
-            <h5 className={`font-mono font-bold text-sm mb-4 uppercase tracking-widest ${colorClass} border-b border-white/10 pb-2`}>{title}</h5>
-            <ul className="space-y-2 text-xs text-gray-300 font-sans">
-                {items.map((item, i) => <li key={i} className="leading-relaxed">• {item}</li>)}
-            </ul>
+    const Section: React.FC<{ title: string, items: string[], colorClass: string, bgClass: string }> = ({ title, items, colorClass, bgClass }) => (
+        <div className={`relative p-5 rounded-xl border border-white/5 overflow-hidden group transition-all duration-300 hover:border-white/20 hover:shadow-lg bg-black/20`}>
+             <div className={`absolute top-0 right-0 w-32 h-32 ${bgClass} blur-[60px] opacity-10 group-hover:opacity-20 transition-opacity rounded-full -mr-10 -mt-10`}></div>
+            <h5 className={`font-mono font-bold text-sm mb-4 uppercase tracking-widest ${colorClass} border-b border-white/5 pb-2 flex justify-between items-center`}>
+                {title}
+                <span className="text-[10px] opacity-50 bg-white/5 px-2 py-0.5 rounded">{items.length}</span>
+            </h5>
+            {items.length > 0 ? (
+                <ul className="space-y-3 text-xs text-gray-300 font-sans">
+                    {items.map((item, i) => (
+                        <li key={i} className="leading-relaxed flex items-start gap-2">
+                            <span className={`mt-1.5 w-1 h-1 rounded-full flex-shrink-0 ${bgClass.replace('bg-', 'bg-')}`}></span>
+                            <MarkdownText text={item} />
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <p className="text-xs text-gray-500 italic">Sin datos detectados.</p>
+            )}
         </div>
     );
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-8">
-            <Section title="Strengths (Fortalezas)" items={sections.STRENGTHS} colorClass="text-green-400" glowClass="bg-green-500" />
-            <Section title="Weaknesses (Debilidades)" items={sections.WEAKNESSES} colorClass="text-red-400" glowClass="bg-red-500" />
-            <Section title="Opportunities (Oportunidades)" items={sections.OPPORTUNITIES} colorClass="text-blue-400" glowClass="bg-blue-500" />
-            <Section title="Threats (Amenazas)" items={sections.THREATS} colorClass="text-yellow-400" glowClass="bg-yellow-500" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
+            <Section title="Fortalezas" items={sections.STRENGTHS} colorClass="text-emerald-400" bgClass="bg-emerald-500" />
+            <Section title="Debilidades" items={sections.WEAKNESSES} colorClass="text-rose-400" bgClass="bg-rose-500" />
+            <Section title="Oportunidades" items={sections.OPPORTUNITIES} colorClass="text-blue-400" bgClass="bg-blue-500" />
+            <Section title="Amenazas" items={sections.THREATS} colorClass="text-amber-400" bgClass="bg-amber-500" />
         </div>
     );
 };
@@ -105,11 +172,11 @@ const GeoTacticalAnalysis: React.FC<{ content: string }> = ({ content }) => {
         .filter(line => (line.startsWith('-') || line.startsWith('*')) && !line.startsWith('#'))
         .map(line => {
             const parts = line.slice(1).split('|').map(p => p.trim());
-            if (parts.length === 3) {
+            if (parts.length >= 2) {
                 return {
                     location: parts[0],
-                    intensity: parts[1] as 'Alta' | 'Media' | 'Baja',
-                    notes: parts[2]
+                    intensity: (parts[1] as any) || 'Media',
+                    notes: parts[2] || ''
                 };
             }
             return null;
@@ -118,33 +185,35 @@ const GeoTacticalAnalysis: React.FC<{ content: string }> = ({ content }) => {
 
     if (data.length === 0) return null;
 
-    const intensityStyles = {
-        'Alta': { color: 'text-emerald-400', bg: 'bg-emerald-500', width: 'w-full' },
-        'Media': { color: 'text-amber-400', bg: 'bg-amber-500', width: 'w-2/3' },
-        'Baja': { color: 'text-red-400', bg: 'bg-red-500', width: 'w-1/3' },
+    const intensityConfig = {
+        'Alta': { color: 'text-emerald-400', bg: 'bg-emerald-500', width: 100 },
+        'Media': { color: 'text-amber-400', bg: 'bg-amber-500', width: 60 },
+        'Baja': { color: 'text-rose-400', bg: 'bg-rose-500', width: 30 },
     };
 
     return (
-        <div className="my-8 p-6 glass-panel rounded-xl border border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.05)]">
-            <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400 mb-6 font-mono flex items-center gap-2">
-                <MapIcon className="w-4 h-4"/>
-                Inteligencia Geo-Táctica (Bastiones)
+        <div className="my-6 p-6 bg-black/20 rounded-xl border border-white/5">
+            <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-6 font-mono flex items-center gap-2">
+                <MapIcon className="w-4 h-4 text-brand-secondary"/>
+                Inteligencia Geo-Táctica
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.map((item, index) => {
-                    const style = intensityStyles[item.intensity] || intensityStyles['Media'];
+                    const config = intensityConfig[item.intensity as keyof typeof intensityConfig] || intensityConfig['Media'];
                     return (
-                        <div key={index} className="flex flex-col p-3 bg-black/40 rounded-lg border border-white/5 hover:border-emerald-500/30 transition-colors group">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="font-bold text-gray-200 text-sm font-mono">{item.location}</span>
-                                <span className={`text-[10px] uppercase font-bold tracking-wider ${style.color}`}>
+                        <div key={index} className="relative overflow-hidden flex flex-col p-4 bg-[#1a1410] rounded-lg border border-white/5 hover:border-brand-primary/30 transition-all group">
+                            <div className="flex justify-between items-center mb-2 z-10">
+                                <span className="font-bold text-gray-200 text-sm">{item.location}</span>
+                                <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-white/5 ${config.color}`}>
                                     {item.intensity}
                                 </span>
                             </div>
-                            <div className="w-full h-1 bg-gray-700 rounded-full mb-2 overflow-hidden">
-                                <div className={`h-full rounded-full ${style.bg} shadow-[0_0_8px_currentColor]`} style={{ width: style.width === 'w-full' ? '100%' : style.width === 'w-2/3' ? '66%' : '33%' }}></div>
+                            <div className="w-full h-1.5 bg-gray-800 rounded-full mb-3 overflow-hidden z-10">
+                                <div className={`h-full rounded-full ${config.bg} shadow-[0_0_8px_currentColor] transition-all duration-1000`} style={{ width: `${config.width}%` }}></div>
                             </div>
-                            <p className="text-xs text-gray-400 leading-tight italic">{item.notes}</p>
+                            <p className="text-xs text-gray-400 leading-tight z-10"><MarkdownText text={item.notes} /></p>
+                            {/* Background decoration */}
+                            <div className={`absolute -bottom-4 -right-4 w-16 h-16 ${config.bg} opacity-5 blur-[30px] rounded-full group-hover:opacity-10 transition-opacity`}></div>
                         </div>
                     );
                 })}
@@ -166,12 +235,12 @@ const ThemesBarChart: React.FC<{ content: string }> = ({ content }) => {
         .filter(line => (line.startsWith('-') || line.startsWith('*')) && !line.startsWith('#'))
         .map(line => {
             const parts = line.slice(1).split('|').map(p => p.trim());
-            if (parts.length === 3) {
+            if (parts.length >= 2) {
                 const relevance = parseInt(parts[1].replace(/\D/g, ''), 10);
                 return {
                     theme: parts[0],
                     relevance: isNaN(relevance) ? 0 : relevance,
-                    sentiment: parts[2].replace(/[\[\]]/g, ''),
+                    sentiment: parts[2] ? parts[2].replace(/[\[\]]/g, '') : 'Neutro',
                 };
             }
             return null;
@@ -180,24 +249,27 @@ const ThemesBarChart: React.FC<{ content: string }> = ({ content }) => {
 
     if (data.length === 0) return null;
 
-    const sentimentColors: Record<string, string> = {
-        'Positivo': 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]',
-        'Neutro': 'bg-gray-500 shadow-[0_0_10px_rgba(107,114,128,0.5)]',
-        'Negativo': 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]',
+    const sentimentConfig: Record<string, string> = {
+        'Positivo': 'bg-gradient-to-r from-emerald-600 to-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.3)]',
+        'Neutro': 'bg-gradient-to-r from-gray-600 to-gray-400',
+        'Negativo': 'bg-gradient-to-r from-rose-600 to-rose-400 shadow-[0_0_10px_rgba(251,113,133,0.3)]',
     };
 
     return (
-        <div className="space-y-4 my-8 p-6 glass-panel rounded-xl border border-white/10">
-             <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-brand-primary mb-6 font-mono">Temas Clave en la Narrativa</h4>
+        <div className="space-y-5 my-6 p-6 bg-black/20 rounded-xl border border-white/5">
+             <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-4 font-mono flex items-center gap-2">
+                <ChartBarIcon className="w-4 h-4 text-brand-secondary"/>
+                Ecosistema Narrativo
+            </h4>
             {data.map((item, index) => (
                 <div key={index} className="group">
-                    <div className="flex justify-between items-center mb-2 text-xs">
-                        <span className="font-bold text-gray-200">{item.theme}</span>
-                        <span className="text-gray-400 font-mono">{item.relevance}%</span>
+                    <div className="flex justify-between items-end mb-1.5 text-xs">
+                        <span className="font-bold text-gray-200 group-hover:text-white transition-colors">{item.theme}</span>
+                        <span className="text-gray-500 font-mono group-hover:text-brand-primary transition-colors">{item.relevance}%</span>
                     </div>
-                    <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden border border-white/5" title={`Sentimiento: ${item.sentiment}`}>
+                    <div className="w-full bg-gray-800/50 rounded-full h-2.5 overflow-hidden">
                         <div
-                            className={`h-full rounded-full transition-all duration-1000 ease-out ${sentimentColors[item.sentiment] || 'bg-gray-500'}`}
+                            className={`h-full rounded-full transition-all duration-1000 ease-out group-hover:brightness-110 ${sentimentConfig[item.sentiment] || sentimentConfig['Neutro']}`}
                             style={{ width: `${item.relevance}%` }}
                         ></div>
                     </div>
@@ -207,112 +279,181 @@ const ThemesBarChart: React.FC<{ content: string }> = ({ content }) => {
     );
 };
 
+// --- Main Report Renderer ---
+
+const ReportSection: React.FC<{ title: string, children: React.ReactNode }> = ({ title, children }) => (
+    <section className="mb-8 animate-fade-in-up">
+        {title && (
+            <h3 className="text-lg font-bold text-brand-primary mb-4 pb-2 border-b border-white/10 font-mono tracking-wide uppercase flex items-center gap-3">
+                <span className="w-1.5 h-1.5 bg-brand-primary rotate-45"></span>
+                {title}
+            </h3>
+        )}
+        <div className="text-gray-300 space-y-4">
+            {children}
+        </div>
+    </section>
+);
 
 const ReportRenderer: React.FC<{ text: string }> = ({ text }) => {
-    const parts = text.split(/(---\s*(?:SWOT|BARCHART|TABLE|GEO)\s*(?:START|END)\s*---)/g);
+    // Split by custom markers
+    const parts = text.split(/(---\s*(?:SWOT|BARCHART|TABLE|GEO)\s*(?:START|END)(?:.*?)---)/g);
     
     const elements: React.ReactNode[] = [];
-    let buffer = '';
+    
+    // Buffer for text content between visualizations
+    let textBuffer = '';
+    let currentSectionTitle = '';
+    let sectionContent: React.ReactNode[] = [];
 
-    const renderBuffer = (key: string) => {
-        if (buffer.trim() === '') return;
+    const flushTextBuffer = (keyPrefix: string) => {
+        if (!textBuffer.trim()) return;
 
-        const lines = buffer.split('\n');
+        const lines = textBuffer.split('\n');
         let listItems: React.ReactNode[] = [];
-
         const flushList = () => {
             if (listItems.length > 0) {
-                elements.push(<ul key={`ul-${key}-${elements.length}`} className="list-disc pl-6 my-4 space-y-2 text-gray-300 text-sm marker:text-brand-primary">{listItems}</ul>);
+                sectionContent.push(
+                    <ul key={`${keyPrefix}-ul-${sectionContent.length}`} className="list-none space-y-2 my-3 pl-4 border-l-2 border-white/10">
+                        {listItems}
+                    </ul>
+                );
                 listItems = [];
             }
         };
 
-        for (const [index, line] of lines.entries()) {
-            if (line.startsWith('* ') || line.startsWith('- ')) {
-                listItems.push(<li key={`li-${key}-${index}`}>{line.slice(2)}</li>);
-            } else {
+        lines.forEach((line, i) => {
+            const trimmed = line.trim();
+            if (!trimmed) return;
+
+            // Header Detection (### or **Title**)
+            if (trimmed.startsWith('###') || (trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length < 50 && !trimmed.includes(':'))) {
                 flushList();
-                if (line.trim()) {
-                    if (line.startsWith('**') && line.endsWith('**')) {
-                        // Section Header
-                         elements.push(
-                            <h3 key={`h3-${key}-${index}`} className="text-lg font-bold mt-8 mb-4 text-brand-primary font-mono uppercase tracking-widest border-b border-brand-primary/30 pb-2 flex items-center gap-3">
-                                <span className="w-2 h-2 bg-brand-primary rotate-45"></span>
-                                {line.slice(2, -2)}
-                            </h3>
-                        );
-                    } else {
-                        elements.push(<p key={`p-${key}-${index}`} className="mb-4 leading-7 text-gray-300 text-sm font-sans text-justify">{line}</p>);
-                    }
+                // If we have accumulated content for a previous section, push it
+                if (sectionContent.length > 0 || currentSectionTitle) {
+                    elements.push(
+                        <ReportSection key={`${keyPrefix}-sec-${elements.length}`} title={currentSectionTitle}>
+                            {[...sectionContent]}
+                        </ReportSection>
+                    );
+                    sectionContent = [];
                 }
+                currentSectionTitle = trimmed.replace(/^#+\s*/, '').replace(/\*\*/g, '');
+                return;
             }
-        }
+
+            // List Detection
+            if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+                listItems.push(
+                    <li key={`${keyPrefix}-li-${i}`} className="text-sm text-gray-300 relative pl-4">
+                        <span className="absolute left-0 top-1.5 w-1 h-1 bg-brand-primary rounded-full"></span>
+                        <MarkdownText text={trimmed.slice(2)} />
+                    </li>
+                );
+                return;
+            }
+
+            // Quote/Highlight Detection
+            if (trimmed.startsWith('>')) {
+                flushList();
+                sectionContent.push(
+                    <InsightCard key={`${keyPrefix}-quote-${i}`} title="Insight Estratégico">
+                        <MarkdownText text={trimmed.replace(/^>\s*/, '')} />
+                    </InsightCard>
+                );
+                return;
+            }
+
+            // Normal Paragraph
+            flushList();
+            sectionContent.push(
+                <p key={`${keyPrefix}-p-${i}`} className="text-sm leading-7 text-justify text-gray-300/90">
+                    <MarkdownText text={trimmed} />
+                </p>
+            );
+        });
+
         flushList();
-        buffer = '';
+        textBuffer = '';
     };
 
     let i = 0;
     while(i < parts.length) {
         const part = parts[i];
 
-        if (part.startsWith('--- SWOT START ---')) {
-            renderBuffer(`text-${i}`);
-            elements.push(<SWOTGrid key={`swot-${i}`} content={parts[i+1]} />);
-            i += 3; 
-        } else if (part.startsWith('--- BARCHART START ---')) {
-            renderBuffer(`text-${i}`);
-            elements.push(<ThemesBarChart key={`barchart-${i}`} content={parts[i+1]} />);
-            i += 3;
-        } else if (part.startsWith('--- GEO START ---')) {
-            renderBuffer(`text-${i}`);
-            elements.push(<GeoTacticalAnalysis key={`geo-${i}`} content={parts[i+1]} />);
-            i += 3;
-        } else if (part.startsWith('--- TABLE START:')) {
-            renderBuffer(`text-${i}`);
-            const tableTitle = part.replace('--- TABLE START:', '').replace('---', '').trim();
-            const tableContent = parts[i+1];
-            const tableRows = tableContent.split('\n').map(row => row.split('|').map(cell => cell.trim()).filter(cell => cell)).filter(row => row.length > 0 && !row.every(cell => cell.startsWith('-')));
-            if(tableRows.length > 1) {
-                const tableHeaders = tableRows[0];
-                const tableBody = tableRows.slice(1);
-                 elements.push(
-                    <div key={`table-container-${i}`} className="my-8">
-                         <h4 key={`h4-${i}`} className="text-xs font-bold mb-3 uppercase tracking-[0.2em] text-gray-400 font-mono flex items-center gap-2">
-                            <SparklesIcon className="w-4 h-4 text-brand-secondary"/>
-                            {tableTitle}
-                        </h4>
-                        <div className="overflow-x-auto rounded-xl border border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
-                            <table className="min-w-full text-sm text-left">
-                                <thead className="bg-white/5 text-brand-primary font-mono text-xs uppercase">
-                                    <tr>{tableHeaders.map((h, idx) => <th key={`th-${h}-${idx}`} className="px-6 py-4 font-bold tracking-wider">{h}</th>)}</tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5 bg-black/20 backdrop-blur-sm">
-                                    {tableBody.map((row, idx) => (
-                                        <tr key={`tr-${idx}`} className="hover:bg-white/5 transition-colors group">
-                                            {row.map((cell, j) => (
-                                                <td key={`td-${idx}-${j}`} className={`px-6 py-4 text-gray-300 font-medium ${j === 0 ? 'text-white group-hover:text-brand-glow' : ''} ${cell.includes('%') || !isNaN(Number(cell.replace(/\./g, ''))) ? 'font-mono' : ''}`}>
-                                                    {cell}
-                                                </td>
-                                            ))}
+        if (part.includes('START ---')) {
+            // Flush any preceding text
+            flushTextBuffer(`chunk-${i}`);
+            
+            // Process specialized component
+            const content = parts[i+1];
+            if (part.includes('SWOT')) {
+                sectionContent.push(<SWOTGrid key={`swot-${i}`} content={content} />);
+            } else if (part.includes('BARCHART')) {
+                sectionContent.push(<ThemesBarChart key={`bar-${i}`} content={content} />);
+            } else if (part.includes('GEO')) {
+                sectionContent.push(<GeoTacticalAnalysis key={`geo-${i}`} content={content} />);
+            } else if (part.includes('TABLE')) {
+                const titleMatch = part.match(/TABLE START: (.*?)---/);
+                const title = titleMatch ? titleMatch[1].trim() : 'Datos Detallados';
+                const rows = content.split('\n').filter(r => r.trim() && !r.includes('---'));
+                if (rows.length > 1) {
+                    const headers = rows[0].split('|').map(c => c.trim()).filter(c => c);
+                    const body = rows.slice(1).map(r => r.split('|').map(c => c.trim()).filter(c => c));
+                    sectionContent.push(
+                        <div key={`table-${i}`} className="my-6 overflow-hidden rounded-xl border border-white/10 bg-black/20 shadow-lg">
+                            <div className="bg-white/5 px-4 py-3 border-b border-white/5 flex items-center gap-2">
+                                <ScaleIcon className="w-4 h-4 text-brand-secondary"/>
+                                <span className="text-xs font-bold uppercase tracking-wider text-gray-300">{title}</span>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full text-sm text-left text-gray-400">
+                                    <thead className="bg-white/5 text-xs uppercase text-brand-primary">
+                                        <tr>
+                                            {headers.map((h, idx) => <th key={idx} className="px-6 py-3 font-semibold">{h}</th>)}
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {body.map((row, rIdx) => (
+                                            <tr key={rIdx} className="hover:bg-white/5 transition-colors">
+                                                {row.map((cell, cIdx) => (
+                                                    <td key={cIdx} className={`px-6 py-3 ${cIdx === 0 ? 'text-white font-medium' : ''} ${cell.includes('%') ? 'font-mono text-brand-glow' : ''}`}>
+                                                        {cell}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
-                );
+                    );
+                }
             }
-            i += 3;
-        } else if (part.startsWith('---') && (part.includes('END') || part.includes('START'))) {
-            i++;
+            i += 3; // Skip start tag, content, and end tag parts
+        } else if (part.includes('END ---')) {
+            i++; 
         } else {
-            buffer += part;
+            textBuffer += part;
             i++;
         }
     }
-    renderBuffer(`text-final`);
+    
+    // Final flush
+    flushTextBuffer('final');
+    if (sectionContent.length > 0 || currentSectionTitle) {
+        elements.push(
+            <ReportSection key="sec-final" title={currentSectionTitle}>
+                {sectionContent}
+            </ReportSection>
+        );
+    }
 
-    return <>{elements}</>;
+    return (
+        <div className="space-y-2">
+            {elements}
+        </div>
+    );
 };
 
 
@@ -321,10 +462,19 @@ const StrategicReportGenerator: React.FC<StrategicReportGeneratorProps> = ({ dat
     
     const getDefaultSeats = useCallback((dataset: HistoricalDataset | null) => {
         if (!dataset || !dataset.processedData || dataset.processedData.length === 0) return 17;
+        const name = dataset.name.toLowerCase();
         const type = dataset.processedData[0].Eleccion;
         const lowerType = type.toLowerCase();
-        if (lowerType === 'asamblea' || lowerType === 'concejo') {
+        
+        if (lowerType.includes('senado') || name.includes('senado')) {
+            return 100;
+        }
+        if (lowerType.includes('asamblea') || lowerType.includes('concejo')) {
             return 26;
+        }
+        if (lowerType.includes('cámara') || lowerType.includes('camara')) {
+             if (name.includes('antioquia') || dataset.processedData[0].Departamento?.toLowerCase().includes('antioquia')) return 17;
+             return 5;
         }
         return 17;
     }, []);
@@ -379,7 +529,7 @@ const StrategicReportGenerator: React.FC<StrategicReportGeneratorProps> = ({ dat
         <div className="space-y-8">
             <AnalysisCard
                 title="Generador de Informes Estratégicos con IA"
-                explanation="Selecciona un partido y el número de escaños en disputa. La IA analizará todos los datos disponibles y usará Google Search para el contexto actual, generando un informe cuantitativo completo."
+                explanation="Selecciona un partido y el número de escaños en disputa. La IA analizará todos los datos disponibles y usará Google Search para el contexto actual, generando un informe cuantitativo completo. Ahora compatible con análisis de Senado y otros departamentos."
                 fullscreenable={false}
             >
                 <div className="p-6 space-y-6">
@@ -460,24 +610,35 @@ const StrategicReportGenerator: React.FC<StrategicReportGeneratorProps> = ({ dat
             )}
 
             {report && (
-                <AnalysisCard title={`Informe Estratégico: ${targetParty} ${focus ? `(${focus})` : ''}`} explanation="Informe generado por la IA basado en datos históricos y metodologías internas.">
-                    <div className="flex justify-end mb-6">
+                <div className="animate-fade-in-up">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                            <CpuChipIcon className="w-8 h-8 text-brand-primary" />
+                            <span className="text-brand-glow">Informe Generado</span>
+                        </h2>
                         <ExportMenu onPdf={handleExportPdf} onXlsx={handleExportXlsx} disabled={!report} />
                     </div>
+                    
                      <div className="p-8 bg-[#0f0a06] text-gray-200 rounded-xl border border-white/10 shadow-2xl relative overflow-hidden">
                         {/* Watermark-like background element */}
-                        <div className="absolute top-0 right-0 w-96 h-96 bg-brand-primary/5 rounded-full blur-[100px] pointer-events-none"></div>
+                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
+                        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-blue-500/5 rounded-full blur-[100px] pointer-events-none"></div>
                         
                         <div ref={reportRef} className="relative z-10">
                              {/* Header of the report */}
-                             <div className="border-b border-white/10 pb-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                             <div className="border-b border-white/10 pb-8 mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                                 <div>
-                                    <p className="text-brand-primary font-mono text-xs uppercase tracking-[0.3em] mb-2">Documento Confidencial</p>
-                                    <h2 className="text-3xl font-bold text-white font-sans tracking-tight">Informe de Inteligencia Electoral</h2>
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="px-3 py-1 bg-brand-primary/10 border border-brand-primary/30 rounded text-[10px] font-bold uppercase tracking-widest text-brand-primary">Confidencial</div>
+                                        <div className="px-3 py-1 bg-white/5 border border-white/10 rounded text-[10px] font-bold uppercase tracking-widest text-gray-400">Inteligencia Artificial</div>
+                                    </div>
+                                    <h2 className="text-4xl font-bold text-white font-sans tracking-tight mb-1">{targetParty}</h2>
+                                    {focus && <p className="text-lg text-brand-glow font-medium">Enfoque: {focus}</p>}
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-gray-500 text-xs font-mono uppercase">Generado por DEMOS ARRAKIS</p>
-                                    <p className="text-gray-400 text-sm font-mono">{new Date().toLocaleDateString()}</p>
+                                    <p className="text-gray-500 text-xs font-mono uppercase tracking-widest mb-1">Generado por</p>
+                                    <p className="text-white font-bold font-mono text-sm">DEMOS ARRAKIS</p>
+                                    <p className="text-brand-secondary text-xs font-mono mt-1">{new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                                 </div>
                              </div>
                             
@@ -485,22 +646,29 @@ const StrategicReportGenerator: React.FC<StrategicReportGeneratorProps> = ({ dat
                         </div>
                         
                         {report.sources && report.sources.length > 0 && (
-                            <div className="mt-12 pt-6 border-t border-white/10">
-                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em] mb-4 font-mono">Fuentes de Inteligencia Externa (Google Search)</h4>
-                                <ul className="space-y-2">
+                            <div className="mt-12 pt-8 border-t border-white/10">
+                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em] mb-6 font-mono flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                    Fuentes de Inteligencia (Google Search)
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     {report.sources.map((source, index) => source.web && (
-                                        <li key={index} className="text-xs font-mono flex items-center gap-2 text-gray-400">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-brand-primary"></span>
-                                            <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="hover:text-brand-glow hover:underline truncate max-w-full block transition-colors">
-                                                {source.web.title || source.web.uri}
-                                            </a>
-                                        </li>
+                                        <a 
+                                            key={index} 
+                                            href={source.web.uri} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            className="block p-3 rounded bg-white/5 hover:bg-white/10 border border-white/5 transition-all group"
+                                        >
+                                            <p className="text-xs font-bold text-gray-300 group-hover:text-white truncate mb-1">{source.web.title}</p>
+                                            <p className="text-[10px] text-gray-500 font-mono truncate">{source.web.uri}</p>
+                                        </a>
                                     ))}
-                                </ul>
+                                </div>
                             </div>
                         )}
                     </div>
-                </AnalysisCard>
+                </div>
             )}
 
         </div>
@@ -508,3 +676,5 @@ const StrategicReportGenerator: React.FC<StrategicReportGeneratorProps> = ({ dat
 };
 
 export default StrategicReportGenerator;
+// Import CpuChipIcon for new header usage if not already imported in full file context
+import { CpuChipIcon } from './Icons';

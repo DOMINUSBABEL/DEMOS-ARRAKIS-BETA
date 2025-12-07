@@ -1,15 +1,13 @@
-
-
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { CandidateRanking, ProbabilityResult, SimulationResults, HistoricalDataset, PartyAnalysisData, PartyData, ListAnalysisAIResponse, ProcessedElectionData } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const model = 'gemini-3-pro-preview';
 
-// --- CONTEXTO ESPECÍFICO DEL PDF PROPORCIONADO (CENTRO DEMOCRÁTICO) ---
-const CD_METHODOLOGY_CONTEXT = `
-DATOS ESTRATÉGICOS INTERNOS (CENTRO DEMOCRÁTICO - ANTIOQUIA 2026):
-Utiliza EXCLUSIVAMENTE estos datos base para los siguientes precandidatos si son consultados. No alucines números.
+// --- CONTEXTO ESTRATÉGICO ESPECÍFICO (SOLO PARA ANTIOQUIA / CD) ---
+const CD_ANTIOQUIA_METHODOLOGY = `
+DATOS ESTRATÉGICOS INTERNOS (CENTRO DEMOCRÁTICO - ANTIOQUIA):
+Utiliza EXCLUSIVAMENTE estos datos base para los siguientes precandidatos si son consultados EN EL CONTEXTO DE ANTIOQUIA.
 
 METODOLOGÍA DE CÁLCULO (PROTOCOLOS INTERNOS):
 1.  **Fuente de Datos:** Se toman los votos de la "Unidad Política" (estructura del candidato) en Cámara 2022, Senado 2022 y Asamblea 2023.
@@ -18,20 +16,18 @@ METODOLOGÍA DE CÁLCULO (PROTOCOLOS INTERNOS):
 4.  **Resultado Final:** El "Poder Electoral Proyectado" es el PROMEDIO de los resultados ajustados de las tres elecciones: ((Cámara/K) + (Senado/K) + (Asamblea/K)) / 3.
 
 TABLA MAESTRA DE DATOS (PRECANDIDATOS IDENTIFICADOS):
-| Pre-candidato | Unidad Política | Votos Cámara 22 (Base) | Votos Senado 22 (Base) | Votos Asamblea 23 (Base) | Promedio Proyectado (Resultado) |
-|---|---|---|---|---|---|
-| Juan Espinal | Paolos | 41.442 | 49.793 | 65.500 | 41.328 |
-| Jhon Jairo Berrio | Valencia | 30.526 | 22.772 | 51.921 | 26.419 |
-| (Equipo de todos) | Equipo de todos | 50.535 | 62.377 | 23.078 | 21.313 |
-| Bello (esposa exalcalde)| Óscar Andrés | 50.535 | 62.377 | 28.057 | 18.296 |
-| Yulieth Sánchez | Yulieth Sánchez | 50.535 | 62.377 | 28.057 | 18.296 |
-| Andrés Guerra | Siembra | 25.552 | 64.640 | 21.259 | 29.348 |
-| Ana Ligia | Hernán Cadavid | 56.244 | 25.304 | 18.662 | 19.812 |
-| Óscar Darío Pérez | Óscar Darío Pérez | 45.148 | 62.377 | 51.921 | 28.900 |
-| Anderson Duque | C. García / J.L. Noreña | No aplica | No aplica | 23.732 + 10.630 | 23.723 |
-| Cabal | Cabalismo | 6.240 | 34.228 | 9.977 | 16.815 |
-
-INSTRUCCIÓN: Si el informe es sobre el CENTRO DEMOCRÁTICO o uno de estos candidatos, DEBES incorporar estos datos específicos en la sección de "Proyecciones Cuantitativas", citando el "Promedio Proyectado" como su fuerza real estimada.
+| Pre-candidato | Unidad Política | Promedio Proyectado (Resultado) |
+|---|---|---|
+| Juan Espinal | Paolos | 41.328 |
+| Jhon Jairo Berrio | Valencia | 26.419 |
+| (Equipo de todos) | Equipo de todos | 21.313 |
+| Bello (esposa exalcalde)| Óscar Andrés | 18.296 |
+| Yulieth Sánchez | Yulieth Sánchez | 18.296 |
+| Andrés Guerra | Siembra | 29.348 |
+| Ana Ligia | Hernán Cadavid | 19.812 |
+| Óscar Darío Pérez | Óscar Darío Pérez | 28.900 |
+| Anderson Duque | C. García / J.L. Noreña | 23.723 |
+| Cabal | Cabalismo | 16.815 |
 `;
 
 const CSV_EXTRACTION_PROMPT_BASE = `
@@ -40,7 +36,7 @@ const CSV_EXTRACTION_PROMPT_BASE = `
     REGLA CRÍTICA: Tu respuesta DEBE SER únicamente el contenido del CSV, sin explicaciones, introducciones, resúmenes, ni las vallas de código (''') al inicio o al final.
     
     Las columnas del CSV deben ser exactamente estas y en este orden:
-    Eleccion,Año,UnidadPolitica,Candidato,Votos,EsCabezaDeLista,AlianzaHistoricaID
+    Eleccion,Año,UnidadPolitica,Candidato,Votos,EsCabezaDeLista,AlianzaHistoricaID,Departamento
 
     REGLA DE FORMATO CSV CRÍTICA: Si un valor en cualquier campo (especialmente 'UnidadPolitica' o 'Candidato') contiene una coma (,), DEBES encerrar todo el valor entre comillas dobles. Por ejemplo: "PARTIDO LIBERAL, ALIANZA VERDE".
 
@@ -62,8 +58,9 @@ const CSV_EXTRACTION_PROMPT_BASE = `
             *   El resto de las columnas pueden quedar vacías para estas filas.
 
     4.  **INFERENCIA DE DATOS GENERALES:**
-        *   'Eleccion': Infiere el tipo de elección del título (ej. 'ASAMBLEA', 'SENADO'). Si no se especifica, usa 'Desconocida'.
+        *   'Eleccion': Infiere el tipo de elección del título (ej. 'ASAMBLEA', 'SENADO', 'CÁMARA'). Si no se especifica, usa 'Desconocida'.
         *   'Año': Infiere el año de la elección. Si no se especifica, usa el año actual.
+        *   'Departamento': Si el documento menciona un departamento (ej. "Antioquia", "Valle", "Cundinamarca"), extraelo. Si es Senado Nacional, pon "Nacional".
         *   'AlianzaHistoricaID': Déjalo vacío si no se especifica.
 
     5.  **INSTRUCCIONES PARA XLSX:**
@@ -410,6 +407,14 @@ export const classifyPartiesIdeology = async (partyNames: string[]): Promise<Rec
 const aggregateVotesByLocation = (data: ProcessedElectionData[], candidateName?: string, partyName?: string): string => {
     const locations = new Map<string, number>();
     
+    // Check if we should use Department or Municipality aggregation based on available data
+    const hasMunicipality = data.some(row => row.Municipio && row.Municipio.trim() !== '');
+    const hasDepartment = data.some(row => row.Departamento && row.Departamento.trim() !== '');
+    
+    // For National elections (Senate), Department is usually more relevant for the top-level view unless specified otherwise
+    const isNationalContext = data.length > 0 && (data[0].Eleccion.toLowerCase().includes('senado') || data[0].Eleccion.toLowerCase().includes('nacional'));
+    const useDepartment = isNationalContext && hasDepartment;
+
     data.forEach(row => {
         let shouldCount = false;
         if (candidateName && row.Candidato.toUpperCase().includes(candidateName.toUpperCase())) {
@@ -419,15 +424,20 @@ const aggregateVotesByLocation = (data: ProcessedElectionData[], candidateName?:
         }
 
         if (shouldCount) {
-            // Prioritize Municipio, then Zona, then Comuna
-            const locationName = row.Municipio || row.Zona || row.Comuna || 'Desconocido';
+            let locationName = 'Desconocido';
+            if (useDepartment) {
+                locationName = row.Departamento || 'Desconocido';
+            } else {
+                locationName = row.Municipio || row.Zona || row.Comuna || row.Departamento || 'Desconocido';
+            }
+
             if (locationName && locationName !== 'Desconocido') {
                 locations.set(locationName, (locations.get(locationName) || 0) + row.Votos);
             }
         }
     });
 
-    if (locations.size === 0) return "No hay datos geográficos detallados (Municipio/Zona) disponibles en el set de datos.";
+    if (locations.size === 0) return "No hay datos geográficos detallados disponibles en el set de datos.";
 
     // Sort by votes descending
     const sortedLocations = Array.from(locations.entries()).sort((a, b) => b[1] - a[1]);
@@ -454,16 +464,32 @@ export const generateStrategicReport = async (
     // Attempt to aggregate geographical data if fields exist
     const geoData = aggregateVotesByLocation(activeDataset.processedData, focus, targetParty);
 
+    // --- CONTEXT DETECTION ---
+    const datasetNameLower = activeDataset.name.toLowerCase();
+    const isAntioquia = datasetNameLower.includes('antioquia') || 
+                        activeDataset.processedData.some(r => r.Departamento?.toLowerCase().includes('antioquia') || r.Eleccion?.toLowerCase().includes('antioquia'));
+    const isSenado = datasetNameLower.includes('senado') || activeDataset.processedData[0]?.Eleccion?.toLowerCase().includes('senado');
+    const isCamara = datasetNameLower.includes('cámara') || datasetNameLower.includes('camara') || activeDataset.processedData[0]?.Eleccion?.toLowerCase().includes('camara');
+    
+    const scopeDescription = isSenado ? "NACIONAL (SENADO)" : (isAntioquia ? "DEPARTAMENTAL (ANTIOQUIA)" : `REGIONAL/DEPARTAMENTAL (${activeDataset.name})`);
+    
+    // Only apply the CD methodology if it's Antioquia AND Centro Democrático
+    const isCD = targetParty.toLowerCase().includes('centro democrático') || targetParty.toLowerCase().includes('centro democratico') || targetParty.toLowerCase().includes('creemos'); // Extended slightly for coalition context
+    const methodologyContext = (isAntioquia && isCD) ? CD_ANTIOQUIA_METHODOLOGY : "";
+
     let prompt = '';
 
     if (focus && focus.trim() !== '') {
-        // New, candidate-focused prompt
+        // Candidate-focused prompt
         prompt = `
     ROL: Eres un estratega político de élite y analista de datos. Tu cliente es el comando de campaña del candidato "${focus}" del partido "${targetParty}".
-    TAREA: Genera un informe estratégico PERSONALIZADO y PROFUNDO para el candidato.
-    INSTRUCCIÓN CRÍTICA: Debes usar Google Search para obtener el contexto más reciente: noticias, perfil público, declaraciones, historial político y percepción pública del candidato "${focus}".
+    ALCANCE DE LA ELECCIÓN: ${scopeDescription}.
     
-    ${CD_METHODOLOGY_CONTEXT}
+    ${methodologyContext}
+
+    INSTRUCCIÓN CRÍTICA: Debes generar un **INFORME ESTRATÉGICO EXTENSO Y PROFUNDO**. No seas superficial.
+    Debes usar Google Search para obtener el contexto más reciente: noticias, perfil público, declaraciones, historial político y percepción pública del candidato "${focus}".
+    Si la elección es al SENADO (Nacional), tu análisis debe considerar el impacto nacional y las regiones clave, no solo un departamento.
 
     DATOS DE CONTEXTO:
     - Elección de Referencia: ${activeDataset.name}
@@ -474,86 +500,91 @@ export const generateStrategicReport = async (
     ${query ? `- PREGUNTA ESTRATÉGICA ADICIONAL: "${query}"` : ''}
 
     FORMATO DE SALIDA REQUERIDO:
-    Respuesta en Markdown. USA TÍTULOS CLAROS. Para el análisis SWOT y el gráfico de barras, USA LOS BLOQUES ESPECIALES COMO SE INDICA A CONTINUACIÓN.
+    Respuesta en Markdown. USA TÍTULOS CLAROS.
 
-    ESTRUCTURA DEL INFORME:
+    ESTRUCTURA DEL INFORME (DEBE CUBRIR TODOS LOS PUNTOS CON DETALLE):
 
     **Informe Estratégico de Candidato: ${focus}**
     **Fecha:** ${new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}
 
     **1. Pronóstico Electoral y Perfil (Ejecutivo)**
     - INICIO OBLIGATORIO: Tu primera frase DEBE SER un pronóstico claro del rango de votación estimada (Ej: "Se proyecta una votación estimada entre [X] y [Y] votos...").
-    - Si el candidato "${focus}" aparece en la "TABLA MAESTRA DE DATOS" proporcionada en el contexto, DEBES usar el valor de "Promedio Proyectado" como el centro de tu estimación. Si no, usa la tendencia histórica.
+    - Si aplica la "TABLA MAESTRA DE DATOS" (Solo CD/Antioquia), usa esos datos como base. Si no, usa la tendencia histórica y proyecciones racionales para ${scopeDescription}.
     - Resumen ejecutivo del perfil del candidato basado en tu búsqueda. Incluye trayectoria, ideología percibida, público objetivo y posicionamiento actual.
 
     **2. Análisis SWOT Visual**
-    - Proporciona un análisis SWOT conciso. Cada punto debe ser una frase corta y directa.
+    - Proporciona un análisis SWOT conciso.
 
     --- SWOT START ---
     STRENGTHS:
     - [Punto Fuerte 1]
-    - [Punto Fuerte 2]
     WEAKNESSES:
     - [Punto Débil 1]
-    - [Punto Débil 2]
     OPPORTUNITIES:
     - [Oportunidad 1]
-    - [Oportunidad 2]
     THREATS:
     - [Amenaza 1]
-    - [Amenaza 2]
     --- SWOT END ---
 
     **3. Ecosistema Narrativo del Candidato**
-    - Describe los temas principales que el candidato está impulsando en su campaña y en medios. Luego, proporciona los datos para el gráfico de barras que se muestra a continuación.
+    - Describe los temas principales.
 
     --- BARCHART START ---
     # Tema | Relevancia (1-100) | Sentimiento (Positivo/Neutro/Negativo)
     - [Tema 1] | [85] | [Positivo]
-    - [Tema 2] | [70] | [Negativo]
-    - [Tema 3] | [60] | [Neutro]
-    - [Tema 4] | [45] | [Positivo]
     --- BARCHART END ---
 
     **4. Proyecciones Cuantitativas Detalladas**
-    - Análisis de proyecciones de votos para el candidato.
-    - SI EL CANDIDATO ES DEL CENTRO DEMOCRÁTICO Y APARECE EN LA TABLA MAESTRA, USA ESOS DATOS OBLIGATORIAMENTE PARA LLENAR LA TABLA.
-    - Presenta la tabla a continuación.
+    - Análisis de proyecciones de votos.
 
     --- TABLE START: Proyecciones de Votos para ${focus} ---
     | Escenario | Votos Proyectados | Probabilidad de Éxito | Supuestos Clave |
     |---|---|---|---|
-    | Pesimista | [Número] | [Baja/Media/Alta] | [Supuesto clave para este escenario] |
-    | Realista | [Número] | [Baja/Media/Alta] | [Supuesto clave para este escenario] |
-    | Optimista | [Número] | [Baja/Media/Alta] | [Supuesto clave para este escenario] |
+    | Pesimista | [Número] | [Baja/Media/Alta] | [Supuesto clave] |
+    | Realista | [Número] | [Baja/Media/Alta] | [Supuesto clave] |
+    | Optimista | [Número] | [Baja/Media/Alta] | [Supuesto clave] |
     --- TABLE END ---
     
     **5. Geografía Electoral (Estimación de Bastiones)**
-    - Identifica los municipios, comunas o zonas donde se concentra históricamente el voto de este candidato o partido.
-    - SI SE PROVEYERON DATOS GEOGRÁFICOS EN EL CONTEXTO, ÚSALOS. Si no, usa Google Search para inferir sus bastiones tradicionales.
-    - Genera la siguiente estructura estrictamente:
-
+    - Identifica los municipios o departamentos donde se concentra el voto.
+    - SI SE PROVEYERON DATOS GEOGRÁFICOS EN EL CONTEXTO, ÚSALOS.
+    
     --- GEO START ---
     # Ubicación | Intensidad (Alta/Media/Baja) | Notas Estratégicas
-    - [Municipio/Zona] | [Alta] | [Razón breve de la fortaleza]
-    - [Municipio/Zona] | [Media] | [Potencial de crecimiento]
+    - [Ubicación] | [Alta] | [Razón]
     --- GEO END ---
 
-    **6. Recomendaciones Estratégicas Accionables**
-    - Basado en TODO el análisis anterior, proporciona 3 a 5 recomendaciones claras y directas para la campaña del candidato.
-    - Recomendación 1: ...
-    - Recomendación 2: ...
-    - Recomendación 3: ...
+    **6. Perfil Psicográfico y Avatar del Votante (Targeting)**
+    - Construye un "Avatar" detallado del votante probable de ${focus}.
+    - **Edad y Género:** ¿Quién es el núcleo duro?
+    - **Dolores y Necesidades:** ¿Qué le preocupa a este votante?
+    - **Consumo de Medios:** ¿Dónde se informa?
+    - **Valores:** ¿Qué busca en un líder?
+
+    **7. Análisis de Elasticidad y Captura de Voto Blando**
+    - ¿Qué tan elástico es el voto potencial de ${focus}?
+    - Estrategias específicas para convertir a los indecisos y capturar voto de opinión.
+    - Mensajes clave para expandir la base más allá del núcleo duro.
+
+    **8. Matriz de Rivalidades y Canibalización**
+    - **Amenazas Internas:** Identifica compañeros de lista que compiten por el mismo perfil de votante o zona geográfica.
+    - **Amenazas Externas:** Candidatos de otros partidos con propuestas similares.
+    - **Riesgo de Canibalización:** Evaluación del riesgo de dividir votos y tácticas para diferenciarse.
+
+    **9. Recomendaciones Estratégicas Accionables**
+    - Basado en TODO el análisis anterior, proporciona 3 a 5 recomendaciones claras y tácticas.
     `;
     } else {
-        // Original party-focused prompt
+        // Party-focused prompt
         prompt = `
     ROL: Eres un estratega político de élite y analista de datos cuantitativos. Tu cliente es el comando de campaña del "${targetParty}".
-    TAREA: Genera un informe estratégico exhaustivo y accionable para la próxima elección, donde se disputan ${seatsToContest} curules. Tu análisis debe ser riguroso, basado en datos, y presentado en un formato de informe ejecutivo profesional.
-    INSTRUCCIÓN CRÍTICA: Debes usar la búsqueda de Google para obtener el contexto más reciente sobre el panorama político, noticias sobre "${targetParty}" y sus competidores, y opinión pública actual. Integra esta información en tu análisis para que sea relevante y oportuno.
+    ALCANCE DE LA ELECCIÓN: ${scopeDescription}.
+    TAREA: Genera un **INFORME ESTRATÉGICO EXTENSO Y DE ALTO NIVEL** (Expandido un 200% respecto a análisis básicos) para la próxima elección (${activeDataset.name}), donde se disputan ${seatsToContest} curules.
     
-    ${CD_METHODOLOGY_CONTEXT}
+    ${methodologyContext}
 
+    INSTRUCCIÓN CRÍTICA: Debes usar la búsqueda de Google para obtener el contexto más reciente sobre el panorama político, noticias sobre "${targetParty}" y sus competidores. Integra esta información en tu análisis.
+    
     ${focus ? `ENFOQUE ADICIONAL: Concéntrate particularmente en el siguiente tema o candidato: "${focus}".` : ''}
     ${query ? `PREGUNTA ESTRATÉGICA A RESPONDER: "${query}".` : ''}
     
@@ -568,61 +599,69 @@ export const generateStrategicReport = async (
         ${geoData}
 
     FORMATO DE SALIDA REQUERIDO:
-    Tu respuesta DEBE ser texto plano con formato similar a Markdown. USA TÍTULOS CLAROS para cada sección (ej. **Título de Sección**). Para listas, usa viñetas (* o -). Para tablas, usa delimitadores de pipe (|).
+    Tu respuesta DEBE ser texto plano con formato similar a Markdown. USA TÍTULOS CLAROS Y SECCIONES BIEN DEFINIDAS.
 
-    ESTRUCTURA DEL INFORME (sigue este orden rigurosamente):
+    ESTRUCTURA DEL INFORME (sigue este orden rigurosamente y PROFUNDIZA en cada punto):
     
     **Fecha:** ${new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}
     **Resumen Ejecutivo:**
-    - INICIO OBLIGATORIO: Tu primer párrafo DEBE incluir el "Pronóstico de Votación Total Estimada" para el partido, basado en la tendencia histórica y el contexto actual. (Ej: "Se proyecta una votación total para la lista entre [X] y [Y]...").
+    - INICIO OBLIGATORIO: Tu primer párrafo DEBE incluir el "Pronóstico de Votación Total Estimada" para el partido en el ámbito ${scopeDescription}.
     - Diagnóstico del nuevo paradigma electoral con ${seatsToContest} curules.
-    - Análisis de la tendencia del "${targetParty}" y su competidor principal, considerando el contexto actual.
-    - Definición de objetivos estratégicos clave (ej. "Alcanzar 5 curules") con los rangos de votos necesarios.
     - Conclusión estratégica central.
     
     **Sección 1: El Nuevo Paradigma Electoral: Análisis Técnico de un Escenario de ${seatsToContest} Curules**
-    - 1.1. La Mecánica D'Hondt en un Entorno de Alta Competencia: Analiza la elevación de la cifra repartidora y el castigo a la ineficiencia.
+    - 1.1. La Mecánica D'Hondt en un Entorno de Alta Competencia.
+    - 1.2. Umbral Efectivo y Cifra Repartidora Estimada.
     
     **Sección 2: Diagnóstico Profundo de la Línea Base**
-    - 2.2. Análisis Longitudinal de las Fuerzas Políticas: Analiza la evolución del "${targetParty}", su competidor principal y otros bloques relevantes, incorporando hallazgos recientes de la búsqueda.
+    - 2.1. Análisis Longitudinal de las Fuerzas Políticas: Analiza la evolución del "${targetParty}" frente a sus rivales.
+    - 2.2. Tendencias de Crecimiento/Decrecimiento Histórico.
     
     **Sección 3: Geografía Electoral y Bastiones**
-    - 3.1. Mapa de Calor: Identifica las zonas fuertes del partido basándote en los datos geográficos suministrados o en tu conocimiento/búsqueda.
+    - 3.1. Mapa de Calor: Identifica las zonas fuertes del partido basándote en los datos geográficos suministrados. Si es SENADO, enfócate en Departamentos clave; si es CÁMARA/ASAMBLEA, en Municipios/Zonas.
     - Genera la estructura GEO:
     --- GEO START ---
     # Ubicación | Intensidad (Alta/Media/Baja) | Notas Estratégicas
-    - [Municipio/Zona] | [Alta] | [Análisis]
+    - [Ubicación] | [Alta] | [Análisis detallado de por qué es fuerte/débil aquí]
     --- GEO END ---
     
-    **Sección 4: El Campo de Batalla Central: Un Análisis de la Competencia Directa**
+    **Sección 4: El Campo de Batalla Central**
     - 4.1. Perfil del Votante del Competidor Principal.
-    - 4.2. Vulnerabilidades Estratégicas del Competidor (Puntos de Ataque), basado en datos y noticias actuales.
+    - 4.2. Vulnerabilidades Estratégicas de los Rivales.
     
-    **Sección 5: Proyecciones Cuantitativas para una Batalla a Dos Bandas (${seatsToContest} Curules)**
-    - 5.1. Escenario 1: Estabilidad Competitiva (Tendencial)
-      - Asunciones claras.
-      - Objetivo: Alcanzar [N] Curules.
-      - Votos Necesarios, Votos Competidor, Cifra Repartidora.
-      - Análisis Táctico.
-    - 5.2. Escenario 2: Oportunidad por Desgaste del Adversario
-      - Similar al Escenario 1 pero con diferentes asunciones y objetivos.
+    **Sección 5: Avatar del Votante (Buyer Persona Político)**
+    - **El Votante Base (Inelástico):** Describe demografía, valores y motivaciones del núcleo leal del partido.
+    - **El Votante Persuadible (Elástico):** Describe al votante indeciso o blando que podría ser capturado. ¿Qué le duele? ¿Qué espera?
     
-    **Sección 6: Tablas de Proyección y Análisis de Sensibilidad**
-    - Incluye al menos 3 de las siguientes tablas, llenándolas con datos plausibles y proyecciones basadas en la información proporcionada.
-    - Tabla 6.2: Análisis de Sensibilidad del "${targetParty}".
+    **Sección 6: Estrategias de Optimización del Voto Elástico**
+    - Tácticas específicas para ampliar el techo electoral.
+    - Mensajes clave para resonar con el votante elástico sin alienar a la base.
+    - Canales recomendados para alcanzar estos segmentos.
+    
+    **Sección 7: Dinámica de Canibalización y Fuga de Votos**
+    - **Riesgo de Canibalización Interna:** (Especialmente relevante si hay múltiples listas o candidatos fuertes). ¿Cómo evitar que los candidatos del mismo partido se quiten votos entre sí en lugar de traer nuevos?
+    - **Fuga hacia Rivales:** ¿Hacia qué partidos se están yendo los votos perdidos? Análisis de flujo.
+    
+    **Sección 8: Proyecciones Cuantitativas para una Batalla a Dos Bandas**
+    - 8.1. Escenario 1: Estabilidad Competitiva (Tendencial)
+    - 8.2. Escenario 2: Oportunidad por Desgaste del Adversario
+    
+    **Sección 9: Tablas de Proyección y Análisis de Sensibilidad**
+    - Incluye al menos 3 de las siguientes tablas.
+    - Tabla 9.1: Análisis de Sensibilidad del "${targetParty}".
       --- TABLE START: Análisis de Sensibilidad ---
-      | Votación Proyectada CD | Curules Probables | Análisis Táctico |
+      | Votación Proyectada | Curules Probables | Análisis Táctico |
       |---|---|---|
       | [Votos] | [N] | [Análisis] |
       ...
       --- TABLE END ---
-    - Tabla 6.4: Análisis de Costo Marginal por Curul.
+    - Tabla 9.2: Análisis de Costo Marginal por Curul.
       --- TABLE START: Costo Marginal por Curul ---
       | Curul Objetivo | Votos Totales Requeridos | Votos Adicionales (Costo Marginal) | Análisis Estratégico del Costo-Beneficio |
       |---|---|---|---|
       ...
       --- TABLE END ---
-    - Tabla 6.8: Índice de Eficiencia Electoral (Votos por Curul).
+    - Tabla 9.3: Índice de Eficiencia Electoral (Votos por Curul).
       --- TABLE START: Eficiencia Electoral ---
       | Partido | Votos Proyectados | Curules Obtenidas | Votos por Curul | Análisis |
       |---|---|---|---|---|
