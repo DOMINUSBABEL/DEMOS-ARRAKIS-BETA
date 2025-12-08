@@ -2,7 +2,7 @@
 import React from 'react';
 import { ChartBarIcon, DatabaseIcon, ScaleIcon, BeakerIcon, CpuChipIcon, ShareIcon, BookOpenIcon, ListBulletIcon, MapIcon, ClockIcon, UserGroupIcon, CloseIcon, MegaphoneIcon, FingerPrintIcon } from './Icons';
 
-type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap' | 'marketing' | 'candidate_intelligence';
+type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap' | 'marketing' | 'candidate_intelligence' | 'comparative_analysis';
 
 interface SidebarProps {
   activeTab: Tab;
@@ -140,9 +140,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteDa
           Marketing de Guerra
         </NavItem>
         <NavItem index={9} tabId="candidate_intelligence" activeTab={activeTab} setActiveTab={setActiveTab} icon={<FingerPrintIcon />}>
-          Inteligencia de Candidatos
+          Inteligencia Individual
         </NavItem>
-        <NavItem index={10} tabId="strategist" activeTab={activeTab} setActiveTab={setActiveTab} icon={<CpuChipIcon />}>
+        <NavItem index={10} tabId="comparative_analysis" activeTab={activeTab} setActiveTab={setActiveTab} icon={<UserGroupIcon />}>
+          Comparador de Listas
+        </NavItem>
+        <NavItem index={11} tabId="strategist" activeTab={activeTab} setActiveTab={setActiveTab} icon={<CpuChipIcon />}>
           Estratega IA
         </NavItem>
         
@@ -163,7 +166,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteDa
 
         <div className="my-6 mx-6 border-t border-white/5"></div>
 
-        <NavItem index={11} tabId="methodology" activeTab={activeTab} setActiveTab={setActiveTab} icon={<BookOpenIcon />}>
+        <NavItem index={12} tabId="methodology" activeTab={activeTab} setActiveTab={setActiveTab} icon={<BookOpenIcon />}>
             Metodología
         </NavItem>
       </nav>
@@ -172,7 +175,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteDa
       <div className="p-4 border-t border-white/5 bg-black/60 backdrop-blur-md relative z-10">
         <div className="flex items-center gap-3 px-2">
             <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse"></div>
-            <p className="text-[10px] text-dark-text-muted uppercase tracking-widest font-mono">System Online v2.0</p>
+            <p className="text-[10px] text-dark-text-muted uppercase tracking-widest font-mono">System Online v2.1</p>
         </div>
       </div>
     </aside>

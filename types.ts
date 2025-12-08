@@ -236,24 +236,40 @@ export interface CandidateProfileResult {
 }
 
 export interface ComparisonScenario {
-    name: string; // "Escenario Pesimista", "Escenario Base", "Escenario Optimista"
+    name: string; 
     description: string;
-    voteProjections: { candidateName: string; votes: number }[]; // Updated for N candidates
-    swingVotes: number; // Votos indecisos en juego
-    winner: string; // Winner name
+    voteProjections: { candidateName: string; votes: number }[]; 
+    swingVotes: number; 
+    winner: string; 
+}
+
+export interface ComparisonAttributes {
+    structure: number; // 0-100 (Maquinaria)
+    opinion: number; // 0-100 (Voto de Opinión)
+    resources: number; // 0-100 (Capacidad Financiera)
+    territory: number; // 0-100 (Control Territorial)
+    momentum: number; // 0-100 (Crecimiento Reciente)
 }
 
 export interface CandidateAnalysis {
     name: string;
-    strengths: string[];
-    weaknesses: string[];
-    probabilityScore: number; // 0-100
+    probabilityScore: number; // 0-100 (Chance of Seat/Win)
+    
+    // Deep Dive Fields
+    trajectory: string; // Resumen de carrera política
+    scandals: string; // Escándalos, investigaciones o ruido negativo
+    image: string; // Percepción pública (positiva/negativa/neutra)
+    structure: string; // Apoyos de maquinaria, alcaldes, concejales
+    management: string; // Hitos de gestión (si aplica)
+    territory: string; // Fortalezas geográficas
+    alliances: string; // Apoyos clave y rivalidades internas
+    
+    // For Radar Chart
+    attributes: ComparisonAttributes;
 }
 
 export interface CandidateComparisonResult {
-    winner: string;
-    winnerReason: string;
-    candidates: CandidateAnalysis[]; // Array of N candidates
+    listVerdict: string; // Análisis global de la lista (quiénes entran, quiénes salen)
+    candidates: CandidateAnalysis[]; 
     scenarios: ComparisonScenario[];
-    keyDifferentiator: string;
 }

@@ -1,14 +1,15 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import AnalysisCard from './AnalysisCard';
-import { FingerPrintIcon, LoadingSpinner, SparklesIcon, WarningIcon, ChartBarIcon, MapIcon, ShareIcon, BeakerIcon, ClipboardDocumentIcon, TableCellsIcon, ChevronDownIcon, ScaleIcon, PlusIcon, TrashIcon } from './Icons';
+import { FingerPrintIcon, LoadingSpinner, SparklesIcon, WarningIcon, ChartBarIcon, MapIcon, ShareIcon, BeakerIcon, ClipboardDocumentIcon, TableCellsIcon, ChevronDownIcon, ScaleIcon, PlusIcon, TrashIcon, UserGroupIcon, FilePdfIcon, CpuChipIcon } from './Icons';
 import { generateCandidateProfile, generateCandidateComparison } from '../services/geminiService';
-import { CandidateProfileResult, ElectoralDataset, PartyData, ProcessedElectionData, CandidateComparisonResult, ComparisonScenario } from '../types';
-import { BarChart as VerticalBarChart } from './Charts';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, Cell } from 'recharts';
+import { generateStrategicReportPDF } from '../services/reportGenerator';
+import { CandidateProfileResult, ElectoralDataset, PartyData, ProcessedElectionData, CandidateComparisonResult, ComparisonScenario, HistoricalDataset, CandidateAnalysis } from '../types';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, Cell, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 
 interface CandidateIntelligenceProps {
     datasets: ElectoralDataset[];
+    activeDataset: HistoricalDataset | null;
     onProjectAndSimulate: (projectedParties: PartyData[]) => void;
 }
 
@@ -25,7 +26,6 @@ const CollapsibleNode: React.FC<{ node: LocationNode; level: number; totalVotes:
     const hasChildren = node.children && node.children.length > 0;
     const percentage = totalVotes > 0 ? (node.votes / totalVotes) * 100 : 0;
 
-    // Define colors and icons based on level
     const colors = ['bg-brand-primary/10 border-brand-primary/30', 'bg-blue-500/10 border-blue-500/30', 'bg-purple-500/10 border-purple-500/30', 'bg-gray-800 border-gray-700'];
     const textColors = ['text-brand-primary', 'text-blue-400', 'text-purple-400', 'text-gray-400'];
     const currentBg = colors[Math.min(level, colors.length - 1)];
@@ -41,7 +41,7 @@ const CollapsibleNode: React.FC<{ node: LocationNode; level: number; totalVotes:
                     {hasChildren && (
                         <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
                     )}
-                    {!hasChildren && <div className="w-4 h-4" />} {/* Spacer */}
+                    {!hasChildren && <div className="w-4 h-4" />} 
                     
                     <span className={`font-mono font-bold text-sm ${currentText} uppercase`}>
                         {node.type === 'municipio' ? 'MUN: ' : node.type === 'zona' ? 'ZONA: ' : 'PUESTO: '}
@@ -67,10 +67,14 @@ const CollapsibleNode: React.FC<{ node: LocationNode; level: number; totalVotes:
     );
 };
 
-// New Chart Component for Multi-Candidate Scenarios
 const ScenarioChart: React.FC<{ scenarios: ComparisonScenario[] }> = ({ scenarios }) => {
-    // Generate distinct colors for candidates
-    const candidateColors = ['#d97706', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6'];
+    const candidateColors = [
+        '#d97706', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', 
+        '#ec4899', '#14b8a6', '#f59e0b', '#6366f1', '#84cc16',
+        '#d946ef', '#06b6d4', '#f97316', '#a855f7', '#22c55e',
+        '#be123c', '#1e40af', '#047857', '#7e22ce', '#b45309'
+    ];
+    
     const candidates = scenarios.length > 0 
         ? scenarios[0].voteProjections.map(vp => vp.candidateName)
         : [];
@@ -115,7 +119,123 @@ const ScenarioChart: React.FC<{ scenarios: ComparisonScenario[] }> = ({ scenario
     );
 };
 
-const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets, onProjectAndSimulate }) => {
+const AttributeRadarChart: React.FC<{ candidates: CandidateAnalysis[] }> = ({ candidates }) => {
+    const data = [
+        { subject: 'Estructura', fullMark: 100 },
+        { subject: 'Opinión', fullMark: 100 },
+        { subject: 'Recursos', fullMark: 100 },
+        { subject: 'Territorio', fullMark: 100 },
+        { subject: 'Momentum', fullMark: 100 },
+    ];
+
+    const candidateColors = [
+        '#d97706', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', 
+        '#ec4899', '#14b8a6', '#f59e0b', '#6366f1', '#84cc16'
+    ];
+
+    // Transform data for Recharts
+    const chartData = data.map(dim => {
+        const point: any = { subject: dim.subject, fullMark: 100 };
+        candidates.forEach(c => {
+            const key = dim.subject.toLowerCase() === 'estructura' ? 'structure' :
+                        dim.subject.toLowerCase() === 'opinión' ? 'opinion' :
+                        dim.subject.toLowerCase() === 'recursos' ? 'resources' :
+                        dim.subject.toLowerCase() === 'territorio' ? 'territory' : 'momentum';
+            // @ts-ignore
+            point[c.name] = c.attributes[key];
+        });
+        return point;
+    });
+
+    return (
+        <div className="h-[450px] w-full bg-black/20 p-4 rounded-xl border border-white/5">
+            <h4 className="text-sm font-bold text-center text-gray-400 uppercase tracking-widest mb-2">Radar de Atributos Competitivos</h4>
+            <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
+                    <PolarGrid stroke="#374151" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#9ca3af', fontSize: 12, fontWeight: 'bold' }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                    {candidates.slice(0, 5).map((candidate, idx) => ( // Limit to 5 for readability on radar
+                        <Radar
+                            key={candidate.name}
+                            name={candidate.name}
+                            dataKey={candidate.name}
+                            stroke={candidateColors[idx % candidateColors.length]}
+                            fill={candidateColors[idx % candidateColors.length]}
+                            fillOpacity={0.1}
+                        />
+                    ))}
+                    <Legend />
+                    <Tooltip 
+                        contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', color: '#f3f4f6' }}
+                    />
+                </RadarChart>
+            </ResponsiveContainer>
+        </div>
+    );
+};
+
+const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: number }> = ({ candidate, index }) => (
+    <div className="break-inside-avoid bg-white dark:bg-[#1a1410] p-6 rounded-xl border border-gray-200 dark:border-white/10 shadow-lg mb-6">
+        <header className="flex justify-between items-start border-b border-gray-200 dark:border-white/10 pb-4 mb-4">
+            <div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-brand-primary mb-1 block">Candidato #{index + 1}</span>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white font-sans">{candidate.name}</h3>
+            </div>
+            <div className="text-right">
+                <div className="text-3xl font-bold text-brand-primary">{candidate.probabilityScore}%</div>
+                <div className="text-[9px] uppercase text-gray-500 font-bold">Probabilidad</div>
+            </div>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+                <div>
+                    <h4 className="text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Trayectoria Política</h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed text-justify">{candidate.trajectory}</p>
+                </div>
+                <div>
+                    <h4 className="text-xs font-bold uppercase text-red-500 dark:text-red-400 mb-1">Escándalos y Ruido</h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed text-justify">{candidate.scandals}</p>
+                </div>
+                <div>
+                    <h4 className="text-xs font-bold uppercase text-green-500 dark:text-green-400 mb-1">Gestión Destacada</h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed text-justify">{candidate.management}</p>
+                </div>
+            </div>
+            
+            <div className="space-y-4">
+                <div>
+                    <h4 className="text-xs font-bold uppercase text-blue-500 dark:text-blue-400 mb-1">Estructura y Apoyos</h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed text-justify">{candidate.structure}</p>
+                </div>
+                <div>
+                    <h4 className="text-xs font-bold uppercase text-purple-500 dark:text-purple-400 mb-1">Fortaleza Territorial</h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed text-justify">{candidate.territory}</p>
+                </div>
+                <div>
+                    <h4 className="text-xs font-bold uppercase text-orange-500 dark:text-orange-400 mb-1">Dinámica Interna (Rivales/Aliados)</h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed text-justify">{candidate.alliances}</p>
+                </div>
+            </div>
+        </div>
+        
+        {/* Mini Attributes Bar for quick glance */}
+        <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/5 grid grid-cols-5 gap-2">
+            {Object.entries(candidate.attributes).map(([key, value]) => (
+                <div key={key} className="text-center">
+                    <div className="text-[9px] uppercase text-gray-500 mb-1">{key}</div>
+                    <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-brand-primary" style={{width: `${value}%`}}></div>
+                    </div>
+                    <div className="text-[10px] font-bold mt-1 text-gray-700 dark:text-gray-300">{value}</div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets, activeDataset, onProjectAndSimulate }) => {
     const [candidateName, setCandidateName] = useState('');
     const [context, setContext] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -124,19 +244,18 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
     const [error, setError] = useState<string | null>(null);
     const [localHistory, setLocalHistory] = useState<{ election: string; votes: number; party: string }[]>([]);
     
-    // Comparison State
-    const [contenders, setContenders] = useState<string[]>(['', '']); // Start with 2 empty slots
+    const resultsRef = useRef<HTMLDivElement>(null);
+    const [contenders, setContenders] = useState<string[]>(['', '']); 
 
     const [activeTab, setActiveTab] = useState<'profile' | 'forms' | 'comparison'>('profile');
 
-    // Effect to initialize comparison with profile candidate if available
     useEffect(() => {
         if (activeTab === 'comparison' && candidateName && contenders[0] === '' && contenders[1] === '') {
             const newContenders = [...contenders];
             newContenders[0] = candidateName;
             setContenders(newContenders);
         }
-    }, [activeTab, candidateName]); // Removed contenders dependency to prevent loop
+    }, [activeTab, candidateName]); 
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -149,15 +268,12 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
         setActiveTab('profile'); 
 
         try {
-            // 1. Mining Internal Data
             const history: { election: string; votes: number; party: string }[] = [];
-            
             datasets.forEach(ds => {
                 const matches = ds.processedData.filter(row => 
                     row.Candidato.toLowerCase().includes(candidateName.toLowerCase()) && 
                     !row.Candidato.toLowerCase().includes('solo por la lista')
                 );
-
                 matches.forEach(match => {
                     history.push({
                         election: ds.name,
@@ -166,13 +282,9 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                     });
                 });
             });
-
             setLocalHistory(history);
-
-            // 2. AI Profile Generation
             const result = await generateCandidateProfile(candidateName, context, history);
             setProfile(result);
-
         } catch (err: any) {
             setError(err.message || "Error al analizar el candidato.");
         } finally {
@@ -187,7 +299,7 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
     };
 
     const handleAddContender = () => {
-        if (contenders.length < 5) {
+        if (contenders.length < 20) {
             setContenders([...contenders, '']);
         }
     };
@@ -196,6 +308,14 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
         if (contenders.length > 2) {
             setContenders(contenders.filter((_, i) => i !== index));
         }
+    };
+
+    const handleLoadTopCandidates = () => {
+        if (!activeDataset) return;
+        const topCandidates = activeDataset.baseRanking
+            .slice(0, 17)
+            .map(c => c.candidato);
+        setContenders(topCandidates);
     };
 
     const handleCompare = async () => {
@@ -219,15 +339,19 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
 
     const handleSimulate = () => {
         if (!profile || !profile.simulationParameters) return;
-        
         const candidateParty: PartyData = {
             id: Date.now(), 
             name: candidateName.toUpperCase(),
             votes: profile.simulationParameters.suggestedVoteBase || 0,
             color: '#d97706' 
         };
-
         onProjectAndSimulate([candidateParty]);
+    };
+    
+    const handleExportPdf = () => {
+        if (resultsRef.current) {
+            generateStrategicReportPDF(resultsRef.current, `Informe_Inteligencia_Candidato.pdf`);
+        }
     };
 
     const chartData = useMemo(() => {
@@ -238,42 +362,32 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
         }));
     }, [localHistory]);
 
-    // --- LOGIC FOR FORMS BREAKDOWN ---
     const detailedBreakdown = useMemo(() => {
         if (!candidateName) return [];
-
         const breakdown: { election: string; totalVotes: number; tree: LocationNode[] }[] = [];
-
         datasets.forEach(ds => {
             const relevantRows = ds.processedData.filter(row => 
                 row.Candidato.toLowerCase().includes(candidateName.toLowerCase()) || 
                 (row.UnidadPolitica.toLowerCase() === candidateName.toLowerCase() && row.Candidato === 'SOLO POR LA LISTA')
             );
-
             if (relevantRows.length === 0) return;
-
             const totalVotes = relevantRows.reduce((sum, r) => sum + r.Votos, 0);
-            
             const munMap = new Map<string, LocationNode>();
-
             relevantRows.forEach(row => {
                 const munName = row.Municipio || row.Departamento || 'Desconocido'; 
                 const zonaName = row.Zona || 'Zona Única';
                 const puestoName = row.Puesto || 'Puesto Único';
-
                 if (!munMap.has(munName)) {
                     munMap.set(munName, { name: munName, type: 'municipio', votes: 0, children: [] });
                 }
                 const munNode = munMap.get(munName)!;
                 munNode.votes += row.Votos;
-
                 let zonaNode = munNode.children!.find(c => c.name === zonaName);
                 if (!zonaNode) {
                     zonaNode = { name: zonaName, type: 'zona', votes: 0, children: [] };
                     munNode.children!.push(zonaNode);
                 }
                 zonaNode.votes += row.Votos;
-
                 let puestoNode = zonaNode.children!.find(c => c.name === puestoName);
                 if (!puestoNode) {
                     puestoNode = { name: puestoName, type: 'puesto', votes: 0 };
@@ -281,14 +395,12 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                 }
                 puestoNode.votes += row.Votos;
             });
-
             breakdown.push({
                 election: ds.name,
                 totalVotes,
                 tree: Array.from(munMap.values()).sort((a,b) => b.votes - a.votes)
             });
         });
-
         return breakdown;
     }, [candidateName, datasets]);
 
@@ -343,7 +455,6 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
 
             {(profile || candidateName || activeTab === 'comparison') && (
                 <div className="space-y-6">
-                    {/* Header */}
                     {profile && (
                         <div className="glass-panel p-6 rounded-xl border border-brand-primary/30 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div>
@@ -362,7 +473,6 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                         </div>
                     )}
 
-                    {/* Tabs Navigation */}
                     <div className="flex space-x-1 bg-dark-bg/50 p-1 rounded-lg border border-white/5 w-fit">
                         <button
                             onClick={() => setActiveTab('profile')}
@@ -389,10 +499,11 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                         </button>
                     </div>
 
-                    {/* CONTENT - STRATEGIC PROFILE */}
+                    <div ref={resultsRef} className="bg-white p-4 rounded-lg hidden" data-pdf-target="true">
+                    </div>
+
                     {activeTab === 'profile' && profile && (
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
-                            {/* Left Col: Analysis */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in" ref={resultsRef} data-pdf-target="true">
                             <div className="lg:col-span-2 space-y-6">
                                 <AnalysisCard title="Análisis de Opinión Pública" explanation="Sentimiento general y percepción pública basada en búsquedas recientes." collapsible={false} icon={<ShareIcon />}>
                                     <div className="p-4 text-sm text-dark-text-primary leading-relaxed whitespace-pre-wrap">
@@ -417,7 +528,6 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                                 )}
                             </div>
 
-                            {/* Right Col: Simulation Parameters */}
                             <div className="lg:col-span-1 space-y-6">
                                 <AnalysisCard title="Parámetros de Simulación" explanation="Variables sugeridas por la IA para utilizar en los modelos predictivos." collapsible={false} icon={<BeakerIcon />}>
                                     <div className="p-4 space-y-4">
@@ -464,13 +574,22 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                                         <p className="text-[10px] text-center text-gray-500 mt-2">
                                             Esto llevará al candidato al simulador como una lista independiente con {(profile.simulationParameters?.suggestedVoteBase || 0).toLocaleString()} votos.
                                         </p>
+                                        
+                                        <div className="pt-4 border-t border-white/10 mt-4">
+                                            <button
+                                                onClick={handleExportPdf}
+                                                className="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 text-xs border border-gray-600 transition-colors"
+                                            >
+                                                <FilePdfIcon className="w-4 h-4 text-red-400" />
+                                                Exportar Informe Ejecutivo
+                                            </button>
+                                        </div>
                                     </div>
                                 </AnalysisCard>
                             </div>
                         </div>
                     )}
 
-                    {/* CONTENT - ELECTORAL AUDIT / FORMS */}
                     {activeTab === 'forms' && (
                         <div className="space-y-6 animate-fade-in">
                             {detailedBreakdown.length > 0 ? (
@@ -478,7 +597,7 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                                     <AnalysisCard 
                                         key={idx} 
                                         title={`Simulación E-26: ${datasetResult.election}`} 
-                                        explanation="Desglose detallado de votos por jerarquía territorial (Municipio > Zona > Puesto). Esta vista simula la estructura de los formularios electorales oficiales E-26 (Municipal) y E-24 (Puesto)."
+                                        explanation="Desglose detallado de votos por jerarquía territorial."
                                         collapsible
                                         defaultCollapsed={idx > 0}
                                         icon={<TableCellsIcon />}
@@ -508,20 +627,38 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                                 <div className="p-8 border border-dashed border-white/10 rounded-xl text-center bg-white/5">
                                     <ClipboardDocumentIcon className="w-12 h-12 mx-auto text-gray-500 mb-3" />
                                     <h3 className="text-lg font-bold text-gray-300">No hay datos detallados disponibles</h3>
-                                    <p className="text-sm text-gray-500 mt-2">
-                                        No se encontró información de Municipios, Zonas o Puestos en los conjuntos de datos cargados para este candidato. 
-                                        Asegúrate de cargar archivos que contengan estas columnas.
-                                    </p>
                                 </div>
                             )}
                         </div>
                     )}
 
-                    {/* CONTENT - COMPARISON (VERSUS) */}
                     {activeTab === 'comparison' && (
-                        <div className="space-y-6 animate-fade-in">
-                            <AnalysisCard title="Comparador de Candidatos (War Games)" explanation="Simulación de enfrentamiento directo entre múltiples candidatos (máximo 5). Genera escenarios cuantitativos (Pesimista, Base, Optimista) para cada uno.">
+                        <div className="space-y-6 animate-fade-in" ref={resultsRef} data-pdf-target="true">
+                            <AnalysisCard title="Comparador de Candidatos (War Games)" explanation="Simulación de enfrentamiento directo e informes de Due Diligence.">
                                 <div className="p-4">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wide">Candidatos en Disputa</h4>
+                                        <div className="flex gap-2">
+                                            {activeDataset && (
+                                                <button 
+                                                    onClick={handleLoadTopCandidates}
+                                                    className="px-3 py-1.5 bg-blue-900/30 text-blue-300 border border-blue-500/30 rounded-md text-xs font-bold hover:bg-blue-800/50 transition-colors flex items-center gap-2"
+                                                >
+                                                    <UserGroupIcon className="w-4 h-4" />
+                                                    Cargar Top 17
+                                                </button>
+                                            )}
+                                            {comparison && (
+                                                <button 
+                                                    onClick={handleExportPdf}
+                                                    className="px-3 py-1.5 bg-green-900/30 text-green-300 border border-green-500/30 rounded-md text-xs font-bold hover:bg-green-800/50 transition-colors flex items-center gap-2"
+                                                >
+                                                    <FilePdfIcon className="w-4 h-4" />
+                                                    Exportar Informe
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                                         {contenders.map((contender, index) => (
                                             <div key={index} className="flex gap-2 items-end">
@@ -546,7 +683,7 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                                                 )}
                                             </div>
                                         ))}
-                                        {contenders.length < 5 && (
+                                        {contenders.length < 20 && (
                                             <div className="flex items-end">
                                                 <button 
                                                     onClick={handleAddContender}
@@ -566,89 +703,50 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                                             className="bg-brand-primary hover:bg-brand-secondary text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
                                         >
                                             {isLoading ? <LoadingSpinner className="w-5 h-5"/> : <ScaleIcon className="w-5 h-5"/>}
-                                            Ejecutar Simulación (Versus)
+                                            Ejecutar Simulación Avanzada
                                         </button>
                                     </div>
 
                                     {comparison && (
-                                        <div className="mt-8 relative animate-fade-in">
-                                            {/* Summary Stats Grid */}
-                                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6 border-b border-white/5 pb-6">
-                                                {comparison.candidates.map((cand, idx) => (
-                                                    <div key={idx} className="text-center p-3 bg-black/20 rounded-lg border border-white/5">
-                                                        <h3 className="text-sm font-bold text-gray-300 truncate mb-1" title={cand.name}>{cand.name}</h3>
-                                                        <div className="text-2xl font-mono font-bold text-white">{cand.probabilityScore}%</div>
-                                                        <p className="text-[10px] text-gray-500 uppercase tracking-widest">Prob. Éxito</p>
-                                                    </div>
-                                                ))}
+                                        <div className="mt-8 relative animate-fade-in" data-pdf-target="true">
+                                            {/* LIST VERDICT SECTION */}
+                                            <div className="mb-8 p-6 bg-gradient-to-r from-brand-primary/10 to-blue-900/20 rounded-xl border border-white/10 text-center shadow-lg relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                                                <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
+                                                    <CpuChipIcon className="w-5 h-5 text-brand-secondary" />
+                                                    Veredicto de Inteligencia Artificial (Lista Completa)
+                                                </h4>
+                                                <p className="text-sm text-gray-200 leading-relaxed max-w-4xl mx-auto italic border-l-4 border-brand-primary pl-4 py-2 bg-black/20 rounded">
+                                                    "{comparison.listVerdict}"
+                                                </p>
                                             </div>
 
-                                            {/* Scenario Chart */}
-                                            {comparison.scenarios && (
-                                                <div className="mb-8">
+                                            {/* VISUALIZATIONS */}
+                                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+                                                {/* Scenario Chart */}
+                                                <div>
                                                     <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2">
                                                         <ChartBarIcon className="w-4 h-4 text-brand-secondary"/>
-                                                        Proyección de Votos por Escenario
+                                                        Proyecciones de Votos (3 Escenarios)
                                                     </h4>
                                                     <ScenarioChart scenarios={comparison.scenarios} />
-                                                    
-                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                                                        {comparison.scenarios.map((scene, i) => (
-                                                            <div key={i} className="bg-black/30 p-4 rounded-lg border border-white/5 text-center">
-                                                                <p className="text-xs font-bold text-brand-secondary uppercase mb-2">{scene.name}</p>
-                                                                <p className="text-xs text-gray-400 mb-3 min-h-[40px]">{scene.description}</p>
-                                                                
-                                                                <div className="space-y-1 mb-3">
-                                                                    {scene.voteProjections.map((vp, j) => (
-                                                                        <div key={j} className="flex justify-between text-xs border-b border-white/5 pb-1 last:border-0">
-                                                                            <span className="text-gray-300 truncate max-w-[60%]">{vp.candidateName}</span>
-                                                                            <span className="font-mono font-bold">{vp.votes.toLocaleString()}</span>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-
-                                                                <div className="pt-2 border-t border-white/10 bg-white/5 rounded p-2 mt-2">
-                                                                    <p className="text-[10px] text-gray-500 uppercase">Ganador Escenario</p>
-                                                                    <p className="text-white font-bold text-sm">{scene.winner}</p>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
                                                 </div>
-                                            )}
-
-                                            {/* Detailed Analysis Grid */}
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                {comparison.candidates.map((cand, idx) => (
-                                                    <div key={idx} className="bg-black/20 p-4 rounded-xl border border-white/5">
-                                                        <h4 className="text-sm font-bold text-brand-primary uppercase mb-3 border-b border-brand-primary/20 pb-2">{cand.name}</h4>
-                                                        
-                                                        <div className="mb-4">
-                                                            <p className="text-xs font-bold text-green-400 uppercase mb-1">Fortalezas</p>
-                                                            <ul className="list-disc pl-4 space-y-1 text-xs text-gray-400">
-                                                                {cand.strengths.map((s, i) => <li key={i}>{s}</li>)}
-                                                            </ul>
-                                                        </div>
-                                                        
-                                                        <div>
-                                                            <p className="text-xs font-bold text-red-400 uppercase mb-1">Debilidades</p>
-                                                            <ul className="list-disc pl-4 space-y-1 text-xs text-gray-400">
-                                                                {cand.weaknesses.map((s, i) => <li key={i}>{s}</li>)}
-                                                            </ul>
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                                {/* Radar Chart */}
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                        <FingerPrintIcon className="w-4 h-4 text-brand-secondary"/>
+                                                        Radar de Capacidades Competitivas
+                                                    </h4>
+                                                    <AttributeRadarChart candidates={comparison.candidates} />
+                                                </div>
                                             </div>
 
-                                            {/* Final Verdict */}
-                                            <div className="mt-8 p-6 bg-gradient-to-r from-brand-primary/10 to-purple-600/10 rounded-xl border border-white/10 text-center">
-                                                <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-2">Veredicto de la IA</h4>
-                                                <p className="text-3xl font-bold text-brand-glow mb-3">Ganador Probable: {comparison.winner}</p>
-                                                <p className="text-sm text-gray-300 leading-relaxed max-w-3xl mx-auto">{comparison.winnerReason}</p>
-                                                <div className="mt-6 pt-4 border-t border-white/5">
-                                                    <span className="text-xs font-bold text-gray-500 uppercase">Factor Diferencial Clave:</span>
-                                                    <p className="text-white font-medium mt-1">{comparison.keyDifferentiator}</p>
-                                                </div>
+                                            {/* DETAILED EXECUTIVE REPORT CARDS */}
+                                            <h4 className="text-lg font-bold text-white uppercase tracking-widest mb-6 border-b border-white/10 pb-2">Informe Ejecutivo Detallado por Candidato</h4>
+                                            <div className="space-y-6">
+                                                {comparison.candidates.map((cand, idx) => (
+                                                    <DetailedCandidateCard key={idx} candidate={cand} index={idx} />
+                                                ))}
                                             </div>
                                         </div>
                                     )}

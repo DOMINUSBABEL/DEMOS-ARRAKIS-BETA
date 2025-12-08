@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { SimulationResults, SimulationParams, PartyData } from '../types';
 import ScenarioControls from './ScenarioControls';
 import AnalysisCard from './AnalysisCard';
@@ -10,7 +10,7 @@ import DataManager from './DataManager';
 import { ManualRow } from './ManualEntryForm';
 import TrendsAnalysis from './TrendsAnalysis';
 import { BarChart } from './Charts';
-import { SparklesIcon, LoadingSpinner, FilePdfIcon, FileExcelIcon, UserGroupIcon, ChartBarIcon, ScaleIcon } from './Icons';
+import { SparklesIcon, LoadingSpinner, FilePdfIcon, FileExcelIcon, UserGroupIcon, ChartBarIcon, ScaleIcon, WarningIcon } from './Icons';
 import { getAIAnalysis } from '../services/geminiService';
 import { generateGeneralAnalysisPDF } from '../services/reportGenerator';
 import { exportGeneralAnalysisToXLSX } from '../services/spreadsheetGenerator';
@@ -22,6 +22,7 @@ import ListAnalysis from './ListAnalysis';
 import HeatmapAnalysis from './HeatmapAnalysis';
 import MarketingStrategy from './MarketingStrategy';
 import CandidateIntelligence from './CandidateIntelligence';
+import ComparativeAnalysis from './ComparativeAnalysis';
 import { 
   simulateVoteFragmentation,
   applyGovernmentOppositionFactor,
@@ -35,7 +36,7 @@ import { ElectoralDataset, PartyAnalysisData, HistoricalDataset } from '../types
 import { GenerateContentResponse } from '@google/genai';
 
 
-type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap' | 'marketing' | 'candidate_intelligence';
+type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap' | 'marketing' | 'candidate_intelligence' | 'comparative_analysis';
 type DataSource = 'local' | 'remote';
 
 interface DashboardProps {
@@ -144,16 +145,22 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, [datasets, selectedDatasetId, dataSource, remoteDataset]);
 
 
+  // ... (rest of the component logic remains the same) ...
   const baseRanking = activeDataset?.baseRanking ?? [];
   const initialPartyData = activeDataset?.partyData ?? [];
   const invalidVoteCounts = activeDataset?.invalidVoteCounts ?? { blankVotes: 0, nullVotes: 0 };
   const analysisType = activeDataset?.analysisType ?? 'party';
+  const isExecutive = analysisType === 'executive';
 
   const politicalUnits = useMemo(() => ['', ...new Set(baseRanking.map(c => c.unidadPolitica))], [baseRanking]);
   const partyColorMap = useMemo(() => new Map(initialPartyData.map(p => [p.name, p.color])), [initialPartyData]);
 
-  const analysisSubject = useMemo(() => analysisType === 'candidate' ? 'Candidato' : 'Unidad Política', [analysisType]);
-  const analysisSubjectPlural = useMemo(() => analysisType === 'candidate' ? 'Candidatos' : 'Unidades Políticas', [analysisType]);
+  const analysisSubject = useMemo(() => {
+      if (isExecutive) return 'Candidato (Uninominal)';
+      return analysisType === 'candidate' ? 'Candidato (Lista Abierta)' : 'Unidad Política (Lista Cerrada)';
+  }, [analysisType, isExecutive]);
+  
+  const analysisSubjectPlural = useMemo(() => isExecutive ? 'Candidatos' : (analysisType === 'candidate' ? 'Candidatos' : 'Unidades Políticas'), [analysisType, isExecutive]);
 
   const filteredRanking = useMemo(() => {
     if (!partyFilter) return baseRanking;
@@ -234,12 +241,12 @@ const Dashboard: React.FC<DashboardProps> = ({
       color: partyColorMap.get(c.unidadPolitica)
   })).sort((a,b) => a.value - b.value);
 
-  const headers = analysisType === 'candidate'
-    ? ['#', 'Candidato', 'Unidad Política', 'Poder Electoral Base']
+  const headers = (analysisType === 'candidate' || isExecutive)
+    ? ['#', 'Candidato', 'Unidad Política', 'Votos']
     : ['#', 'Unidad Política', 'Poder Electoral Base'];
 
   const data = filteredRanking.map((c, i) => (
-    analysisType === 'candidate'
+    (analysisType === 'candidate' || isExecutive)
       ? [i + 1, c.candidato, c.unidadPolitica, c.poderElectoralBase]
       : [i + 1, c.unidadPolitica, c.poderElectoralBase]
   ));
@@ -264,7 +271,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, []);
 
   const renderContent = () => {
-    if (noDataLoaded && activeTab !== 'data_manager' && activeTab !== 'methodology' && activeTab !== 'marketing' && activeTab !== 'candidate_intelligence') {
+    if (noDataLoaded && activeTab !== 'data_manager' && activeTab !== 'methodology' && activeTab !== 'marketing' && activeTab !== 'candidate_intelligence' && activeTab !== 'comparative_analysis') {
         return (
             <div className="text-center py-10 bg-light-card dark:bg-dark-card rounded-lg mt-8 animate-fade-in-up">
                 <h2 className="text-xl font-semibold">Dashboard Vacío</h2>
@@ -316,6 +323,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
             
             <div ref={generalAnalysisRef}>
+                {/* ... (existing General Analysis rendering) ... */}
                 <div>
                     <h2 className="text-2xl font-bold mb-4">Análisis de: <span className="text-brand-primary">{activeDataset.name}</span></h2>
                     
@@ -344,19 +352,22 @@ const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                     </div>
 
-                    <div className="bg-light-card dark:bg-dark-card/50 backdrop-blur-sm border border-light-border dark:border-dark-border p-4 rounded-lg shadow-lg mb-6 transition-all duration-300 hover:border-brand-primary/30">
-                        <label htmlFor="partyFilter" className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-1">Filtrar por Unidad Política</label>
-                        <select
-                            id="partyFilter"
-                            value={partyFilter}
-                            onChange={(e) => setPartyFilter(e.target.value)}
-                            className="w-full md:w-1/3 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 focus:ring-brand-primary focus:border-brand-primary"
-                        >
-                            {politicalUnits.map(unit => <option key={unit} value={unit}>{unit || 'Todos los Partidos'}</option>)}
-                        </select>
-                    </div>
+                    {!isExecutive && (
+                        <div className="bg-light-card dark:bg-dark-card/50 backdrop-blur-sm border border-light-border dark:border-dark-border p-4 rounded-lg shadow-lg mb-6 transition-all duration-300 hover:border-brand-primary/30">
+                            <label htmlFor="partyFilter" className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-1">Filtrar por Unidad Política</label>
+                            <select
+                                id="partyFilter"
+                                value={partyFilter}
+                                onChange={(e) => setPartyFilter(e.target.value)}
+                                className="w-full md:w-1/3 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 focus:ring-brand-primary focus:border-brand-primary"
+                            >
+                                {politicalUnits.map(unit => <option key={unit} value={unit}>{unit || 'Todos los Partidos'}</option>)}
+                            </select>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6" id="analysis-charts">
-                        <AnalysisCard title={`Poder Electoral Base (Top 10${partyFilter ? ' - ' + partyFilter : ''})`} explanation={`Este gráfico muestra el 'Poder Electoral Base' de los 10 principales ${analysisSubjectPlural.toLowerCase()}. Esta métrica es el promedio de votos ajustados que un ${analysisSubject.toLowerCase()} ha obtenido, sirviendo como un indicador de su fuerza inicial.`} collapsible>
+                        <AnalysisCard title={`Ranking de Votación (${analysisSubjectPlural})`} explanation={`Este gráfico muestra los votos obtenidos por los 10 principales ${analysisSubjectPlural.toLowerCase()}.`} collapsible>
                             <BarChart data={chartData} />
                         </AnalysisCard>
 
@@ -411,7 +422,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                     )}
                     <div className="mt-6" id="analysis-table">
-                        <AnalysisCard title={`Ranking Base Completo (Poder Electoral por ${analysisSubject})`} explanation="Esta tabla muestra el ranking completo de todos los ${analysisSubjectPlural.toLowerCase()} basado en su Poder Electoral Base. Es la línea de base fundamental para todas las proyecciones y simulaciones." collapsible>
+                        <AnalysisCard title={`Ranking Base Completo (${analysisSubjectPlural})`} explanation="Esta tabla muestra el ranking completo de todos los ${analysisSubjectPlural.toLowerCase()} basado en su Poder Electoral Base. Es la línea de base fundamental para todas las proyecciones y simulaciones." collapsible>
                             <DataTable title="" headers={headers} data={data} colorMap={partyColorMap} colorColumnKey="Unidad Política" />
                         </AnalysisCard>
                     </div>
@@ -461,6 +472,18 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>;
 
       case 'd_hondt':
+        if (isExecutive) {
+            return (
+                <div className="text-center py-10 bg-light-card dark:bg-dark-card rounded-lg mt-8 animate-fade-in-up border border-yellow-600/30">
+                    <WarningIcon className="w-12 h-12 mx-auto text-yellow-500 mb-4" />
+                    <h2 className="text-xl font-semibold text-yellow-500">Módulo No Disponible para Cargos Uninominales</h2>
+                    <p className="text-light-text-secondary dark:text-dark-text-secondary mt-2 max-w-lg mx-auto">
+                        El simulador de cifra repartidora (D'Hondt) se aplica únicamente a corporaciones públicas (Concejo, Asamblea, Cámara, Senado). 
+                        Para elecciones de Alcalde, Gobernador o Presidente, el ganador se define por mayoría simple (o segunda vuelta).
+                    </p>
+                </div>
+            );
+        }
         return activeDataset && <div>
           <p className="text-center text-light-text-secondary dark:text-dark-text-secondary text-sm mb-4">Análisis para: <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">{activeDataset.name}</span></p>
           <DHondtSimulator
@@ -487,6 +510,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             )}
             {simulationResults && (
                 <div className="space-y-6 animate-fade-in-up">
+                  {/* ... (Existing simulation result cards) ... */}
                   <AnalysisCard title="Análisis IA de la Simulación" explanation={`Obtén un análisis estratégico de los resultados de la simulación de ${analysisSubjectPlural.toLowerCase()}.`} collapsible defaultCollapsed>
                     <button onClick={() => handleAiAnalysis('projections')} disabled={isAiLoading['projections']} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-wait">
                         <SparklesIcon className="w-5 h-5" />
@@ -520,8 +544,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                         </>
                     )}
                   </AnalysisCard>
-                  <AnalysisCard title="Oráculo Final (Probabilidad de Curul)" explanation="Resultado de la simulación de Monte Carlo. Muestra la probabilidad de que cada candidato obtenga una curul, basado en miles de micro-elecciones simuladas.">
-                      <DataTable title="" headers={['#', 'Candidato', 'Votos Proyectados', 'Probabilidad de Curul (%)']} data={simulationResults.probabilities.map((p, i) => [i + 1, p.candidato, Math.round(p.votos_proyectados), p.probabilidad_curul.toFixed(2) + '%'])} highlightFirstN={5} />
+                  <AnalysisCard title={`Oráculo Final (Probabilidad de ${isExecutive ? 'Victoria' : 'Curul'})`} explanation="Resultado de la simulación de Monte Carlo. Muestra la probabilidad de éxito basado en miles de micro-elecciones simuladas.">
+                      <DataTable title="" headers={['#', 'Candidato', 'Votos Proyectados', `Probabilidad de ${isExecutive ? 'Victoria' : 'Curul'} (%)`]} data={simulationResults.probabilities.map((p, i) => [i + 1, p.candidato, Math.round(p.votos_proyectados), p.probabilidad_curul.toFixed(2) + '%'])} highlightFirstN={5} />
                     </AnalysisCard>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <AnalysisCard title="Impacto: Fragmentación de Votos" explanation="Este ranking muestra cómo quedaría el poder electoral si la unidad política seleccionada se fragmenta entre varios candidatos.">
@@ -539,9 +563,31 @@ const Dashboard: React.FC<DashboardProps> = ({
         return <HistoricalSimulator datasets={datasets} partyAnalysis={partyAnalysis} onClassifyIdeologies={onClassifyIdeologies} />;
 
       case 'coalitions':
+        if (isExecutive) {
+             return (
+                <div className="text-center py-10 bg-light-card dark:bg-dark-card rounded-lg mt-8 animate-fade-in-up border border-gray-600/30">
+                    <UserGroupIcon className="w-12 h-12 mx-auto text-gray-500 mb-4" />
+                    <h2 className="text-xl font-semibold text-gray-400">Análisis de Coaliciones</h2>
+                    <p className="text-light-text-secondary dark:text-dark-text-secondary mt-2 max-w-lg mx-auto">
+                        Este módulo está optimizado para analizar listas a corporaciones. Para elecciones uninominales, use el módulo de "Simulación Histórica".
+                    </p>
+                </div>
+            );
+        }
         return <CoalitionAnalysis datasets={datasets} />;
 
       case 'list_analysis':
+        if (isExecutive) {
+             return (
+                <div className="text-center py-10 bg-light-card dark:bg-dark-card rounded-lg mt-8 animate-fade-in-up border border-gray-600/30">
+                    <UserGroupIcon className="w-12 h-12 mx-auto text-gray-500 mb-4" />
+                    <h2 className="text-xl font-semibold text-gray-400">Análisis de Listas (Abierta vs Cerrada)</h2>
+                    <p className="text-light-text-secondary dark:text-dark-text-secondary mt-2 max-w-lg mx-auto">
+                        No aplicable para cargos uninominales (Alcalde, Gobernador) donde no existen listas abiertas o cerradas.
+                    </p>
+                </div>
+            );
+        }
         return <ListAnalysis
           datasets={datasets}
           partyAnalysis={partyAnalysis}
@@ -566,7 +612,14 @@ const Dashboard: React.FC<DashboardProps> = ({
         return <MarketingStrategy />;
 
       case 'candidate_intelligence':
-        return <CandidateIntelligence datasets={datasets} onProjectAndSimulate={handleProjectAndSimulate} />;
+        return <CandidateIntelligence 
+            datasets={datasets} 
+            activeDataset={activeDataset}
+            onProjectAndSimulate={handleProjectAndSimulate} 
+        />;
+        
+      case 'comparative_analysis':
+        return <ComparativeAnalysis />;
 
       default:
         return null;

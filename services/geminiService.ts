@@ -453,17 +453,39 @@ export const generateCandidateComparison = async (
     context: string
 ): Promise<CandidateComparisonResult> => {
     const prompt = `
-    ROL: Estratega Político Senior experto en "War Games" electorales.
-    OBJETIVO: Realizar una simulación cuantitativa de enfrentamiento entre los siguientes candidatos: ${candidates.join(', ')}.
+    ROL: Consultor Político Senior experto en Due Diligence e Inteligencia Competitiva.
+    OBJETIVO: Realizar un análisis profundo ("War Games") de los siguientes candidatos: ${candidates.join(', ')}.
 
     CONTEXTO ELECTORAL: ${context}
 
-    INSTRUCCIONES CLAVE:
-    1.  Investiga el perfil actual, fortalezas, debilidades y maquinaria de CADA candidato usando Google Search.
-    2.  Genera 3 ESCENARIOS CUANTITATIVOS DISTINTOS (ej: 'Alta Abstención', 'Voto de Opinión Masivo', 'Estructuras vs Opinión').
-    3.  En cada escenario, estima una CIFRA DE VOTOS NUMÉRICA (no porcentajes) para CADA candidato basada en datos históricos o inferencias lógicas.
-    4.  Calcula los 'swing votes' (votos indecisos o en disputa) para cada escenario.
-    5.  Define un ganador probable para cada escenario y un ganador general.
+    INSTRUCCIONES CLAVE PARA EL INFORME EJECUTIVO:
+    
+    1.  **DUE DILIGENCE POR CANDIDATO (Google Search):**
+        Para CADA candidato, investiga y completa los siguientes campos con profundidad:
+        *   **Trayectoria:** Resumen ejecutivo de su carrera y cargos previos.
+        *   **Escándalos:** Investigaciones, polémicas o ruido negativo específico. Si no hay, indícalo.
+        *   **Imagen:** Percepción pública actual (opinión).
+        *   **Estructura (Maquinaria):** ¿Quién lo apoya? (Alcaldes, congresistas, clanes políticos, gremios).
+        *   **Territorio:** ¿Dónde están sus votos? (Municipios o zonas específicas).
+        *   **Gestión:** Logros concretos si ha gobernado o legislado.
+        *   **Rivalidades/Alianzas:** Enemigos internos en su partido o aliados clave.
+
+    2.  **GRÁFICO DE RADAR (ATRIBUTOS):**
+        Califica numéricamente (0-100) los siguientes atributos para cada uno:
+        *   Structure (Maquinaria/Voto Duro)
+        *   Opinion (Voto de Opinión/Imagen)
+        *   Resources (Capacidad Financiera)
+        *   Territory (Control Territorial)
+        *   Momentum (Crecimiento Reciente)
+
+    3.  **PROBABILIDAD:**
+        Estima la probabilidad de obtener curul (0-100) basándote en la combinación de factores.
+
+    4.  **VEREDICTO DE LISTA (Análisis Conjunto):**
+        Analiza la lista o el grupo en su totalidad. ¿Quiénes son los probables ganadores de las curules? ¿Quiénes están en riesgo ("quemados")? ¿Cómo se distribuye el poder en este escenario?
+
+    5.  **ESCENARIOS CUANTITATIVOS:**
+        Genera 3 escenarios de votación numérica para alimentar los gráficos de barras.
 
     FORMATO DE RESPUESTA: JSON Estricto que coincida con el schema.
     `;
@@ -471,19 +493,36 @@ export const generateCandidateComparison = async (
     const schema: Schema = {
         type: Type.OBJECT,
         properties: {
-            winner: { type: Type.STRING, description: "Nombre del ganador global probable" },
-            winnerReason: { type: Type.STRING, description: "Justificación estratégica del ganador" },
+            listVerdict: { type: Type.STRING, description: "Análisis estratégico de la lista en conjunto. Quiénes entran, quiénes salen." },
             candidates: {
                 type: Type.ARRAY,
                 items: {
                     type: Type.OBJECT,
                     properties: {
                         name: { type: Type.STRING },
-                        strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
-                        weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
-                        probabilityScore: { type: Type.NUMBER, description: "Probabilidad General de Victoria (0-100)" }
+                        probabilityScore: { type: Type.NUMBER, description: "Probabilidad General de Victoria (0-100)" },
+                        // Deep Dive Fields
+                        trajectory: { type: Type.STRING, description: "Resumen de carrera política" },
+                        scandals: { type: Type.STRING, description: "Escándalos o investigaciones" },
+                        image: { type: Type.STRING, description: "Percepción de imagen" },
+                        structure: { type: Type.STRING, description: "Apoyos de maquinaria" },
+                        management: { type: Type.STRING, description: "Hitos de gestión" },
+                        territory: { type: Type.STRING, description: "Fortalezas territoriales" },
+                        alliances: { type: Type.STRING, description: "Alianzas y rivalidades" },
+                        // Radar Attributes
+                        attributes: {
+                            type: Type.OBJECT,
+                            properties: {
+                                structure: { type: Type.NUMBER },
+                                opinion: { type: Type.NUMBER },
+                                resources: { type: Type.NUMBER },
+                                territory: { type: Type.NUMBER },
+                                momentum: { type: Type.NUMBER },
+                            },
+                            required: ['structure', 'opinion', 'resources', 'territory', 'momentum']
+                        }
                     },
-                    required: ['name', 'strengths', 'weaknesses', 'probabilityScore']
+                    required: ['name', 'probabilityScore', 'trajectory', 'scandals', 'image', 'structure', 'management', 'territory', 'alliances', 'attributes']
                 }
             },
             scenarios: {
@@ -491,8 +530,8 @@ export const generateCandidateComparison = async (
                 items: {
                     type: Type.OBJECT,
                     properties: {
-                        name: { type: Type.STRING, description: "Ej: 'Escenario de Alta Participación'" },
-                        description: { type: Type.STRING, description: "Condiciones del escenario." },
+                        name: { type: Type.STRING },
+                        description: { type: Type.STRING },
                         voteProjections: {
                             type: Type.ARRAY,
                             items: {
@@ -504,15 +543,14 @@ export const generateCandidateComparison = async (
                                 required: ['candidateName', 'votes']
                             }
                         },
-                        swingVotes: { type: Type.NUMBER, description: "Votos en disputa/indecisos" },
-                        winner: { type: Type.STRING, description: "Nombre del ganador del escenario" }
+                        swingVotes: { type: Type.NUMBER },
+                        winner: { type: Type.STRING }
                     },
                     required: ['name', 'description', 'voteProjections', 'swingVotes', 'winner']
                 }
-            },
-            keyDifferentiator: { type: Type.STRING }
+            }
         },
-        required: ['winner', 'winnerReason', 'candidates', 'scenarios', 'keyDifferentiator']
+        required: ['listVerdict', 'candidates', 'scenarios']
     };
 
     try {
@@ -530,6 +568,6 @@ export const generateCandidateComparison = async (
         return JSON.parse(jsonText) as CandidateComparisonResult;
     } catch (error) {
         console.error("Error generating comparison:", error);
-        throw new Error("No se pudo generar la comparación detallada.");
+        throw new Error("No se pudo generar el informe detallado.");
     }
 };
