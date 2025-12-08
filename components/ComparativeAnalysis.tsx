@@ -150,59 +150,59 @@ const AttributeRadarChart: React.FC<{ candidates: CandidateAnalysis[], visibleCa
 };
 
 const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: number }> = ({ candidate, index }) => (
-    <div className="break-inside-avoid bg-white dark:bg-[#1a1410] p-6 rounded-xl border border-gray-200 dark:border-white/10 shadow-lg mb-6">
-        <header className="flex justify-between items-start border-b border-gray-200 dark:border-white/10 pb-4 mb-4">
+    <div className="break-inside-avoid bg-white dark:bg-[#1a1410] p-8 rounded-xl border border-gray-200 dark:border-white/10 shadow-lg mb-8">
+        <header className="flex justify-between items-start border-b-2 border-gray-100 dark:border-white/5 pb-6 mb-6">
             <div>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-brand-primary mb-1 block">Candidato #{index + 1}</span>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white font-sans">{candidate.name}</h3>
+                <span className="text-xs font-bold uppercase tracking-widest text-brand-primary mb-2 block">Candidato #{index + 1}</span>
+                <h3 className="text-3xl font-bold text-gray-900 dark:text-white font-sans tracking-tight">{candidate.name}</h3>
             </div>
             <div className="text-right">
-                <div className="text-3xl font-bold text-brand-primary">{candidate.probabilityScore}%</div>
-                <div className="text-[9px] uppercase text-gray-500 font-bold">Probabilidad</div>
+                <div className="text-4xl font-bold text-brand-primary">{candidate.probabilityScore}%</div>
+                <div className="text-[10px] uppercase text-gray-500 font-bold tracking-wider mt-1">Probabilidad</div>
             </div>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-6">
                 <div>
-                    <h4 className="text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Trayectoria Política</h4>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed text-justify">{candidate.trajectory}</p>
+                    <h4 className="text-xs font-black uppercase text-gray-400 dark:text-gray-500 tracking-widest mb-2">Trayectoria Política</h4>
+                    <p className="text-base text-gray-800 dark:text-gray-200 leading-7 text-justify font-normal">{candidate.trajectory}</p>
                 </div>
                 <div>
-                    <h4 className="text-xs font-bold uppercase text-red-500 dark:text-red-400 mb-1">Escándalos y Ruido</h4>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed text-justify">{candidate.scandals}</p>
+                    <h4 className="text-xs font-black uppercase text-red-500 dark:text-red-400 tracking-widest mb-2">Escándalos y Ruido</h4>
+                    <p className="text-base text-gray-800 dark:text-gray-200 leading-7 text-justify font-normal">{candidate.scandals}</p>
                 </div>
                 <div>
-                    <h4 className="text-xs font-bold uppercase text-green-500 dark:text-green-400 mb-1">Gestión Destacada</h4>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed text-justify">{candidate.management}</p>
+                    <h4 className="text-xs font-black uppercase text-green-600 dark:text-green-400 tracking-widest mb-2">Gestión Destacada</h4>
+                    <p className="text-base text-gray-800 dark:text-gray-200 leading-7 text-justify font-normal">{candidate.management}</p>
                 </div>
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-6">
                 <div>
-                    <h4 className="text-xs font-bold uppercase text-blue-500 dark:text-blue-400 mb-1">Estructura y Apoyos</h4>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed text-justify">{candidate.structure}</p>
+                    <h4 className="text-xs font-black uppercase text-blue-600 dark:text-blue-400 tracking-widest mb-2">Estructura y Apoyos</h4>
+                    <p className="text-base text-gray-800 dark:text-gray-200 leading-7 text-justify font-normal">{candidate.structure}</p>
                 </div>
                 <div>
-                    <h4 className="text-xs font-bold uppercase text-purple-500 dark:text-purple-400 mb-1">Fortaleza Territorial</h4>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed text-justify">{candidate.territory}</p>
+                    <h4 className="text-xs font-black uppercase text-purple-600 dark:text-purple-400 tracking-widest mb-2">Fortaleza Territorial</h4>
+                    <p className="text-base text-gray-800 dark:text-gray-200 leading-7 text-justify font-normal">{candidate.territory}</p>
                 </div>
                 <div>
-                    <h4 className="text-xs font-bold uppercase text-orange-500 dark:text-orange-400 mb-1">Dinámica Interna (Rivales/Aliados)</h4>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed text-justify">{candidate.alliances}</p>
+                    <h4 className="text-xs font-black uppercase text-orange-600 dark:text-orange-400 tracking-widest mb-2">Dinámica Interna (Rivales/Aliados)</h4>
+                    <p className="text-base text-gray-800 dark:text-gray-200 leading-7 text-justify font-normal">{candidate.alliances}</p>
                 </div>
             </div>
         </div>
         
         {/* Mini Attributes Bar for quick glance */}
-        <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/5 grid grid-cols-5 gap-2">
+        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-white/5 grid grid-cols-5 gap-4">
             {Object.entries(candidate.attributes).map(([key, value]) => (
                 <div key={key} className="text-center">
-                    <div className="text-[9px] uppercase text-gray-500 mb-1">{key}</div>
-                    <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="text-[10px] uppercase text-gray-500 font-bold mb-2 tracking-wider">{key}</div>
+                    <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                         <div className="h-full bg-brand-primary" style={{width: `${value}%`}}></div>
                     </div>
-                    <div className="text-[10px] font-bold mt-1 text-gray-700 dark:text-gray-300">{value}</div>
+                    <div className="text-xs font-bold mt-2 text-gray-700 dark:text-gray-300">{value} / 100</div>
                 </div>
             ))}
         </div>

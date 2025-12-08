@@ -453,63 +453,57 @@ export const generateCandidateComparison = async (
     context: string
 ): Promise<CandidateComparisonResult> => {
     const prompt = `
-    ROL: Consultor Político Senior experto en Due Diligence e Inteligencia Competitiva.
-    OBJETIVO: Realizar un análisis profundo ("War Games") de los siguientes candidatos: ${candidates.join(', ')}.
+    ROL: Consultor Estratégico Político Senior (Especialista en Modelos Predictivos).
+    OBJETIVO: Realizar un análisis profundo ("War Games") de TODOS los siguientes candidatos: ${candidates.join(', ')}.
 
     CONTEXTO ELECTORAL: ${context}
 
-    INSTRUCCIONES CLAVE PARA EL INFORME EJECUTIVO:
+    *** REGLAS DE ORO DE COHERENCIA Y PONDERACIÓN HISTÓRICA (SANITY CHECK) ***
+    1.  **PONDERACIÓN HISTÓRICA VS OPINIÓN:** El historial electoral (votos previos reales) es el factor MÁS importante. 
+        *   CRÍTICO: Un candidato con una votación histórica pequeña (ej. 3.500 votos como Julián Lopera o similar) **JAMÁS** debe aparecer con mayor probabilidad que un gran elector histórico (ej. 33.000 votos como John Jairo o similar) a menos que exista un evento catastrófico documentado (inhabilidad, cárcel, pérdida total de estructura).
+        *   No sobrevalores el "ruido" en redes sociales sobre los votos reales de maquinaria y estructura.
     
-    1.  **DUE DILIGENCE POR CANDIDATO (Google Search):**
-        Para CADA candidato, investiga y completa los siguientes campos con profundidad:
-        *   **Trayectoria:** Resumen ejecutivo de su carrera y cargos previos.
-        *   **Escándalos:** Investigaciones, polémicas o ruido negativo específico. Si no hay, indícalo.
-        *   **Imagen:** Percepción pública actual (opinión).
-        *   **Estructura (Maquinaria):** ¿Quién lo apoya? (Alcaldes, congresistas, clanes políticos, gremios).
-        *   **Territorio:** ¿Dónde están sus votos? (Municipios o zonas específicas).
-        *   **Gestión:** Logros concretos si ha gobernado o legislado.
-        *   **Rivalidades/Alianzas:** Enemigos internos en su partido o aliados clave.
+    2.  **ESCENARIOS DE CURULES (MODELO DE 3 NIVELES):**
+        Calcula la probabilidad asumiendo que la lista obtendrá entre 5 y 7 curules.
+        *   **Escenario A (Probable - 5 Curules):** Los 5 candidatos más fuertes deben tener una 'probabilityScore' ALTA (>85%).
+        *   **Escenario B (Posible - 6 Curules):** El 6º candidato fuerte está en zona de disputa ('probabilityScore' entre 40% y 60%).
+        *   **Escenario C (Improbable/Techo - 7 Curules):** El 7º candidato tiene opciones remotas ('probabilityScore' entre 10% y 30%).
+        *   **Resto de la Lista:** Candidatos por debajo del puesto 7 deben tener probabilidades residuales (< 5%).
 
-    2.  **GRÁFICO DE RADAR (ATRIBUTOS):**
-        Califica numéricamente (0-100) los siguientes atributos para cada uno:
-        *   Structure (Maquinaria/Voto Duro)
-        *   Opinion (Voto de Opinión/Imagen)
-        *   Resources (Capacidad Financiera)
-        *   Territory (Control Territorial)
-        *   Momentum (Crecimiento Reciente)
+    INSTRUCCIONES CLAVE PARA EL INFORME:
+    
+    1.  **DUE DILIGENCE (Google Search):** Investiga a CADA candidato. Busca:
+        *   Votaciones anteriores (Cámara 2018, 2022, Asamblea, Concejo).
+        *   Estructura actual (¿Quiénes son sus padrinos? ¿Qué alcaldías tienen?).
+        *   Escándalos recientes que afecten su viabilidad.
 
-    3.  **PROBABILIDAD:**
-        Estima la probabilidad de obtener curul (0-100) basándote en la combinación de factores.
+    2.  **ESCENARIOS CUANTITATIVOS:**
+        Genera 3 escenarios numéricos de votación para CADA candidato. Asegúrate de que las cifras proyectadas sean coherentes con su historial (un candidato de 3k no salta a 40k mágicamente).
+        *   Escenario 1: Base (5 Curules Efectivas).
+        *   Escenario 2: Optimista (6 Curules Efectivas).
+        *   Escenario 3: Techo (7 Curules Efectivas).
 
-    4.  **VEREDICTO DE LISTA (Análisis Conjunto):**
-        Analiza la lista o el grupo en su totalidad. ¿Quiénes son los probables ganadores de las curules? ¿Quiénes están en riesgo ("quemados")? ¿Cómo se distribuye el poder en este escenario?
-
-    5.  **ESCENARIOS CUANTITATIVOS:**
-        Genera 3 escenarios de votación numérica para alimentar los gráficos de barras.
-
-    FORMATO DE RESPUESTA: JSON Estricto que coincida con el schema.
+    FORMATO DE RESPUESTA: JSON Estricto. Incluye TODOS los candidatos.
     `;
 
     const schema: Schema = {
         type: Type.OBJECT,
         properties: {
-            listVerdict: { type: Type.STRING, description: "Análisis estratégico de la lista en conjunto. Quiénes entran, quiénes salen." },
+            listVerdict: { type: Type.STRING, description: "Análisis estratégico de la lista. Quiénes son los fijos (1-5), quién pelea la 6ta, quién sueña con la 7ma." },
             candidates: {
                 type: Type.ARRAY,
                 items: {
                     type: Type.OBJECT,
                     properties: {
                         name: { type: Type.STRING },
-                        probabilityScore: { type: Type.NUMBER, description: "Probabilidad General de Victoria (0-100)" },
-                        // Deep Dive Fields
-                        trajectory: { type: Type.STRING, description: "Resumen de carrera política" },
-                        scandals: { type: Type.STRING, description: "Escándalos o investigaciones" },
-                        image: { type: Type.STRING, description: "Percepción de imagen" },
-                        structure: { type: Type.STRING, description: "Apoyos de maquinaria" },
-                        management: { type: Type.STRING, description: "Hitos de gestión" },
-                        territory: { type: Type.STRING, description: "Fortalezas territoriales" },
-                        alliances: { type: Type.STRING, description: "Alianzas y rivalidades" },
-                        // Radar Attributes
+                        probabilityScore: { type: Type.NUMBER, description: "Probabilidad General de Victoria (0-100). Respetar jerarquía histórica." },
+                        trajectory: { type: Type.STRING, description: "Resumen detallado de carrera política y VOTOS ANTERIORES." },
+                        scandals: { type: Type.STRING, description: "Investigaciones activas o ruido negativo." },
+                        image: { type: Type.STRING, description: "Percepción de imagen." },
+                        structure: { type: Type.STRING, description: "Apoyos de maquinaria y padrinos." },
+                        management: { type: Type.STRING, description: "Hitos de gestión." },
+                        territory: { type: Type.STRING, description: "Fortalezas territoriales." },
+                        alliances: { type: Type.STRING, description: "Alianzas y rivalidades." },
                         attributes: {
                             type: Type.OBJECT,
                             properties: {
@@ -530,7 +524,7 @@ export const generateCandidateComparison = async (
                 items: {
                     type: Type.OBJECT,
                     properties: {
-                        name: { type: Type.STRING },
+                        name: { type: Type.STRING, description: "Nombre del escenario (ej: Base 5 Curules, Optimista 6 Curules)" },
                         description: { type: Type.STRING },
                         voteProjections: {
                             type: Type.ARRAY,

@@ -32,7 +32,7 @@ const addElementAsImage = async (
                 element.style.color = '#000000';
             }
             // Also force specific text classes if needed
-            const texts = clonedDoc.querySelectorAll('.text-white, .text-gray-200, .text-gray-300, .text-gray-400, .text-light-text-primary, .dark\\:text-dark-text-primary');
+            const texts = clonedDoc.querySelectorAll('.text-white, .text-gray-200, .text-gray-300, .text-gray-400, .text-gray-500, .text-gray-700, .text-gray-800, .text-light-text-primary, .dark\\:text-dark-text-primary, .dark\\:text-gray-200, .dark\\:text-gray-300');
             texts.forEach((t: any) => t.style.color = '#000000');
         }
     });
@@ -178,10 +178,16 @@ export const generateStrategicReportPDF = async (element: HTMLElement, fileName:
              el.style.textShadow = 'none';
         }
         // Force background of cards to be light gray for contrast
-        if (el.classList.contains('bg-white/5') || el.classList.contains('glass-panel')) {
+        if (el.classList.contains('bg-white/5') || el.classList.contains('glass-panel') || el.classList.contains('bg-black/20') || el.classList.contains('bg-white') || el.classList.contains('dark:bg-[#1a1410]')) {
             el.style.backgroundColor = '#f3f4f6'; // Light gray background for cards
             el.style.borderColor = '#ccc';
             el.style.boxShadow = 'none';
+            el.style.backgroundImage = 'none';
+        }
+        // Specifically for DetailedCandidateCard backgrounds
+        if(el.classList.contains('dark:bg-[#1a1410]')) {
+             el.style.backgroundColor = '#ffffff';
+             el.style.border = '1px solid #e5e7eb';
         }
     });
     // Remove dark backgrounds
