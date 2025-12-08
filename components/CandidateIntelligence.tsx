@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import AnalysisCard from './AnalysisCard';
-import { FingerPrintIcon, LoadingSpinner, SparklesIcon, WarningIcon, ChartBarIcon, MapIcon, ShareIcon, BeakerIcon, ClipboardDocumentIcon, TableCellsIcon, ChevronDownIcon, ScaleIcon, PlusIcon, TrashIcon, UserGroupIcon, FilePdfIcon, CpuChipIcon } from './Icons';
+import { FingerPrintIcon, LoadingSpinner, SparklesIcon, WarningIcon, ChartBarIcon, MapIcon, ShareIcon, BeakerIcon, ClipboardDocumentIcon, TableCellsIcon, ChevronDownIcon, ScaleIcon, PlusIcon, TrashIcon, UserGroupIcon, FilePdfIcon, CpuChipIcon, DatabaseIcon } from './Icons';
 import { generateCandidateProfile, generateCandidateComparison } from '../services/geminiService';
 import { generateStrategicReportPDF } from '../services/reportGenerator';
 import { CandidateProfileResult, ElectoralDataset, PartyData, ProcessedElectionData, CandidateComparisonResult, ComparisonScenario, HistoricalDataset, CandidateAnalysis } from '../types';
@@ -759,8 +759,5 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
         </div>
     );
 };
-
-// Add DatabaseIcon import if not available in context, reusing from existing imports
-import { DatabaseIcon } from './Icons';
 
 export default CandidateIntelligence;

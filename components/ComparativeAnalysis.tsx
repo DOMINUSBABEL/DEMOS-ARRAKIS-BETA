@@ -1,11 +1,10 @@
-
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import AnalysisCard from './AnalysisCard';
-import { UserGroupIcon, LoadingSpinner, ScaleIcon, PlusIcon, TrashIcon, ChartBarIcon, FingerPrintIcon, CpuChipIcon, FilePdfIcon, ShareIcon } from './Icons';
+import { UserGroupIcon, LoadingSpinner, ScaleIcon, PlusIcon, TrashIcon, ChartBarIcon, FingerPrintIcon, CpuChipIcon, FilePdfIcon, BuildingOfficeIcon, ShareIcon, WarningIcon } from './Icons';
 import { generateCandidateComparison } from '../services/geminiService';
 import { generateStrategicReportPDF } from '../services/reportGenerator';
-import { CandidateComparisonResult, ComparisonScenario, CandidateAnalysis } from '../types';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
+import { CandidateComparisonResult, ComparisonScenario, CandidateAnalysis, PartyMetrics } from '../types';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, PieChart, Pie, Cell } from 'recharts';
 
 interface ComparativeAnalysisProps {
     // No specific props needed as it manages its own state
@@ -31,8 +30,71 @@ const DEFAULT_CANDIDATES = [
     "117 Ana Ligia Mora Martínez"
 ];
 
+// --- Custom Tooltips for Enhanced Visualization ---
+
+const CustomScenarioTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+        // Sort payload by value descending to show winners first
+        const sortedPayload = [...payload].sort((a: any, b: any) => b.value - a.value);
+        
+        return (
+            <div className="bg-[#0f0a06]/95 border border-brand-primary/30 p-4 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.8)] backdrop-blur-xl min-w-[280px] z-50">
+                <p className="text-brand-glow text-xs font-mono uppercase tracking-widest mb-3 pb-2 border-b border-white/10 font-bold">{label}</p>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                    {sortedPayload.map((entry: any, index: number) => (
+                        <div key={index} className="flex items-center justify-between gap-4 text-xs">
+                            <div className="flex items-center gap-2 overflow-hidden w-full">
+                                <div className="w-2 h-2 rounded-full shadow-sm flex-shrink-0" style={{ backgroundColor: entry.color }}></div>
+                                <span className={`font-medium truncate ${entry.name === 'Votos en Disputa' ? 'text-gray-400 italic' : 'text-gray-200'}`} style={{maxWidth: '160px'}}>
+                                    {entry.name}
+                                </span>
+                            </div>
+                            <span className="font-mono font-bold text-white text-xs whitespace-nowrap">
+                                {typeof entry.value === 'number' ? entry.value.toLocaleString('es-CO') : entry.value}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
+
+const CustomRadarTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+        const sortedPayload = [...payload].sort((a: any, b: any) => b.value - a.value);
+        return (
+            <div className="bg-[#0f0a06]/95 border border-brand-primary/30 p-3 rounded-xl shadow-lg backdrop-blur-xl z-50">
+                <p className="text-gray-400 text-[10px] font-mono uppercase tracking-widest mb-2 border-b border-white/10 pb-1">Factor: {label}</p>
+                {sortedPayload.map((entry: any, index: number) => (
+                    <div key={index} className="flex items-center gap-2 text-xs mb-1">
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: entry.color }}></div>
+                        <span className="text-gray-300 w-32 truncate">{entry.name}:</span>
+                        <span className="text-white font-bold font-mono">{entry.value}</span>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+    return null;
+};
+
+// --- Helper for Score Color ---
+const getScoreColor = (score: number) => {
+    if (score >= 80) return 'bg-gradient-to-r from-emerald-600 to-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.4)]';
+    if (score >= 50) return 'bg-gradient-to-r from-yellow-600 to-yellow-400';
+    return 'bg-gradient-to-r from-red-600 to-red-400';
+};
+
+const getScoreTextColor = (score: number) => {
+    if (score >= 80) return 'text-emerald-400';
+    if (score >= 50) return 'text-yellow-400';
+    return 'text-red-400';
+};
+
+
 const ScenarioChart: React.FC<{ scenarios: ComparisonScenario[], visibleCandidates: Set<string> }> = ({ scenarios, visibleCandidates }) => {
-    // Extended color palette to support up to 20 distinct candidates clearly
     const candidateColors = [
         '#d97706', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', 
         '#ec4899', '#14b8a6', '#f59e0b', '#6366f1', '#84cc16',
@@ -40,7 +102,6 @@ const ScenarioChart: React.FC<{ scenarios: ComparisonScenario[], visibleCandidat
         '#be123c', '#1e40af', '#047857', '#7e22ce', '#b45309'
     ];
     
-    // Filter candidates based on visibility toggle
     const allCandidates = scenarios.length > 0 
         ? scenarios[0].voteProjections.map(vp => vp.candidateName)
         : [];
@@ -64,27 +125,106 @@ const ScenarioChart: React.FC<{ scenarios: ComparisonScenario[], visibleCandidat
                     data={data}
                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                 >
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-                    <XAxis dataKey="name" stroke="#9ca3af" tick={{fontSize: 12}} />
-                    <YAxis stroke="#9ca3af" tickFormatter={(val) => `${(val/1000).toFixed(0)}k`} />
-                    <Tooltip 
-                        contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', color: '#f3f4f6' }}
-                        formatter={(value: number) => value.toLocaleString('es-CO')}
-                        labelStyle={{ color: '#d1d5db', fontWeight: 'bold' }}
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis 
+                        dataKey="name" 
+                        stroke="#9ca3af" 
+                        tick={{fontSize: 11, fontWeight: 'bold'}} 
+                        axisLine={false} 
+                        tickLine={false} 
+                        dy={10}
                     />
-                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                    <YAxis 
+                        stroke="#6b7280" 
+                        tickFormatter={(val) => `${(val/1000).toFixed(0)}k`} 
+                        tick={{fontSize: 10}} 
+                        axisLine={false} 
+                        tickLine={false}
+                    />
+                    <Tooltip content={<CustomScenarioTooltip />} cursor={{fill: 'rgba(255,255,255,0.03)'}} />
+                    <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px', color: '#9ca3af' }} />
                     {activeCandidates.map((candidate, idx) => (
                         <Bar 
                             key={candidate} 
                             dataKey={candidate} 
                             fill={candidateColors[allCandidates.indexOf(candidate) % candidateColors.length]} 
                             name={candidate} 
-                            radius={[4, 4, 0, 0]} 
+                            radius={[2, 2, 0, 0]}
+                            stackId={undefined} // Side by side bars for comparison
+                            maxBarSize={60}
                         />
                     ))}
-                    <Bar dataKey="indecisos" fill="#9ca3af" name="Votos en Disputa" stackId="a" radius={[4, 4, 0, 0]} fillOpacity={0.3} />
+                    <Bar dataKey="indecisos" fill="#4b5563" name="Votos en Disputa" radius={[2, 2, 0, 0]} fillOpacity={0.3} maxBarSize={60} />
                 </BarChart>
             </ResponsiveContainer>
+        </div>
+    );
+};
+
+const ListCompositionChart: React.FC<{ metrics: PartyMetrics }> = ({ metrics }) => {
+    const data = [
+        { name: 'Votos Candidatos', value: metrics.candidateVotesSubtotal, color: '#3b82f6' },
+        { name: 'Votos por Logo/Lista', value: metrics.logoVotes, color: '#9ca3af' }
+    ];
+
+    const CustomPieTooltip = ({ active, payload }: any) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="bg-[#0f0a06]/90 border border-white/10 p-2 rounded shadow-lg backdrop-blur-md text-xs text-white">
+                    <p className="font-bold mb-1">{payload[0].name}</p>
+                    <p>{payload[0].value.toLocaleString('es-CO')} votos</p>
+                </div>
+            );
+        }
+        return null;
+    };
+
+    return (
+        <div className="bg-black/20 p-6 rounded-xl border border-white/10 mb-8">
+            <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                <BuildingOfficeIcon className="w-4 h-4 text-brand-secondary" />
+                Composición de Votación (Lista vs. Logo)
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div className="h-[220px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                            <Pie
+                                data={data}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                paddingAngle={5}
+                                dataKey="value"
+                                stroke="none"
+                            >
+                                {data.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                            </Pie>
+                            <Tooltip content={<CustomPieTooltip />} />
+                            <Legend verticalAlign="bottom" height={36} iconType="circle"/>
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
+                <div className="space-y-4">
+                    <div className="bg-white/5 p-4 rounded-lg border-l-4 border-blue-500">
+                        <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Total Votos Candidatos</p>
+                        <p className="text-2xl font-bold text-white font-mono">{metrics.candidateVotesSubtotal.toLocaleString('es-CO')}</p>
+                        <p className="text-xs text-blue-400 font-bold mt-1">{(100 - metrics.logoPercentage).toFixed(1)}% del total</p>
+                    </div>
+                    <div className="bg-white/5 p-4 rounded-lg border-l-4 border-gray-500">
+                        <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Votos Solo por Lista/Logo</p>
+                        <p className="text-2xl font-bold text-white font-mono">{metrics.logoVotes.toLocaleString('es-CO')}</p>
+                        <p className="text-xs text-gray-400 font-bold mt-1">{metrics.logoPercentage.toFixed(1)}% del total</p>
+                    </div>
+                    <div className="pt-3 border-t border-white/10 flex justify-between items-center">
+                        <p className="text-xs text-gray-500 uppercase tracking-widest">Proyección Total Lista</p>
+                        <span className="text-xl text-white font-bold font-mono">{metrics.totalListVotes.toLocaleString('es-CO')}</span>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
@@ -92,10 +232,10 @@ const ScenarioChart: React.FC<{ scenarios: ComparisonScenario[], visibleCandidat
 const AttributeRadarChart: React.FC<{ candidates: CandidateAnalysis[], visibleCandidates: Set<string> }> = ({ candidates, visibleCandidates }) => {
     const data = [
         { subject: 'Estructura', fullMark: 100 },
-        { subject: 'Opinión', fullMark: 100 },
-        { subject: 'Recursos', fullMark: 100 },
         { subject: 'Territorio', fullMark: 100 },
-        { subject: 'Momentum', fullMark: 100 },
+        { subject: 'Trayectoria', fullMark: 100 },
+        { subject: 'Gestión', fullMark: 100 },
+        { subject: 'Cohesión', fullMark: 100 },
     ];
 
     const candidateColors = [
@@ -107,27 +247,31 @@ const AttributeRadarChart: React.FC<{ candidates: CandidateAnalysis[], visibleCa
 
     const activeCandidates = candidates.filter(c => visibleCandidates.has(c.name));
 
-    // Transform data for Recharts
     const chartData = data.map(dim => {
         const point: any = { subject: dim.subject, fullMark: 100 };
         activeCandidates.forEach(c => {
-            const key = dim.subject.toLowerCase() === 'estructura' ? 'structure' :
-                        dim.subject.toLowerCase() === 'opinión' ? 'opinion' :
-                        dim.subject.toLowerCase() === 'recursos' ? 'resources' :
-                        dim.subject.toLowerCase() === 'territorio' ? 'territory' : 'momentum';
+            const scores = c.scoring;
+            let val = 0;
+            switch(dim.subject) {
+                case 'Estructura': val = scores.structureScore; break;
+                case 'Territorio': val = scores.territoryScore; break;
+                case 'Trayectoria': val = scores.trajectoryScore; break;
+                case 'Gestión': val = scores.managementScore; break;
+                case 'Cohesión': val = scores.internalDynamicsScore; break;
+            }
             // @ts-ignore
-            point[c.name] = c.attributes[key];
+            point[c.name] = val;
         });
         return point;
     });
 
     return (
         <div className="h-[500px] w-full bg-black/20 p-4 rounded-xl border border-white/5">
-            <h4 className="text-sm font-bold text-center text-gray-400 uppercase tracking-widest mb-2">Radar de Atributos Competitivos</h4>
+            <h4 className="text-sm font-bold text-center text-gray-400 uppercase tracking-widest mb-2">Radar de Capacidades Políticas</h4>
             <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
-                    <PolarGrid stroke="#374151" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#9ca3af', fontSize: 12, fontWeight: 'bold' }} />
+                <RadarChart cx="50%" cy="50%" outerRadius="75%" data={chartData}>
+                    <PolarGrid stroke="#374151" strokeWidth={1} />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#9ca3af', fontSize: 11, fontWeight: 'bold' }} />
                     <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
                     {activeCandidates.map((candidate, idx) => ( 
                         <Radar
@@ -135,14 +279,14 @@ const AttributeRadarChart: React.FC<{ candidates: CandidateAnalysis[], visibleCa
                             name={candidate.name}
                             dataKey={candidate.name}
                             stroke={candidateColors[candidates.findIndex(c => c.name === candidate.name) % candidateColors.length]}
+                            strokeWidth={2.5}
                             fill={candidateColors[candidates.findIndex(c => c.name === candidate.name) % candidateColors.length]}
-                            fillOpacity={0.1}
+                            fillOpacity={0.05}
+                            dot={{ r: 3, fillOpacity: 1 }}
                         />
                     ))}
-                    <Legend />
-                    <Tooltip 
-                        contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', color: '#f3f4f6' }}
-                    />
+                    <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                    <Tooltip content={<CustomRadarTooltip />} />
                 </RadarChart>
             </ResponsiveContainer>
         </div>
@@ -150,68 +294,113 @@ const AttributeRadarChart: React.FC<{ candidates: CandidateAnalysis[], visibleCa
 };
 
 const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: number }> = ({ candidate, index }) => (
-    <div className="break-inside-avoid bg-white dark:bg-[#1a1410] p-8 rounded-xl border border-gray-200 dark:border-white/10 shadow-lg mb-8">
+    <div className="break-inside-avoid bg-white dark:bg-[#1a1410] p-8 rounded-xl border border-gray-200 dark:border-white/10 shadow-lg mb-8 transition-transform hover:scale-[1.005]">
         <header className="flex justify-between items-start border-b-2 border-gray-100 dark:border-white/5 pb-6 mb-6">
             <div>
-                <span className="text-xs font-bold uppercase tracking-widest text-brand-primary mb-2 block">Candidato #{index + 1}</span>
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-white font-sans tracking-tight">{candidate.name}</h3>
+                <span className="text-xs font-bold uppercase tracking-widest text-brand-primary mb-2 block flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-brand-primary"></span>
+                    Candidato #{index + 1}
+                </span>
+                <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white font-sans tracking-tight">{candidate.name}</h3>
             </div>
-            <div className="text-right">
-                <div className="text-4xl font-bold text-brand-primary">{candidate.probabilityScore}%</div>
-                <div className="text-[10px] uppercase text-gray-500 font-bold tracking-wider mt-1">Probabilidad</div>
+            <div className="text-right bg-black/20 p-3 rounded-lg border border-white/5 min-w-[120px]">
+                <div className={`text-3xl font-bold ${getScoreTextColor(candidate.probabilityScore)}`}>{candidate.probabilityScore}%</div>
+                <div className="text-[9px] uppercase text-gray-500 font-bold tracking-wider mt-1">Probabilidad</div>
             </div>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-6">
-                <div>
-                    <h4 className="text-xs font-black uppercase text-gray-400 dark:text-gray-500 tracking-widest mb-2">Trayectoria Política</h4>
-                    <p className="text-base text-gray-800 dark:text-gray-200 leading-7 text-justify font-normal">{candidate.trajectory}</p>
+            <div className="space-y-8">
+                {/* Section 1 */}
+                <div className="group">
+                    <div className="flex justify-between items-end mb-2">
+                        <h4 className="text-xs font-black uppercase text-gray-400 dark:text-gray-500 tracking-widest flex items-center gap-2">
+                            <span className="w-1 h-3 bg-blue-500 rounded-full"></span> Trayectoria
+                        </h4>
+                        <span className={`text-xs font-bold ${getScoreTextColor(candidate.scoring.trajectoryScore)}`}>{candidate.scoring.trajectoryScore}/100</span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full mb-3 overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-1000 ${getScoreColor(candidate.scoring.trajectoryScore)}`} style={{width: `${candidate.scoring.trajectoryScore}%`}}></div>
+                    </div>
+                    <p className="text-sm text-gray-800 dark:text-gray-300 leading-relaxed text-justify font-normal border-l-2 border-transparent group-hover:border-blue-500/20 pl-2 transition-all">{candidate.trajectory}</p>
                 </div>
-                <div>
-                    <h4 className="text-xs font-black uppercase text-red-500 dark:text-red-400 tracking-widest mb-2">Escándalos y Ruido</h4>
-                    <p className="text-base text-gray-800 dark:text-gray-200 leading-7 text-justify font-normal">{candidate.scandals}</p>
+                
+                {/* Section 2 */}
+                <div className="group">
+                    <div className="flex justify-between items-end mb-2">
+                        <h4 className="text-xs font-black uppercase text-gray-400 dark:text-gray-500 tracking-widest flex items-center gap-2">
+                            <span className="w-1 h-3 bg-green-500 rounded-full"></span> Gestión
+                        </h4>
+                        <span className={`text-xs font-bold ${getScoreTextColor(candidate.scoring.managementScore)}`}>{candidate.scoring.managementScore}/100</span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full mb-3 overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-1000 ${getScoreColor(candidate.scoring.managementScore)}`} style={{width: `${candidate.scoring.managementScore}%`}}></div>
+                    </div>
+                    <p className="text-sm text-gray-800 dark:text-gray-300 leading-relaxed text-justify font-normal border-l-2 border-transparent group-hover:border-green-500/20 pl-2 transition-all">{candidate.management}</p>
                 </div>
-                <div>
-                    <h4 className="text-xs font-black uppercase text-green-600 dark:text-green-400 tracking-widest mb-2">Gestión Destacada</h4>
-                    <p className="text-base text-gray-800 dark:text-gray-200 leading-7 text-justify font-normal">{candidate.management}</p>
+
+                {/* Section 3 - Negative */}
+                <div className="bg-red-500/5 p-4 rounded-lg border border-red-500/10">
+                    <div className="flex justify-between items-baseline mb-2">
+                        <h4 className="text-xs font-black uppercase text-red-500 dark:text-red-400 tracking-widest flex items-center gap-2">
+                            <WarningIcon className="w-3 h-3" /> Riesgo & Ruido
+                        </h4>
+                        <span className="text-xs font-bold text-red-400 bg-red-900/20 px-2 py-0.5 rounded">-{candidate.scoring.scandalPenalty} pts</span>
+                    </div>
+                    <p className="text-sm text-gray-800 dark:text-gray-300 leading-relaxed text-justify font-normal">{candidate.scandals}</p>
                 </div>
             </div>
             
-            <div className="space-y-6">
-                <div>
-                    <h4 className="text-xs font-black uppercase text-blue-600 dark:text-blue-400 tracking-widest mb-2">Estructura y Apoyos</h4>
-                    <p className="text-base text-gray-800 dark:text-gray-200 leading-7 text-justify font-normal">{candidate.structure}</p>
+            <div className="space-y-8">
+                {/* Section 4 */}
+                <div className="group">
+                    <div className="flex justify-between items-end mb-2">
+                        <h4 className="text-xs font-black uppercase text-gray-400 dark:text-gray-500 tracking-widest flex items-center gap-2">
+                            <span className="w-1 h-3 bg-purple-500 rounded-full"></span> Estructura
+                        </h4>
+                        <span className={`text-xs font-bold ${getScoreTextColor(candidate.scoring.structureScore)}`}>{candidate.scoring.structureScore}/100</span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full mb-3 overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-1000 ${getScoreColor(candidate.scoring.structureScore)}`} style={{width: `${candidate.scoring.structureScore}%`}}></div>
+                    </div>
+                    <p className="text-sm text-gray-800 dark:text-gray-300 leading-relaxed text-justify font-normal border-l-2 border-transparent group-hover:border-purple-500/20 pl-2 transition-all">{candidate.structure}</p>
                 </div>
-                <div>
-                    <h4 className="text-xs font-black uppercase text-purple-600 dark:text-purple-400 tracking-widest mb-2">Fortaleza Territorial</h4>
-                    <p className="text-base text-gray-800 dark:text-gray-200 leading-7 text-justify font-normal">{candidate.territory}</p>
+
+                {/* Section 5 */}
+                <div className="group">
+                    <div className="flex justify-between items-end mb-2">
+                        <h4 className="text-xs font-black uppercase text-gray-400 dark:text-gray-500 tracking-widest flex items-center gap-2">
+                            <span className="w-1 h-3 bg-orange-500 rounded-full"></span> Territorio
+                        </h4>
+                        <span className={`text-xs font-bold ${getScoreTextColor(candidate.scoring.territoryScore)}`}>{candidate.scoring.territoryScore}/100</span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full mb-3 overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-1000 ${getScoreColor(candidate.scoring.territoryScore)}`} style={{width: `${candidate.scoring.territoryScore}%`}}></div>
+                    </div>
+                    <p className="text-sm text-gray-800 dark:text-gray-300 leading-relaxed text-justify font-normal border-l-2 border-transparent group-hover:border-orange-500/20 pl-2 transition-all">{candidate.territory}</p>
                 </div>
-                <div>
-                    <h4 className="text-xs font-black uppercase text-orange-600 dark:text-orange-400 tracking-widest mb-2">Dinámica Interna (Rivales/Aliados)</h4>
-                    <p className="text-base text-gray-800 dark:text-gray-200 leading-7 text-justify font-normal">{candidate.alliances}</p>
+
+                {/* Section 6 */}
+                <div className="group">
+                    <div className="flex justify-between items-end mb-2">
+                        <h4 className="text-xs font-black uppercase text-gray-400 dark:text-gray-500 tracking-widest flex items-center gap-2">
+                            <span className="w-1 h-3 bg-cyan-500 rounded-full"></span> Dinámica Interna
+                        </h4>
+                        <span className={`text-xs font-bold ${getScoreTextColor(candidate.scoring.internalDynamicsScore)}`}>{candidate.scoring.internalDynamicsScore}/100</span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full mb-3 overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-1000 ${getScoreColor(candidate.scoring.internalDynamicsScore)}`} style={{width: `${candidate.scoring.internalDynamicsScore}%`}}></div>
+                    </div>
+                    <p className="text-sm text-gray-800 dark:text-gray-300 leading-relaxed text-justify font-normal border-l-2 border-transparent group-hover:border-cyan-500/20 pl-2 transition-all">{candidate.alliances}</p>
                 </div>
             </div>
-        </div>
-        
-        {/* Mini Attributes Bar for quick glance */}
-        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-white/5 grid grid-cols-5 gap-4">
-            {Object.entries(candidate.attributes).map(([key, value]) => (
-                <div key={key} className="text-center">
-                    <div className="text-[10px] uppercase text-gray-500 font-bold mb-2 tracking-wider">{key}</div>
-                    <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-brand-primary" style={{width: `${value}%`}}></div>
-                    </div>
-                    <div className="text-xs font-bold mt-2 text-gray-700 dark:text-gray-300">{value} / 100</div>
-                </div>
-            ))}
         </div>
     </div>
 );
 
 const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
     const [contenders, setContenders] = useState<string[]>(['', '']); 
-    const [context, setContext] = useState('Análisis para Cámara de Representantes Antioquia 2026. Partido Centro Democrático.');
+    const [context, setContext] = useState('Análisis basado en Proyección Cámara Antioquia 2026 - Escenario A (Lista Abierta).');
     const [isLoading, setIsLoading] = useState(false);
     const [comparison, setComparison] = useState<CandidateComparisonResult | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -227,7 +416,7 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
     };
 
     const handleAddContender = () => {
-        if (contenders.length < 25) { // Increased limit
+        if (contenders.length < 25) { 
             setContenders([...contenders, '']);
         }
     };
@@ -254,7 +443,6 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
         try {
             const result = await generateCandidateComparison(validCandidates, context);
             setComparison(result);
-            // Initialize all candidates as visible
             setVisibleCandidates(new Set(result.candidates.map(c => c.name)));
         } catch (err: any) {
             setError(err.message || "Error al generar la comparación.");
@@ -285,7 +473,7 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
         <div className="space-y-8 animate-fade-in-up">
             <AnalysisCard 
                 title="Comparador Avanzado de Listas (War Games)" 
-                explanation="Módulo diseñado para el análisis masivo de candidatos (hasta 20+). Ideal para evaluar listas completas a corporaciones (Cámara/Asamblea/Concejo) y simular la competencia interna por curules."
+                explanation="Módulo diseñado para el análisis masivo de candidatos (hasta 20+). Ideal para evaluar listas completas a corporaciones (Cámara/Asamblea/Concejo) y simular la competencia interna por curules. Incluye desglose de voto preferente vs. voto por logo."
                 icon={<UserGroupIcon />}
                 fullscreenable={false}
             >
@@ -383,13 +571,13 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                         <div className="flex flex-wrap gap-2">
                             <button 
                                 onClick={() => setVisibleCandidates(new Set(comparison.candidates.map(c => c.name)))}
-                                className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-xs text-white border border-white/10"
+                                className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-xs text-white border border-white/10 transition-colors"
                             >
                                 Ver Todos
                             </button>
                             <button 
                                 onClick={() => setVisibleCandidates(new Set())}
-                                className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-xs text-white border border-white/10"
+                                className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-xs text-white border border-white/10 transition-colors"
                             >
                                 Ocultar Todos
                             </button>
@@ -423,6 +611,9 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                             </p>
                         </div>
 
+                        {/* LIST COMPOSITION */}
+                        {comparison.partyMetrics && <ListCompositionChart metrics={comparison.partyMetrics} />}
+
                         {/* VISUALIZATIONS */}
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
                             {/* Scenario Chart */}
@@ -437,7 +628,7 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                             <div>
                                 <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2">
                                     <FingerPrintIcon className="w-4 h-4 text-brand-secondary"/>
-                                    Radar de Capacidades Competitivas
+                                    Radar de Capacidades Políticas
                                 </h4>
                                 <AttributeRadarChart candidates={comparison.candidates} visibleCandidates={visibleCandidates} />
                             </div>

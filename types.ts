@@ -243,33 +243,42 @@ export interface ComparisonScenario {
     winner: string; 
 }
 
-export interface ComparisonAttributes {
-    structure: number; // 0-100 (Maquinaria)
-    opinion: number; // 0-100 (Voto de Opinión)
-    resources: number; // 0-100 (Capacidad Financiera)
-    territory: number; // 0-100 (Control Territorial)
-    momentum: number; // 0-100 (Crecimiento Reciente)
+export interface ScoringBreakdown {
+    trajectoryScore: number; // 0-100 (Trayectoria)
+    structureScore: number; // 0-100 (Estructura)
+    territoryScore: number; // 0-100 (Territorio)
+    managementScore: number; // 0-100 (Gestión)
+    internalDynamicsScore: number; // 0-100 (Dinámica Interna)
+    scandalPenalty: number; // 0-100 (Penalización por Ruido)
 }
 
 export interface CandidateAnalysis {
     name: string;
-    probabilityScore: number; // 0-100 (Chance of Seat/Win)
+    probabilityScore: number; // 0-100 (Chance of Seat/Win) - Calculated Weighted Score
     
     // Deep Dive Fields
-    trajectory: string; // Resumen de carrera política
-    scandals: string; // Escándalos, investigaciones o ruido negativo
-    image: string; // Percepción pública (positiva/negativa/neutra)
-    structure: string; // Apoyos de maquinaria, alcaldes, concejales
-    management: string; // Hitos de gestión (si aplica)
-    territory: string; // Fortalezas geográficas
-    alliances: string; // Apoyos clave y rivalidades internas
+    trajectory: string; // Resumen técnico de carrera política
+    scandals: string; // Análisis de riesgo reputacional
+    image: string; // Percepción pública
+    structure: string; // Capacidad de endoso y maquinaria
+    management: string; // Evaluación de resultados (KPIs cualitativos)
+    territory: string; // Capilaridad geográfica
+    alliances: string; // Alineación con factores de poder
     
-    // For Radar Chart
-    attributes: ComparisonAttributes;
+    // For Radar Chart and Weighting
+    scoring: ScoringBreakdown;
+}
+
+export interface PartyMetrics {
+    totalListVotes: number;
+    candidateVotesSubtotal: number;
+    logoVotes: number;
+    logoPercentage: number;
 }
 
 export interface CandidateComparisonResult {
     listVerdict: string; // Análisis global de la lista (quiénes entran, quiénes salen)
+    partyMetrics: PartyMetrics; // NEW: Breakdown of Logo vs Candidate votes
     candidates: CandidateAnalysis[]; 
     scenarios: ComparisonScenario[];
 }

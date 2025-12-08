@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type, GenerateContentResponse, Schema } from "@google/genai";
 import { CandidateRanking, ProbabilityResult, SimulationResults, HistoricalDataset, PartyAnalysisData, PartyData, ListAnalysisAIResponse, ProcessedElectionData, MarketingStrategyResult, CandidateProfileResult, CandidateComparisonResult } from '../types';
 
@@ -453,70 +452,78 @@ export const generateCandidateComparison = async (
     context: string
 ): Promise<CandidateComparisonResult> => {
     const prompt = `
-    ROL: Consultor Estratégico Político Senior (Especialista en Modelos Predictivos).
-    OBJETIVO: Realizar un análisis profundo ("War Games") de TODOS los siguientes candidatos: ${candidates.join(', ')}.
+    ROL: Consultor Senior de Riesgo Político y Estrategia Electoral.
+    OBJETIVO: Realizar una "Due Diligence" rigurosa y técnica de los siguientes candidatos: ${candidates.join(', ')}.
 
     CONTEXTO ELECTORAL: ${context}
-
-    *** REGLAS DE ORO DE COHERENCIA Y PONDERACIÓN HISTÓRICA (SANITY CHECK) ***
-    1.  **PONDERACIÓN HISTÓRICA VS OPINIÓN:** El historial electoral (votos previos reales) es el factor MÁS importante. 
-        *   CRÍTICO: Un candidato con una votación histórica pequeña (ej. 3.500 votos como Julián Lopera o similar) **JAMÁS** debe aparecer con mayor probabilidad que un gran elector histórico (ej. 33.000 votos como John Jairo o similar) a menos que exista un evento catastrófico documentado (inhabilidad, cárcel, pérdida total de estructura).
-        *   No sobrevalores el "ruido" en redes sociales sobre los votos reales de maquinaria y estructura.
     
-    2.  **ESCENARIOS DE CURULES (MODELO DE 3 NIVELES):**
-        Calcula la probabilidad asumiendo que la lista obtendrá entre 5 y 7 curules.
-        *   **Escenario A (Probable - 5 Curules):** Los 5 candidatos más fuertes deben tener una 'probabilityScore' ALTA (>85%).
-        *   **Escenario B (Posible - 6 Curules):** El 6º candidato fuerte está en zona de disputa ('probabilityScore' entre 40% y 60%).
-        *   **Escenario C (Improbable/Techo - 7 Curules):** El 7º candidato tiene opciones remotas ('probabilityScore' entre 10% y 30%).
-        *   **Resto de la Lista:** Candidatos por debajo del puesto 7 deben tener probabilidades residuales (< 5%).
+    *** BASE DE DATOS DE REFERENCIA ***
+    Referencia: "Proyección Cámara Antioquia 2026 - Escenario A (Lista Abierta)".
 
-    INSTRUCCIONES CLAVE PARA EL INFORME:
+    *** INSTRUCCIONES DE ANÁLISIS CUANTITATIVO Y PONDERACIÓN ***
+    Debes calcular un 'probabilityScore' (0-100%) para cada candidato. NO ADIVINES. Usa esta fórmula de ponderación para derivar la probabilidad:
     
-    1.  **DUE DILIGENCE (Google Search):** Investiga a CADA candidato. Busca:
-        *   Votaciones anteriores (Cámara 2018, 2022, Asamblea, Concejo).
-        *   Estructura actual (¿Quiénes son sus padrinos? ¿Qué alcaldías tienen?).
-        *   Escándalos recientes que afecten su viabilidad.
+    1.  **Estructura y Maquinaria (30%):** Capacidad de movilización, endosos de alcaldes/concejales, apoyos tradicionales.
+    2.  **Fortaleza Territorial (20%):** Capilaridad geográfica, presencia en municipios clave.
+    3.  **Trayectoria y Reconocimiento (15%):** Peso histórico del nombre, recordación de marca personal.
+    4.  **Gestión y Resultados (15%):** Hitos tangibles, ejecución presupuestal previa, leyes/acuerdos.
+    5.  **Dinámica Interna (20%):** Cohesión con el partido, alianzas con cabezas de lista, rivalidades.
+    6.  **PENALIZACIÓN (Escándalos/Ruido):** Resta hasta 20 puntos por investigaciones activas, ruido mediático negativo o riesgo reputacional.
 
-    2.  **ESCENARIOS CUANTITATIVOS:**
-        Genera 3 escenarios numéricos de votación para CADA candidato. Asegúrate de que las cifras proyectadas sean coherentes con su historial (un candidato de 3k no salta a 40k mágicamente).
-        *   Escenario 1: Base (5 Curules Efectivas).
-        *   Escenario 2: Optimista (6 Curules Efectivas).
-        *   Escenario 3: Techo (7 Curules Efectivas).
+    *** INSTRUCCIONES DE ANÁLISIS CUALITATIVO (LENGUAJE TÉCNICO) ***
+    Utiliza terminología de ciencia política: "Voto de opinión", "Estructura endosable", "Desgaste de gobierno", "Techo electoral", "Costo de curul", "Riesgo jurídico".
+    
+    *** ESCENARIOS DE CURULES (REGLA DE ORO) ***
+    *   **Escenario A (Piso - 5 Curules):** Probabilidad > 85%.
+    *   **Escenario B (Media - 6 Curules):** Probabilidad ~50-65%.
+    *   **Escenario C (Techo - 7 Curules):** Probabilidad ~20-30%.
+    *   **Fracaso (<5 Curules):** Descartado.
 
-    FORMATO DE RESPUESTA: JSON Estricto. Incluye TODOS los candidatos.
+    FORMATO DE RESPUESTA: JSON Estricto. Debes devolver los puntajes individuales (scoring) para que puedan ser graficados.
     `;
 
     const schema: Schema = {
         type: Type.OBJECT,
         properties: {
-            listVerdict: { type: Type.STRING, description: "Análisis estratégico de la lista. Quiénes son los fijos (1-5), quién pelea la 6ta, quién sueña con la 7ma." },
+            listVerdict: { type: Type.STRING, description: "Análisis estratégico ejecutivo de la viabilidad de la lista." },
+            partyMetrics: {
+                type: Type.OBJECT,
+                properties: {
+                    totalListVotes: { type: Type.INTEGER },
+                    candidateVotesSubtotal: { type: Type.INTEGER },
+                    logoVotes: { type: Type.INTEGER },
+                    logoPercentage: { type: Type.NUMBER }
+                },
+                required: ['totalListVotes', 'candidateVotesSubtotal', 'logoVotes', 'logoPercentage']
+            },
             candidates: {
                 type: Type.ARRAY,
                 items: {
                     type: Type.OBJECT,
                     properties: {
                         name: { type: Type.STRING },
-                        probabilityScore: { type: Type.NUMBER, description: "Probabilidad General de Victoria (0-100). Respetar jerarquía histórica." },
-                        trajectory: { type: Type.STRING, description: "Resumen detallado de carrera política y VOTOS ANTERIORES." },
-                        scandals: { type: Type.STRING, description: "Investigaciones activas o ruido negativo." },
-                        image: { type: Type.STRING, description: "Percepción de imagen." },
-                        structure: { type: Type.STRING, description: "Apoyos de maquinaria y padrinos." },
-                        management: { type: Type.STRING, description: "Hitos de gestión." },
-                        territory: { type: Type.STRING, description: "Fortalezas territoriales." },
-                        alliances: { type: Type.STRING, description: "Alianzas y rivalidades." },
-                        attributes: {
+                        probabilityScore: { type: Type.NUMBER, description: "Probabilidad Ponderada Final (0-100)." },
+                        trajectory: { type: Type.STRING, description: "Análisis técnico de trayectoria y peso electoral histórico." },
+                        scandals: { type: Type.STRING, description: "Evaluación de riesgo reputacional y jurídico." },
+                        image: { type: Type.STRING, description: "Análisis de imagen y percepción." },
+                        structure: { type: Type.STRING, description: "Detalle de estructura, maquinaria y apoyos territoriales." },
+                        management: { type: Type.STRING, description: "Hitos de gestión o legislativos." },
+                        territory: { type: Type.STRING, description: "Desglose de fortalezas geográficas." },
+                        alliances: { type: Type.STRING, description: "Dinámica de alianzas internas y rivalidades." },
+                        scoring: {
                             type: Type.OBJECT,
                             properties: {
-                                structure: { type: Type.NUMBER },
-                                opinion: { type: Type.NUMBER },
-                                resources: { type: Type.NUMBER },
-                                territory: { type: Type.NUMBER },
-                                momentum: { type: Type.NUMBER },
+                                trajectoryScore: { type: Type.NUMBER },
+                                structureScore: { type: Type.NUMBER },
+                                territoryScore: { type: Type.NUMBER },
+                                managementScore: { type: Type.NUMBER },
+                                internalDynamicsScore: { type: Type.NUMBER },
+                                scandalPenalty: { type: Type.NUMBER },
                             },
-                            required: ['structure', 'opinion', 'resources', 'territory', 'momentum']
+                            required: ['trajectoryScore', 'structureScore', 'territoryScore', 'managementScore', 'internalDynamicsScore', 'scandalPenalty']
                         }
                     },
-                    required: ['name', 'probabilityScore', 'trajectory', 'scandals', 'image', 'structure', 'management', 'territory', 'alliances', 'attributes']
+                    required: ['name', 'probabilityScore', 'trajectory', 'scandals', 'image', 'structure', 'management', 'territory', 'alliances', 'scoring']
                 }
             },
             scenarios: {
@@ -524,7 +531,7 @@ export const generateCandidateComparison = async (
                 items: {
                     type: Type.OBJECT,
                     properties: {
-                        name: { type: Type.STRING, description: "Nombre del escenario (ej: Base 5 Curules, Optimista 6 Curules)" },
+                        name: { type: Type.STRING },
                         description: { type: Type.STRING },
                         voteProjections: {
                             type: Type.ARRAY,
@@ -544,7 +551,7 @@ export const generateCandidateComparison = async (
                 }
             }
         },
-        required: ['listVerdict', 'candidates', 'scenarios']
+        required: ['listVerdict', 'partyMetrics', 'candidates', 'scenarios']
     };
 
     try {
@@ -559,7 +566,22 @@ export const generateCandidateComparison = async (
         });
 
         const jsonText = response.text || "{}";
-        return JSON.parse(jsonText) as CandidateComparisonResult;
+        const result = JSON.parse(jsonText);
+        
+        // Map the new 'scoring' object to the old 'attributes' expected by the UI for backward compatibility 
+        // while we update the UI components.
+        result.candidates = result.candidates.map((c: any) => ({
+            ...c,
+            attributes: {
+                structure: c.scoring.structureScore,
+                opinion: c.scoring.trajectoryScore, // Mapping trajectory to opinion for chart
+                resources: c.scoring.managementScore, // Mapping management to resources/capacity
+                territory: c.scoring.territoryScore,
+                momentum: c.scoring.internalDynamicsScore // Mapping internal to momentum
+            }
+        }));
+
+        return result as CandidateComparisonResult;
     } catch (error) {
         console.error("Error generating comparison:", error);
         throw new Error("No se pudo generar el informe detallado.");
