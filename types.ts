@@ -232,6 +232,22 @@ export interface MarketingStrategyResult {
     }[];
 }
 
+// NEW: Tactical Campaign Result for Specific Targeting
+export interface TacticalContent {
+    platform: string;
+    copy: string;
+    visualPrompt: string;
+}
+
+export interface TacticalCampaignResult {
+    technicalJustification: string; // Why this candidate angle works for this voter
+    slogans: string[];
+    socialMediaPosts: TacticalContent[];
+    whatsappMessage: string;
+    speechFragment: string; // A hook for a speech
+    groundEvents: string[]; // Specific street actions
+}
+
 export interface CandidateProfileResult {
     overview: string;
     opinionAnalysis: string;

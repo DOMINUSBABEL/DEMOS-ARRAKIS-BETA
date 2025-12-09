@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import AnalysisCard from './AnalysisCard';
-import { MegaphoneIcon, LoadingSpinner, UserGroupIcon, ChartBarIcon, MapIcon, SparklesIcon, WarningIcon, CpuChipIcon, ArrowsUpDownIcon, DatabaseIcon } from './Icons';
-import { generateMarketingStrategy } from '../services/geminiService';
-import { MarketingStrategyResult } from '../types';
+import { MegaphoneIcon, LoadingSpinner, UserGroupIcon, ChartBarIcon, MapIcon, SparklesIcon, WarningIcon, CpuChipIcon, ArrowsUpDownIcon, DatabaseIcon, PencilIcon, PhotoIcon, ChatBubbleBottomCenterTextIcon, RocketLaunchIcon } from './Icons';
+import { generateMarketingStrategy, generateTacticalCampaign } from '../services/geminiService';
+import { MarketingStrategyResult, TacticalCampaignResult } from '../types';
 
 const MarketingStrategy: React.FC = () => {
     // Initial State Pre-filled with Simulation Data for John Jairo Berrío
@@ -72,6 +72,11 @@ const MarketingStrategy: React.FC = () => {
     });
     const [error, setError] = useState<string | null>(null);
 
+    // --- New States for Tactical Interaction ---
+    const [selectedAvatarId, setSelectedAvatarId] = useState<number | null>(null);
+    const [isGeneratingTactics, setIsGeneratingTactics] = useState(false);
+    const [tacticalPlan, setTacticalPlan] = useState<TacticalCampaignResult | null>(null);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!targetName.trim() || !context.trim()) {
@@ -82,6 +87,8 @@ const MarketingStrategy: React.FC = () => {
         setIsLoading(true);
         setError(null);
         setStrategy(null);
+        setTacticalPlan(null);
+        setSelectedAvatarId(null);
 
         try {
             const result = await generateMarketingStrategy(targetName, targetType, context);
@@ -90,6 +97,33 @@ const MarketingStrategy: React.FC = () => {
             setError(err.message || "Ocurrió un error al generar la estrategia.");
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleGenerateTactics = async () => {
+        if (!strategy || selectedAvatarId === null) return;
+
+        const voter = strategy.voterAvatars.find(v => v.id === selectedAvatarId);
+        const candidate = strategy.candidateAvatars.find(c => c.id === selectedAvatarId) || strategy.candidateAvatars[0];
+
+        if (!voter || !candidate) return;
+
+        setIsGeneratingTactics(true);
+        setTacticalPlan(null);
+        setError(null);
+
+        try {
+            const result = await generateTacticalCampaign(
+                targetName,
+                `${voter.archetype} (${voter.demographics})`,
+                `${candidate.archetype} (${candidate.messaging_angle})`,
+                context
+            );
+            setTacticalPlan(result);
+        } catch (err: any) {
+            setError(err.message || "Error al generar la campaña táctica.");
+        } finally {
+            setIsGeneratingTactics(false);
         }
     };
 
@@ -258,19 +292,36 @@ const MarketingStrategy: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Matrix 10x10 - Clean Layout */}
-                    <AnalysisCard title="Matriz de Conexión: Votante vs. Candidato" explanation="Alineación estratégica del mensaje." collapsible={false} icon={<ArrowsUpDownIcon />}>
+                    {/* Matrix 10x10 - Clean Layout with Interactions */}
+                    <AnalysisCard title="Matriz de Conexión: Votante vs. Candidato" explanation="Selecciona una tarjeta para generar el despliegue táctico específico para ese micro-segmento." collapsible={false} icon={<ArrowsUpDownIcon />}>
                         <div className="p-6 bg-gray-50">
-                            <div className="flex overflow-x-auto gap-6 pb-4 custom-scrollbar snap-x">
+                            <div className="flex overflow-x-auto gap-6 pb-4 custom-scrollbar snap-x items-stretch">
                                 {strategy.voterAvatars.map((voter, idx) => {
-                                    const candidateAvatar = strategy.candidateAvatars[idx] || strategy.candidateAvatars[0]; // Fallback
+                                    const candidateAvatar = strategy.candidateAvatars[idx] || strategy.candidateAvatars[0];
+                                    const isSelected = selectedAvatarId === voter.id;
+                                    
                                     return (
-                                        <div key={idx} className="snap-center min-w-[320px] bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
+                                        <div 
+                                            key={idx} 
+                                            onClick={() => {
+                                                setSelectedAvatarId(voter.id);
+                                                setTacticalPlan(null); // Reset plan when changing selection
+                                            }}
+                                            className={`snap-center min-w-[320px] bg-white border cursor-pointer transition-all duration-200 rounded-xl shadow-sm flex flex-col overflow-hidden relative group hover:-translate-y-1 hover:shadow-md
+                                                ${isSelected ? 'border-brand-primary ring-2 ring-brand-primary ring-offset-2' : 'border-gray-200 hover:border-gray-300'}
+                                            `}
+                                        >
+                                            {isSelected && (
+                                                <div className="absolute top-2 right-2 bg-brand-primary text-white text-[9px] font-bold px-2 py-1 rounded-full uppercase tracking-wider z-10 shadow-sm animate-fade-in">
+                                                    Seleccionado
+                                                </div>
+                                            )}
+                                            
                                             {/* Voter Card */}
-                                            <div className="p-5 border-b border-gray-100 bg-gradient-to-b from-gray-50 to-white">
+                                            <div className={`p-5 border-b border-gray-100 ${isSelected ? 'bg-brand-primary/5' : 'bg-gradient-to-b from-gray-50 to-white'}`}>
                                                 <div className="flex justify-between items-start mb-3">
                                                     <span className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">Perfil Votante</span>
-                                                    <UserGroupIcon className="w-4 h-4 text-gray-400" />
+                                                    <UserGroupIcon className={`w-4 h-4 ${isSelected ? 'text-brand-primary' : 'text-gray-400'}`} />
                                                 </div>
                                                 <h5 className="text-sm font-bold text-gray-800 mb-2 font-serif">{voter.archetype}</h5>
                                                 <p className="text-xs text-gray-500 mb-3 leading-relaxed">{voter.demographics}</p>
@@ -281,21 +332,21 @@ const MarketingStrategy: React.FC = () => {
 
                                             {/* Connection Line */}
                                             <div className="h-1 bg-gray-100 relative">
-                                                <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white border border-gray-200 rounded-full p-1 text-gray-400">
+                                                <div className={`absolute left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white border rounded-full p-1 ${isSelected ? 'border-brand-primary text-brand-primary' : 'border-gray-200 text-gray-400'}`}>
                                                     <ArrowsUpDownIcon className="w-3 h-3" />
                                                 </div>
                                             </div>
 
                                             {/* Candidate Card */}
-                                            <div className="p-5 bg-white">
+                                            <div className="p-5 bg-white flex-grow flex flex-col">
                                                 <div className="flex justify-between items-start mb-3">
-                                                    <span className="text-[10px] font-bold uppercase text-brand-primary tracking-wider">Ángulo Candidato</span>
-                                                    <MegaphoneIcon className="w-4 h-4 text-brand-primary" />
+                                                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isSelected ? 'text-brand-primary' : 'text-gray-500'}`}>Ángulo Candidato</span>
+                                                    <MegaphoneIcon className={`w-4 h-4 ${isSelected ? 'text-brand-primary' : 'text-gray-400'}`} />
                                                 </div>
-                                                <h5 className="text-sm font-bold text-brand-primary mb-2 font-serif">{candidateAvatar.archetype}</h5>
+                                                <h5 className={`text-sm font-bold mb-2 font-serif ${isSelected ? 'text-brand-primary' : 'text-gray-800'}`}>{candidateAvatar.archetype}</h5>
                                                 <p className="text-xs text-gray-600 mb-3 leading-relaxed font-medium">"{candidateAvatar.messaging_angle}"</p>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="w-2 h-2 rounded-full bg-brand-primary"></span>
+                                                <div className="mt-auto flex items-center gap-2">
+                                                    <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-brand-primary' : 'bg-gray-300'}`}></span>
                                                     <span className="text-[10px] text-gray-500 uppercase font-bold">{candidateAvatar.visual_style}</span>
                                                 </div>
                                             </div>
@@ -304,7 +355,126 @@ const MarketingStrategy: React.FC = () => {
                                 })}
                             </div>
                         </div>
+                        
+                        {/* Tactical Action Bar */}
+                        {selectedAvatarId && (
+                            <div className="border-t border-gray-100 p-4 bg-white flex justify-center animate-fade-in">
+                                <button
+                                    onClick={handleGenerateTactics}
+                                    disabled={isGeneratingTactics}
+                                    className="bg-brand-primary hover:bg-brand-secondary text-white font-bold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all transform hover:scale-105 flex items-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"
+                                >
+                                    {isGeneratingTactics ? <LoadingSpinner className="w-5 h-5"/> : <RocketLaunchIcon className="w-5 h-5" />}
+                                    {isGeneratingTactics ? 'Generando Tácticas...' : 'Diseñar Campaña Táctica para este Perfil'}
+                                </button>
+                            </div>
+                        )}
                     </AnalysisCard>
+
+                    {/* TACTICAL CAMPAIGN OUTPUT SECTION */}
+                    {tacticalPlan && (
+                        <div className="animate-fade-in-up bg-white rounded-xl border border-gray-200 shadow-report-lg overflow-hidden">
+                            <div className="bg-brand-primary p-6 text-white">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <SparklesIcon className="w-5 h-5 text-yellow-400" />
+                                    <h3 className="text-lg font-bold font-serif tracking-wide">CENTRO DE COMANDO TÁCTICO</h3>
+                                </div>
+                                <p className="text-sm text-blue-100 opacity-90 max-w-3xl">
+                                    Despliegue operativo personalizado para conectar el ángulo del candidato con el votante seleccionado.
+                                </p>
+                            </div>
+
+                            <div className="p-8 space-y-8">
+                                {/* Technical Justification */}
+                                <div className="bg-gray-50 border-l-4 border-brand-primary p-5 rounded-r-lg">
+                                    <h4 className="text-xs font-bold text-brand-primary uppercase tracking-widest mb-2 flex items-center gap-2">
+                                        <CpuChipIcon className="w-4 h-4"/> Justificación Técnica
+                                    </h4>
+                                    <p className="text-sm text-gray-700 leading-relaxed text-justify">
+                                        {tacticalPlan.technicalJustification}
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    {/* Column 1: Copywriting & Speech */}
+                                    <div className="space-y-6">
+                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                <MegaphoneIcon className="w-4 h-4 text-red-500"/> Slogans de Combate
+                                            </h4>
+                                            <ul className="space-y-3">
+                                                {tacticalPlan.slogans.map((slogan, i) => (
+                                                    <li key={i} className="text-sm font-bold text-gray-800 bg-gray-50 p-3 rounded-lg border border-gray-100 italic">
+                                                        "{slogan}"
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+
+                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                <ChatBubbleBottomCenterTextIcon className="w-4 h-4 text-green-500"/> Hook de Discurso
+                                            </h4>
+                                            <p className="text-sm text-gray-600 leading-relaxed italic bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+                                                "{tacticalPlan.speechFragment}"
+                                            </p>
+                                        </div>
+                                        
+                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                <MapIcon className="w-4 h-4 text-brand-primary"/> Acciones de Tierra
+                                            </h4>
+                                            <ul className="space-y-2 list-disc pl-5 text-sm text-gray-600">
+                                                {tacticalPlan.groundEvents.map((event, i) => (
+                                                    <li key={i}>{event}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+
+                                    {/* Column 2: Digital Assets */}
+                                    <div className="space-y-6">
+                                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                            <PencilIcon className="w-4 h-4 text-blue-500"/> Activos Digitales
+                                        </h4>
+                                        
+                                        {/* Social Media Posts */}
+                                        {tacticalPlan.socialMediaPosts.map((post, i) => (
+                                            <div key={i} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                                                <div className="bg-gray-100 px-4 py-2 border-b border-gray-200 flex justify-between items-center">
+                                                    <span className="text-xs font-bold text-gray-600 uppercase">{post.platform}</span>
+                                                    <span className="text-[10px] text-gray-400 bg-white px-2 py-0.5 rounded border border-gray-200">Post #{i+1}</span>
+                                                </div>
+                                                <div className="p-4 space-y-3">
+                                                    <div>
+                                                        <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Copy</p>
+                                                        <p className="text-sm text-gray-800 whitespace-pre-line">{post.copy}</p>
+                                                    </div>
+                                                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                                        <p className="text-[10px] text-blue-400 uppercase font-bold mb-1 flex items-center gap-1">
+                                                            <PhotoIcon className="w-3 h-3"/> Prompt Visual (Imagen)
+                                                        </p>
+                                                        <p className="text-xs text-blue-800 italic">{post.visualPrompt}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        {/* WhatsApp Message */}
+                                        <div className="bg-green-50 border border-green-200 rounded-xl p-5 shadow-sm">
+                                            <h4 className="text-xs font-bold text-green-700 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                                Cadena de WhatsApp
+                                            </h4>
+                                            <div className="bg-white p-3 rounded-lg border border-green-100 shadow-sm">
+                                                <p className="text-sm text-gray-800 whitespace-pre-line">{tacticalPlan.whatsappMessage}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* KPIs Footer */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -1,6 +1,5 @@
-
 import { GoogleGenAI, Type, GenerateContentResponse, Schema } from "@google/genai";
-import { CandidateRanking, ProbabilityResult, SimulationResults, HistoricalDataset, PartyAnalysisData, PartyData, ListAnalysisAIResponse, ProcessedElectionData, MarketingStrategyResult, CandidateProfileResult, CandidateComparisonResult } from '../types';
+import { CandidateRanking, ProbabilityResult, SimulationResults, HistoricalDataset, PartyAnalysisData, PartyData, ListAnalysisAIResponse, ProcessedElectionData, MarketingStrategyResult, CandidateProfileResult, CandidateComparisonResult, TacticalCampaignResult } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const model = 'gemini-3-pro-preview';
@@ -406,6 +405,74 @@ export const generateMarketingStrategy = async (
     } catch (error) {
         console.error("Error generating marketing strategy:", error);
         throw error;
+    }
+};
+
+export const generateTacticalCampaign = async (
+    candidateName: string,
+    voterProfile: string,
+    angleProfile: string,
+    context: string
+): Promise<TacticalCampaignResult> => {
+    const prompt = `
+    ROL: Jefe de Campaña Estratégica Digital y de Campo.
+    
+    TAREA: Diseñar una campaña táctica de micro-segmentación específica para conectar al CANDIDATO con el VOTANTE.
+    
+    ENTRADA:
+    - Candidato: ${candidateName}
+    - Ángulo del Candidato: ${angleProfile}
+    - Votante Objetivo: ${voterProfile}
+    - Contexto General: ${context}
+
+    REQUISITOS:
+    1.  **Justificación Técnica (Technical Justification):** Explica en 2 párrafos técnicos y psicológicos por qué este votante Y conecta con este ángulo Z del candidato.
+    2.  **Slogans de Combate:** 3 lemas cortos y potentes específicos para este nicho.
+    3.  **Contenido Redes (Social Media Posts):** 2 posts detallados (Plataforma, Copy persuasivo, Prompt visual para imagen).
+    4.  **Mensajería Directa (WhatsApp):** Un mensaje corto, viralizable y cercano para cadenas de WhatsApp.
+    5.  **Fragmento de Discurso (Speech Hook):** Un párrafo de apertura para un discurso en el barrio/sector de este votante.
+    6.  **Acciones de Tierra (Ground Events):** 2 ideas concretas de eventos pequeños para este segmento.
+
+    FORMATO JSON ESTRICTO.
+    `;
+
+    const schema: Schema = {
+        type: Type.OBJECT,
+        properties: {
+            technicalJustification: { type: Type.STRING },
+            slogans: { type: Type.ARRAY, items: { type: Type.STRING } },
+            socialMediaPosts: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        platform: { type: Type.STRING },
+                        copy: { type: Type.STRING },
+                        visualPrompt: { type: Type.STRING }
+                    },
+                    required: ['platform', 'copy', 'visualPrompt']
+                }
+            },
+            whatsappMessage: { type: Type.STRING },
+            speechFragment: { type: Type.STRING },
+            groundEvents: { type: Type.ARRAY, items: { type: Type.STRING } }
+        },
+        required: ['technicalJustification', 'slogans', 'socialMediaPosts', 'whatsappMessage', 'speechFragment', 'groundEvents']
+    };
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: schema
+            }
+        });
+        return JSON.parse(response.text || '{}');
+    } catch (error) {
+        console.error("Error generating tactical campaign:", error);
+        throw new Error("No se pudo generar la campaña táctica.");
     }
 };
 
