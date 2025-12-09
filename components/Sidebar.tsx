@@ -27,10 +27,10 @@ const NavItem: React.FC<NavItemProps> = ({ tabId, activeTab, setActiveTab, icon,
     <button
       onClick={() => !disabled && setActiveTab(tabId)}
       disabled={disabled}
-      className={`w-full group relative flex items-center gap-3 px-6 py-3 text-sm font-medium transition-all duration-200 border-r-4 ${
+      className={`w-full group relative flex items-center gap-3 px-6 py-3 text-sm font-medium transition-all duration-200 border-l-4 ${
         isActive
-          ? 'bg-brand-primary text-white border-brand-secondary shadow-md'
-          : 'text-slate-600 hover:bg-slate-50 hover:text-brand-primary border-transparent'
+          ? 'bg-brand-primary text-white border-brand-secondary shadow-md' // Active: Navy bg, Red left border, White text
+          : 'text-slate-600 hover:bg-slate-50 hover:text-brand-primary border-transparent' // Inactive: Slate text, light hover
       } ${disabled ? 'opacity-40 cursor-not-allowed grayscale' : ''}`}
     >
       <span className={`w-5 h-5 transition-colors duration-200 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-brand-primary'}`}>
@@ -74,11 +74,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteDa
              <ChartBarIcon className="w-6 h-6" />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-xl font-black text-brand-primary tracking-tight leading-none font-sans">
+            <h1 className="text-xl font-black text-brand-primary tracking-tight leading-none font-serif">
                 DEMOS
             </h1>
             <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase mt-0.5">
-                ARRAKIS
+                ARRAKIS INTEL
             </span>
           </div>
         </div>

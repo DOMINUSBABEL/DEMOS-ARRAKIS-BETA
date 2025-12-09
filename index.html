@@ -5,13 +5,14 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DEMOS INTEL - Sistema de Estrategia</title>
+    <title>DEMOS ARRAKIS - Inteligencia Electoral</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@300;400;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
+        darkMode: 'class', // Keep class strategy but we will force light
         theme: {
           extend: {
             fontFamily: {
@@ -23,36 +24,41 @@
                 primary: '#002855',   // Deep Navy Blue (Institucional)
                 secondary: '#B91C1C', // Deep Red (Acento/Alerta)
                 accent: '#0284C7',    // Sky Blue (Enlaces/Highlights)
-                neutral: '#F3F4F6',   // Light Gray (Fondos)
+                glow: '#002855',      // Replaced neon glow with primary for cleanliness
               },
               light: {
-                  bg: '#FFFFFF',
-                  card: '#FFFFFF',
-                  border: '#E5E7EB',
+                  bg: '#F3F4F6',        // Light Gray Background (Paper feel)
+                  card: '#FFFFFF',      // White Cards
+                  border: '#E5E7EB',    // Light Borders
                   'text-primary': '#111827', // Almost Black
                   'text-secondary': '#4B5563', // Dark Gray
               },
-              // Dark mode colors kept as fallbacks but mapped to light for consistency if toggled accidentally
+              // Mapped dark mode colors to light mode equivalents to enforce the theme
               dark: {
-                bg: '#F9FAFB',       
-                surface: '#FFFFFF',  
+                bg: '#F3F4F6',       
                 card: '#FFFFFF',     
-                border: '#D1D5DB',   
-                'text-primary': '#1F2937', 
-                'text-secondary': '#6B7280', 
-                'text-muted': '#9CA3AF', 
+                border: '#E5E7EB',   
+                'text-primary': '#111827', 
+                'text-secondary': '#4B5563', 
+                'text-muted': '#6B7280', 
               },
             },
             boxShadow: {
               'report': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
               'report-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+              'glow': '0 0 10px rgba(0, 40, 85, 0.1)', // Subtle shadow
             },
             animation: {
               'fade-in': 'fadeIn 0.4s ease-out forwards',
+              'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
             },
             keyframes: {
               fadeIn: {
-                '0%': { opacity: 0, transform: 'translateY(5px)' },
+                '0%': { opacity: 0 },
+                '100%': { opacity: 1 },
+              },
+              fadeInUp: {
+                '0%': { opacity: 0, transform: 'translateY(10px)' },
                 '100%': { opacity: 1, transform: 'translateY(0)' },
               },
             }
@@ -94,44 +100,39 @@
     background: #6B7280; 
   }
   
-  /* Corporate Report Card Style replaces Glassmorphism */
+  /* Corporate Report Card Style - Replaces Glassmorphism */
   .glass-panel {
     background: #FFFFFF;
     border: 1px solid #E5E7EB;
-    border-radius: 0.5rem; /* 8px */
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    border-radius: 0.75rem; /* 12px */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
     position: relative;
     overflow: hidden;
   }
   
-  /* Top accent bar for cards */
-  .glass-panel::after {
+  /* Top accent bar for cards to give "Folder" look */
+  .glass-panel::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
-    height: 4px;
-    background: #002855; /* Brand Primary */
-  }
-
-  .text-shadow-glow {
-    /* Removed for clean look */
-    text-shadow: none;
-  }
-  
-  /* Removed Scanline Effect */
-  .scanline-overlay {
-    display: none;
+    height: 3px;
+    background: linear-gradient(90deg, #002855, #0284C7);
+    z-index: 10;
   }
 
   body {
     background-color: #F3F4F6; /* Light Gray Background */
+    color: #111827;
   }
+  
+  /* Remove scanlines */
+  .scanline-overlay { display: none; }
 
 </style>
 </head>
-  <body class="font-sans text-light-text-primary h-screen overflow-hidden selection:bg-brand-primary selection:text-white">
+  <body class="font-sans text-light-text-primary h-screen overflow-hidden selection:bg-brand-primary selection:text-white bg-light-bg">
     <div id="root" class="h-full w-full"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

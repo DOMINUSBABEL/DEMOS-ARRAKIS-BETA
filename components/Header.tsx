@@ -21,7 +21,7 @@ const Header: React.FC<HeaderProps> = ({ theme, onThemeToggle, onMenuClick }) =>
             <MenuIcon className="w-6 h-6" />
             </button>
             <div className="hidden md:block">
-                <h2 className="text-sm font-bold text-brand-primary uppercase tracking-widest">Panel de Control Estratégico</h2>
+                <h2 className="text-sm font-bold text-brand-primary uppercase tracking-widest font-sans">Panel de Control Estratégico</h2>
             </div>
         </div>
         

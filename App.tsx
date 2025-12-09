@@ -22,26 +22,23 @@ function App() {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  // Forced Light Theme for Professional Style
+  // Forced Light Theme
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [activeTab, setActiveTab] = useState<Tab>('data_manager');
   const defaultsLoaded = useRef(false);
 
-  // New state for hybrid architecture
   const [dataSource, setDataSource] = useState<DataSource>('local');
   const [remoteDataset, setRemoteDataset] = useState<HistoricalDataset | null>(null);
-
-  // Mobile sidebar state
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
-    // Always remove dark class
+    // Enforce light mode on mount
     document.documentElement.classList.remove('dark');
     localStorage.setItem('theme', 'light');
   }, []);
 
   const toggleTheme = () => {
-    // Disabled theme toggling to maintain corporate identity
+    // Disable toggling, enforce corporate identity
     setTheme('light'); 
   };
   
@@ -89,7 +86,7 @@ function App() {
         analysisType: finalAnalysisType
       };
       
-      setDataSource('local'); // Switch to local source upon new data load
+      setDataSource('local');
       setRemoteDataset(null);
 
       setDatasets(prev => {
@@ -97,7 +94,6 @@ function App() {
           return [...updatedDatasets, newDataset];
       });
 
-      // Update party analysis without re-parsing
       const partyDataForDataset = aggregateVotesByParty(allProcessedData);
       setPartyAnalysis(prev => {
         let newAnalysis: Map<string, PartyAnalysisData> = new Map(prev);
@@ -423,7 +419,7 @@ function App() {
             onThemeToggle={toggleTheme} 
             onMenuClick={() => setIsMobileSidebarOpen(true)}
         />
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-light-bg">
           {successMessage && (
             <div className="mb-4 flex items-center p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg shadow-sm">
               <CheckCircleIcon className="w-5 h-5 mr-2 text-green-600"/>
