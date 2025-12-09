@@ -19,33 +19,26 @@ interface NavItemProps {
   icon: React.ReactNode;
   children: React.ReactNode;
   disabled?: boolean;
-  index?: number;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ tabId, activeTab, setActiveTab, icon, children, disabled = false, index = 0 }) => {
+const NavItem: React.FC<NavItemProps> = ({ tabId, activeTab, setActiveTab, icon, children, disabled = false }) => {
   const isActive = activeTab === tabId;
   return (
     <button
       onClick={() => !disabled && setActiveTab(tabId)}
       disabled={disabled}
-      style={{ animationDelay: `${index * 50}ms` }}
-      className={`w-full group relative flex items-center gap-4 px-5 py-3.5 text-sm font-medium transition-all duration-300 animate-slide-in-right opacity-0 ${
+      className={`w-full group relative flex items-center gap-3 px-6 py-3 text-sm font-medium transition-all duration-200 border-r-4 ${
         isActive
-          ? 'text-brand-primary bg-white/5 shadow-[inset_4px_0_0_0_#d97706]'
-          : 'text-dark-text-secondary hover:text-brand-glow hover:bg-white/5'
+          ? 'bg-brand-primary text-white border-brand-secondary shadow-md'
+          : 'text-slate-600 hover:bg-slate-50 hover:text-brand-primary border-transparent'
       } ${disabled ? 'opacity-40 cursor-not-allowed grayscale' : ''}`}
     >
-      <span className={`w-5 h-5 transition-all duration-500 ${isActive ? 'text-brand-primary drop-shadow-[0_0_8px_rgba(217,119,6,0.8)]' : 'group-hover:text-brand-primary'}`}>
+      <span className={`w-5 h-5 transition-colors duration-200 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-brand-primary'}`}>
         {icon}
       </span>
-      <span className={`tracking-wide font-mono uppercase text-xs ${isActive ? 'font-bold text-shadow-glow' : ''}`}>
+      <span className={`tracking-wide font-sans ${isActive ? 'font-bold' : ''}`}>
         {children}
       </span>
-      {isActive && (
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-primary/10 to-transparent opacity-50 pointer-events-none" />
-      )}
-      {/* Hover light leak effect */}
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-brand-primary opacity-0 group-hover:opacity-50 transition-opacity duration-300 blur-[2px]"></div>
     </button>
   );
 };
@@ -54,17 +47,15 @@ interface RemoteButtonProps {
   onClick: () => void;
   icon: React.ReactNode;
   children: React.ReactNode;
-  index?: number;
 }
 
-const RemoteButton: React.FC<RemoteButtonProps> = ({ onClick, icon, children, index = 0 }) => (
+const RemoteButton: React.FC<RemoteButtonProps> = ({ onClick, icon, children }) => (
     <button
       onClick={onClick}
-      style={{ animationDelay: `${index * 50 + 500}ms` }}
-      className="w-full group flex items-center gap-3 px-5 py-2 text-xs font-medium transition-all text-dark-text-secondary hover:text-white hover:bg-brand-primary/10 border-l-2 border-transparent hover:border-brand-primary/50 animate-slide-in-right opacity-0"
+      className="w-full group flex items-center gap-3 px-6 py-2.5 text-xs font-semibold transition-all text-slate-500 hover:text-brand-primary hover:bg-blue-50 rounded-r-full mr-4"
     >
-      <span className="w-4 h-4 text-brand-secondary group-hover:text-brand-glow transition-colors">{icon}</span>
-      <span className="tracking-widest uppercase font-mono text-[10px] group-hover:translate-x-1 transition-transform">{children}</span>
+      <span className="w-4 h-4 text-brand-secondary group-hover:text-brand-primary transition-colors">{icon}</span>
+      <span className="tracking-wider uppercase font-mono group-hover:translate-x-1 transition-transform">{children}</span>
     </button>
 );
 
@@ -72,110 +63,107 @@ const RemoteButton: React.FC<RemoteButtonProps> = ({ onClick, icon, children, in
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteData, isOpen, onClose }) => {
   return (
     <aside className={`
-        fixed inset-y-0 left-0 z-40 w-72 bg-[#050403] border-r border-white/5 flex flex-col h-full shadow-[10px_0_40px_rgba(0,0,0,0.8)] transition-transform duration-300 ease-in-out backdrop-blur-3xl
-        lg:translate-x-0 lg:static lg:shadow-[10px_0_40px_rgba(0,0,0,0.8)]
+        fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 flex flex-col h-full shadow-xl transition-transform duration-300 ease-in-out
+        lg:translate-x-0 lg:static lg:shadow-none
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
     `}>
       {/* Header */}
-      <div className="p-8 pb-6 border-b border-white/5 relative overflow-hidden flex items-center justify-between">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-primary to-transparent opacity-50"></div>
-        <div className="flex items-center gap-4 relative z-10">
-          <div className="p-2 rounded-lg border border-brand-primary/30 bg-brand-primary/5 shadow-[0_0_20px_rgba(217,119,6,0.2)] hover:shadow-[0_0_30px_rgba(217,119,6,0.4)] transition-shadow duration-500">
-             <ChartBarIcon className="w-6 h-6 text-brand-primary" />
+      <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded bg-brand-primary text-white shadow-sm">
+             <ChartBarIcon className="w-6 h-6" />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-2xl font-bold text-white tracking-tighter leading-none font-mono">
+            <h1 className="text-xl font-black text-brand-primary tracking-tight leading-none font-sans">
                 DEMOS
             </h1>
-            <span className="text-[10px] font-bold text-brand-primary tracking-[0.4em] uppercase mt-1 text-shadow-glow animate-pulse-slow">
+            <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase mt-0.5">
                 ARRAKIS
             </span>
           </div>
         </div>
-        <button onClick={onClose} className="lg:hidden text-gray-400 hover:text-white">
+        <button onClick={onClose} className="lg:hidden text-slate-400 hover:text-brand-primary">
             <CloseIcon className="w-6 h-6" />
         </button>
       </div>
 
       {/* Navigation Scroll Area */}
-      <nav className="flex-grow overflow-y-auto py-6 space-y-1 scrollbar-thin scrollbar-thumb-brand-secondary/20">
-        <div className="px-6 mb-3 mt-2">
-            <h3 className="text-[9px] font-bold uppercase text-brand-primary/60 tracking-[0.2em] mb-2 flex items-center gap-2 font-mono animate-fade-in">
-                <span className="w-1 h-1 bg-brand-primary rounded-full animate-pulse"></span>
-                Core Systems
+      <nav className="flex-grow overflow-y-auto py-6 space-y-1 bg-white custom-scrollbar">
+        <div className="px-6 mb-2 mt-1">
+            <h3 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-2 font-mono">
+                Sistemas Centrales
             </h3>
         </div>
-        <NavItem index={0} tabId="data_manager" activeTab={activeTab} setActiveTab={setActiveTab} icon={<DatabaseIcon />}>
+        <NavItem tabId="data_manager" activeTab={activeTab} setActiveTab={setActiveTab} icon={<DatabaseIcon />}>
           Gestor de Datos
         </NavItem>
-        <NavItem index={1} tabId="general" activeTab={activeTab} setActiveTab={setActiveTab} icon={<ChartBarIcon />}>
+        <NavItem tabId="general" activeTab={activeTab} setActiveTab={setActiveTab} icon={<ChartBarIcon />}>
           Análisis General
         </NavItem>
-        <NavItem index={2} tabId="d_hondt" activeTab={activeTab} setActiveTab={setActiveTab} icon={<ScaleIcon />}>
+        <NavItem tabId="d_hondt" activeTab={activeTab} setActiveTab={setActiveTab} icon={<ScaleIcon />}>
           Simulador D'Hondt
         </NavItem>
-         <NavItem index={3} tabId="historical" activeTab={activeTab} setActiveTab={setActiveTab} icon={<ClockIcon />}>
+         <NavItem tabId="historical" activeTab={activeTab} setActiveTab={setActiveTab} icon={<ClockIcon />}>
           Simulación Histórica
         </NavItem>
-        <NavItem index={4} tabId="coalitions" activeTab={activeTab} setActiveTab={setActiveTab} icon={<UserGroupIcon />}>
+        <NavItem tabId="coalitions" activeTab={activeTab} setActiveTab={setActiveTab} icon={<UserGroupIcon />}>
           Coaliciones
         </NavItem>
-        <NavItem index={5} tabId="list_analysis" activeTab={activeTab} setActiveTab={setActiveTab} icon={<ListBulletIcon />}>
+        <NavItem tabId="list_analysis" activeTab={activeTab} setActiveTab={setActiveTab} icon={<ListBulletIcon />}>
           Listas y Estrategia
         </NavItem>
         
-        <div className="px-6 mt-8 mb-3">
-            <h3 className="text-[9px] font-bold uppercase text-brand-accent/60 tracking-[0.2em] mb-2 flex items-center gap-2 font-mono animate-fade-in" style={{animationDelay: '300ms'}}>
-                <span className="w-1 h-1 bg-brand-accent rounded-full animate-pulse"></span>
-                Intelligence
+        <div className="px-6 mt-8 mb-2">
+            <h3 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-2 font-mono">
+                Inteligencia Electoral
             </h3>
         </div>
-         <NavItem index={6} tabId="heatmap" activeTab={activeTab} setActiveTab={setActiveTab} icon={<MapIcon />}>
+         <NavItem tabId="heatmap" activeTab={activeTab} setActiveTab={setActiveTab} icon={<MapIcon />}>
           Mapa de Calor
         </NavItem>
-        <NavItem index={7} tabId="projections" activeTab={activeTab} setActiveTab={setActiveTab} icon={<BeakerIcon />}>
-          Proyecciones
+        <NavItem tabId="projections" activeTab={activeTab} setActiveTab={setActiveTab} icon={<BeakerIcon />}>
+          Proyecciones de Riesgo
         </NavItem>
-        <NavItem index={8} tabId="marketing" activeTab={activeTab} setActiveTab={setActiveTab} icon={<MegaphoneIcon />}>
+        <NavItem tabId="marketing" activeTab={activeTab} setActiveTab={setActiveTab} icon={<MegaphoneIcon />}>
           Marketing de Guerra
         </NavItem>
-        <NavItem index={9} tabId="candidate_intelligence" activeTab={activeTab} setActiveTab={setActiveTab} icon={<FingerPrintIcon />}>
-          Inteligencia Individual
+        <NavItem tabId="candidate_intelligence" activeTab={activeTab} setActiveTab={setActiveTab} icon={<FingerPrintIcon />}>
+          Perfil 360° Candidato
         </NavItem>
-        <NavItem index={10} tabId="comparative_analysis" activeTab={activeTab} setActiveTab={setActiveTab} icon={<UserGroupIcon />}>
-          Comparador de Listas
+        <NavItem tabId="comparative_analysis" activeTab={activeTab} setActiveTab={setActiveTab} icon={<UserGroupIcon />}>
+          War Games (Comparador)
         </NavItem>
-        <NavItem index={11} tabId="strategist" activeTab={activeTab} setActiveTab={setActiveTab} icon={<CpuChipIcon />}>
-          Estratega IA
+        <NavItem tabId="strategist" activeTab={activeTab} setActiveTab={setActiveTab} icon={<CpuChipIcon />}>
+          Consultor IA
         </NavItem>
         
-        <div className="my-6 mx-6 border-t border-white/5"></div>
+        <div className="my-6 mx-6 border-t border-gray-100"></div>
         
-        <div className="px-4">
-          <h3 className="text-[9px] font-bold uppercase text-dark-text-muted tracking-[0.2em] mb-4 px-2 font-mono animate-fade-in" style={{animationDelay: '500ms'}}>External Feeds</h3>
-           <RemoteButton index={0} onClick={() => { loadRemoteData('prediction', 2026, 'A'); onClose(); }} icon={<ShareIcon />}>
+        <div className="px-0">
+          <h3 className="text-[9px] font-bold uppercase text-slate-400 tracking-widest mb-3 px-6 font-mono">Fuentes Externas</h3>
+           <RemoteButton onClick={() => { loadRemoteData('prediction', 2026, 'A'); onClose(); }} icon={<ShareIcon />}>
              Cámara 2026 (A)
            </RemoteButton>
-            <RemoteButton index={1} onClick={() => { loadRemoteData('prediction', 2026, 'B'); onClose(); }} icon={<ShareIcon />}>
+            <RemoteButton onClick={() => { loadRemoteData('prediction', 2026, 'B'); onClose(); }} icon={<ShareIcon />}>
              Cámara 2026 (B)
            </RemoteButton>
-            <RemoteButton index={2} onClick={() => { loadRemoteData('historical', 2022); onClose(); }} icon={<ShareIcon />}>
+            <RemoteButton onClick={() => { loadRemoteData('historical', 2022); onClose(); }} icon={<ShareIcon />}>
              Histórico 2022
            </RemoteButton>
         </div>
 
-        <div className="my-6 mx-6 border-t border-white/5"></div>
+        <div className="my-6 mx-6 border-t border-gray-100"></div>
 
-        <NavItem index={12} tabId="methodology" activeTab={activeTab} setActiveTab={setActiveTab} icon={<BookOpenIcon />}>
-            Metodología
+        <NavItem tabId="methodology" activeTab={activeTab} setActiveTab={setActiveTab} icon={<BookOpenIcon />}>
+            Documentación
         </NavItem>
       </nav>
       
       {/* Footer */}
-      <div className="p-4 border-t border-white/5 bg-black/60 backdrop-blur-md relative z-10">
-        <div className="flex items-center gap-3 px-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse"></div>
-            <p className="text-[10px] text-dark-text-muted uppercase tracking-widest font-mono">System Online v2.1</p>
+      <div className="p-4 border-t border-gray-200 bg-gray-50">
+        <div className="flex items-center gap-2 justify-center">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold font-mono">Sistema Online v2.1</p>
         </div>
       </div>
     </aside>
