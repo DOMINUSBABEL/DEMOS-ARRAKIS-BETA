@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useMemo } from 'react';
 import AnalysisCard from './AnalysisCard';
-import { UserGroupIcon, LoadingSpinner, ScaleIcon, PlusIcon, TrashIcon, ChartBarIcon, FingerPrintIcon, CpuChipIcon, FilePdfIcon, BuildingOfficeIcon, ShareIcon, WarningIcon, FunnelIcon, ArrowsUpDownIcon } from './Icons';
+import { UserGroupIcon, LoadingSpinner, ScaleIcon, PlusIcon, TrashIcon, ChartBarIcon, FingerPrintIcon, CpuChipIcon, FilePdfIcon, BuildingOfficeIcon, ShareIcon, WarningIcon, FunnelIcon, ArrowsUpDownIcon, ChevronDownIcon, ClipboardDocumentIcon } from './Icons';
 import { generateCandidateComparison } from '../services/geminiService';
 import { generateStrategicReportPDF } from '../services/reportGenerator';
 import { CandidateComparisonResult, ComparisonScenario, CandidateAnalysis, PartyMetrics } from '../types';
@@ -11,25 +11,52 @@ interface ComparativeAnalysisProps {
     // No specific props needed as it manages its own state
 }
 
-const DEFAULT_CANDIDATES = [
-    "101 Andres Guerra Hoyos",
-    "102 Oscar Dario Pérez Pineda",
-    "103 Lina Marcela Mena Cordova",
-    "104 Federico Eduardo Hoyos Salazar",
-    "105 Maria Teresa Montoya Álvarez",
-    "106 Andres Felipe Gaviria Cano",
-    "107 Juan David Zuluaga Zuluaga",
-    "108 Yuliet Andrea Sanchez Carreño",
-    "109 Julian Fernando Lopera Garzon",
-    "110 John Jairo Berrio Lopez",
-    "111 Ligia Estela Gil Perez",
-    "112 Sergio Osvaldo Molina Perez",
-    "113 Melissa Orrego Eusse",
-    "114 Osbaldo Ángulo de la Rosa",
-    "115 José Gregorio Orjuela Perez",
-    "116 David Toledo Ospina",
-    "117 Ana Ligia Mora Martínez"
-];
+const SAMPLE_DATASETS = {
+    "sample1": {
+        label: "Muestra 1: CD Antioquia",
+        candidates: [
+            "101 Andres Guerra Hoyos",
+            "102 Oscar Dario Pérez Pineda",
+            "103 Lina Marcela Mena Cordova",
+            "104 Federico Eduardo Hoyos Salazar",
+            "105 Maria Teresa Montoya Álvarez",
+            "106 Andres Felipe Gaviria Cano",
+            "107 Juan David Zuluaga Zuluaga",
+            "108 Yuliet Andrea Sanchez Carreño",
+            "109 Julian Fernando Lopera Garzon",
+            "110 John Jairo Berrio Lopez",
+            "111 Ligia Estela Gil Perez",
+            "112 Sergio Osvaldo Molina Perez",
+            "113 Melissa Orrego Eusse",
+            "114 Osbaldo Ángulo de la Rosa",
+            "115 José Gregorio Orjuela Perez",
+            "116 David Toledo Ospina",
+            "117 Ana Ligia Mora Martínez"
+        ]
+    },
+    "sample2": {
+        label: "Muestra 2: D&C / NL",
+        candidates: [
+            "101 Rafael Nanclares (D&C)",
+            "102 Hanna Escobar (NL)",
+            "103 Marcela Eusse (MIRA)",
+            "104 Marcelo Betancur (NL)",
+            "105 Eberto Saez (NL)",
+            "106 Gilberto Torres (NL)",
+            "107 Nelson Carmona (NL)",
+            "108 Daniel Ospina (D&C)",
+            "109 Cynthia Folleco (NL)",
+            "110 Alejandro Arcila (D&C)",
+            "111 Camilo Quintero (NL)",
+            "112 Juan Camilo Salazar (D&C)",
+            "113 Vladimir Ramírez (NL)",
+            "114 Edilma Berrio (NL)",
+            "115 Victor Correa (D&C)",
+            "116 Tatiana Hidalgo (D&C)",
+            "117 Alejandra Sánchez (D&C)"
+        ]
+    }
+};
 
 // --- Types for Sorting ---
 type SortOption = 'probability' | 'name' | 'structure' | 'territory' | 'trajectory' | 'management' | 'internal' | 'scandal';
@@ -97,6 +124,159 @@ const getScoreTextColor = (score: number) => {
     return 'text-red-400';
 };
 
+// --- Attribute Row Component for Detailed Card ---
+const AttributeRow: React.FC<{ 
+    label: string; 
+    score: number; 
+    weight: string; 
+    text: string; 
+    colorClass: string; 
+    barColor: string; 
+}> = ({ label, score, weight, text, colorClass, barColor }) => {
+    // Determine context style based on score
+    const contextStyle = score >= 70 
+        ? 'bg-emerald-900/10 border-emerald-500/20 text-emerald-100' 
+        : score >= 40 
+            ? 'bg-yellow-900/10 border-yellow-500/20 text-yellow-100' 
+            : 'bg-red-900/10 border-red-500/20 text-red-100';
+
+    return (
+        <div className="mb-6 last:mb-0 group">
+            <div className="flex justify-between items-end mb-1">
+                <div className="flex items-center gap-2">
+                    <span className={`w-1 h-4 rounded-full ${barColor.replace('bg-gradient-to-r from-', 'bg-').split(' ')[0]}`}></span>
+                    <h4 className="text-xs font-black uppercase text-gray-300 tracking-widest">{label}</h4>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500 font-mono border border-white/5">Weight: {weight}</span>
+                </div>
+                <span className={`text-sm font-bold font-mono ${colorClass}`}>{score}/100</span>
+            </div>
+            
+            {/* Progress Bar */}
+            <div className="w-full bg-black/40 h-2 rounded-full mb-3 overflow-hidden border border-white/5">
+                <div className={`h-full rounded-full transition-all duration-1000 ${barColor}`} style={{width: `${score}%`}}></div>
+            </div>
+            
+            {/* Technical Justification Block */}
+            <div className={`p-3 rounded-md border text-xs leading-relaxed font-sans text-justify ${contextStyle} transition-all hover:bg-opacity-20`}>
+                <p className="opacity-90">
+                    <strong className="uppercase text-[9px] tracking-wider opacity-70 block mb-1">Justificación Técnica:</strong>
+                    {text}
+                </p>
+            </div>
+        </div>
+    );
+};
+
+
+const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: number }> = ({ candidate, index }) => {
+    
+    return (
+        <div className="break-inside-avoid bg-[#15100d] p-0 rounded-xl border border-white/10 shadow-lg mb-8 transition-transform hover:scale-[1.005] overflow-hidden">
+            {/* Header: Candidate Identity & Probability */}
+            <header className="flex flex-col md:flex-row justify-between items-stretch border-b border-white/10 bg-gradient-to-r from-black/40 to-transparent">
+                <div className="p-6 flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                        <span className="px-2 py-0.5 bg-brand-primary/20 text-brand-primary border border-brand-primary/30 rounded text-[10px] font-bold uppercase tracking-widest">
+                            Candidato #{index + 1}
+                        </span>
+                        {candidate.probabilityScore > 80 && (
+                            <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
+                                <ScaleIcon className="w-3 h-3" /> Alta Probabilidad
+                            </span>
+                        )}
+                    </div>
+                    <h3 className="text-2xl md:text-3xl font-bold text-white font-sans tracking-tight">{candidate.name}</h3>
+                </div>
+                
+                <div className="bg-black/40 p-6 border-l border-white/10 min-w-[180px] flex flex-col justify-center items-end">
+                    <div className={`text-4xl font-black font-mono ${getScoreTextColor(candidate.probabilityScore)} tracking-tighter`}>
+                        {candidate.probabilityScore}%
+                    </div>
+                    <div className="text-[10px] uppercase text-gray-500 font-bold tracking-widest mt-1">Probabilidad de Curul</div>
+                </div>
+            </header>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2">
+                {/* Column 1: Political Assets (Positive Drivers) */}
+                <div className="p-6 border-r border-white/10 space-y-6">
+                    <h5 className="text-xs font-bold text-brand-primary uppercase tracking-[0.2em] mb-4 border-b border-brand-primary/20 pb-2 flex items-center gap-2">
+                        <CpuChipIcon className="w-4 h-4" />
+                        Auditoría de Activos Políticos
+                    </h5>
+
+                    <AttributeRow 
+                        label="Estructura & Maquinaria" 
+                        score={candidate.scoring.structureScore} 
+                        weight="30%" 
+                        text={candidate.structure} 
+                        colorClass={getScoreTextColor(candidate.scoring.structureScore)}
+                        barColor={getScoreColor(candidate.scoring.structureScore)}
+                    />
+
+                    <AttributeRow 
+                        label="Fortaleza Territorial" 
+                        score={candidate.scoring.territoryScore} 
+                        weight="20%" 
+                        text={candidate.territory} 
+                        colorClass={getScoreTextColor(candidate.scoring.territoryScore)}
+                        barColor={getScoreColor(candidate.scoring.territoryScore)}
+                    />
+
+                    <AttributeRow 
+                        label="Dinámica Interna" 
+                        score={candidate.scoring.internalDynamicsScore} 
+                        weight="20%" 
+                        text={candidate.alliances} 
+                        colorClass={getScoreTextColor(candidate.scoring.internalDynamicsScore)}
+                        barColor={getScoreColor(candidate.scoring.internalDynamicsScore)}
+                    />
+                </div>
+
+                {/* Column 2: Qualitative Metrics & Risk (Soft Power & Liabilities) */}
+                <div className="p-6 space-y-6 bg-white/[0.02]">
+                    <h5 className="text-xs font-bold text-blue-400 uppercase tracking-[0.2em] mb-4 border-b border-blue-500/20 pb-2 flex items-center gap-2">
+                        <ClipboardDocumentIcon className="w-4 h-4" />
+                        Métricas Cualitativas y Riesgo
+                    </h5>
+
+                    <AttributeRow 
+                        label="Trayectoria & Opinión" 
+                        score={candidate.scoring.trajectoryScore} 
+                        weight="15%" 
+                        text={candidate.trajectory} 
+                        colorClass={getScoreTextColor(candidate.scoring.trajectoryScore)}
+                        barColor={getScoreColor(candidate.scoring.trajectoryScore)}
+                    />
+
+                    <AttributeRow 
+                        label="Gestión & Resultados" 
+                        score={candidate.scoring.managementScore} 
+                        weight="15%" 
+                        text={candidate.management} 
+                        colorClass={getScoreTextColor(candidate.scoring.managementScore)}
+                        barColor={getScoreColor(candidate.scoring.managementScore)}
+                    />
+
+                    {/* Risk Section is Special */}
+                    <div className="mt-8 pt-4 border-t border-white/5">
+                        <div className="flex justify-between items-center mb-2">
+                            <h4 className="text-xs font-black uppercase text-red-400 tracking-widest flex items-center gap-2">
+                                <WarningIcon className="w-4 h-4" /> Penalización por Riesgo
+                            </h4>
+                            <span className="text-xs font-bold text-red-400 bg-red-900/20 px-2 py-1 rounded font-mono border border-red-500/30">
+                                -{candidate.scoring.scandalPenalty} pts
+                            </span>
+                        </div>
+                        <div className="p-3 rounded-md bg-red-950/30 border border-red-500/20 text-xs text-red-200/80 leading-relaxed font-sans text-justify">
+                            <strong className="uppercase text-[9px] tracking-wider opacity-70 block mb-1 text-red-400">Análisis de Vulnerabilidad:</strong>
+                            {candidate.scandals}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const ScenarioChart: React.FC<{ scenarios: ComparisonScenario[], visibleCandidates: Set<string> }> = ({ scenarios, visibleCandidates }) => {
     const candidateColors = [
@@ -399,111 +579,6 @@ const AttributeRadarChart: React.FC<{ candidates: CandidateAnalysis[], visibleCa
     );
 };
 
-const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: number }> = ({ candidate, index }) => (
-    <div className="break-inside-avoid bg-white dark:bg-[#1a1410] p-8 rounded-xl border border-gray-200 dark:border-white/10 shadow-lg mb-8 transition-transform hover:scale-[1.005]">
-        <header className="flex justify-between items-start border-b-2 border-gray-100 dark:border-white/5 pb-6 mb-6">
-            <div>
-                <span className="text-xs font-bold uppercase tracking-widest text-brand-primary mb-2 block flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-brand-primary"></span>
-                    Candidato #{index + 1}
-                </span>
-                <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white font-sans tracking-tight">{candidate.name}</h3>
-            </div>
-            <div className="text-right bg-black/20 p-3 rounded-lg border border-white/5 min-w-[120px]">
-                <div className={`text-3xl font-bold ${getScoreTextColor(candidate.probabilityScore)}`}>{candidate.probabilityScore}%</div>
-                <div className="text-[9px] uppercase text-gray-500 font-bold tracking-wider mt-1">Probabilidad</div>
-            </div>
-        </header>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-8">
-                {/* Section 1 */}
-                <div className="group">
-                    <div className="flex justify-between items-end mb-2">
-                        <h4 className="text-xs font-black uppercase text-gray-400 dark:text-gray-500 tracking-widest flex items-center gap-2">
-                            <span className="w-1 h-3 bg-blue-500 rounded-full"></span> Trayectoria
-                        </h4>
-                        <span className={`text-xs font-bold ${getScoreTextColor(candidate.scoring.trajectoryScore)}`}>{candidate.scoring.trajectoryScore}/100</span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full mb-3 overflow-hidden">
-                        <div className={`h-full rounded-full transition-all duration-1000 ${getScoreColor(candidate.scoring.trajectoryScore)}`} style={{width: `${candidate.scoring.trajectoryScore}%`}}></div>
-                    </div>
-                    <p className="text-sm text-gray-800 dark:text-gray-300 leading-relaxed text-justify font-normal border-l-2 border-transparent group-hover:border-blue-500/20 pl-2 transition-all">{candidate.trajectory}</p>
-                </div>
-                
-                {/* Section 2 */}
-                <div className="group">
-                    <div className="flex justify-between items-end mb-2">
-                        <h4 className="text-xs font-black uppercase text-gray-400 dark:text-gray-500 tracking-widest flex items-center gap-2">
-                            <span className="w-1 h-3 bg-green-500 rounded-full"></span> Gestión
-                        </h4>
-                        <span className={`text-xs font-bold ${getScoreTextColor(candidate.scoring.managementScore)}`}>{candidate.scoring.managementScore}/100</span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full mb-3 overflow-hidden">
-                        <div className={`h-full rounded-full transition-all duration-1000 ${getScoreColor(candidate.scoring.managementScore)}`} style={{width: `${candidate.scoring.managementScore}%`}}></div>
-                    </div>
-                    <p className="text-sm text-gray-800 dark:text-gray-300 leading-relaxed text-justify font-normal border-l-2 border-transparent group-hover:border-green-500/20 pl-2 transition-all">{candidate.management}</p>
-                </div>
-
-                {/* Section 3 - Negative */}
-                <div className="bg-red-500/5 p-4 rounded-lg border border-red-500/10">
-                    <div className="flex justify-between items-baseline mb-2">
-                        <h4 className="text-xs font-black uppercase text-red-500 dark:text-red-400 tracking-widest flex items-center gap-2">
-                            <WarningIcon className="w-3 h-3" /> Riesgo & Ruido
-                        </h4>
-                        <span className="text-xs font-bold text-red-400 bg-red-900/20 px-2 py-0.5 rounded">-{candidate.scoring.scandalPenalty} pts</span>
-                    </div>
-                    <p className="text-sm text-gray-800 dark:text-gray-300 leading-relaxed text-justify font-normal">{candidate.scandals}</p>
-                </div>
-            </div>
-            
-            <div className="space-y-8">
-                {/* Section 4 */}
-                <div className="group">
-                    <div className="flex justify-between items-end mb-2">
-                        <h4 className="text-xs font-black uppercase text-gray-400 dark:text-gray-500 tracking-widest flex items-center gap-2">
-                            <span className="w-1 h-3 bg-purple-500 rounded-full"></span> Estructura
-                        </h4>
-                        <span className={`text-xs font-bold ${getScoreTextColor(candidate.scoring.structureScore)}`}>{candidate.scoring.structureScore}/100</span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full mb-3 overflow-hidden">
-                        <div className={`h-full rounded-full transition-all duration-1000 ${getScoreColor(candidate.scoring.structureScore)}`} style={{width: `${candidate.scoring.structureScore}%`}}></div>
-                    </div>
-                    <p className="text-sm text-gray-800 dark:text-gray-300 leading-relaxed text-justify font-normal border-l-2 border-transparent group-hover:border-purple-500/20 pl-2 transition-all">{candidate.structure}</p>
-                </div>
-
-                {/* Section 5 */}
-                <div className="group">
-                    <div className="flex justify-between items-end mb-2">
-                        <h4 className="text-xs font-black uppercase text-gray-400 dark:text-gray-500 tracking-widest flex items-center gap-2">
-                            <span className="w-1 h-3 bg-orange-500 rounded-full"></span> Territorio
-                        </h4>
-                        <span className={`text-xs font-bold ${getScoreTextColor(candidate.scoring.territoryScore)}`}>{candidate.scoring.territoryScore}/100</span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full mb-3 overflow-hidden">
-                        <div className={`h-full rounded-full transition-all duration-1000 ${getScoreColor(candidate.scoring.territoryScore)}`} style={{width: `${candidate.scoring.territoryScore}%`}}></div>
-                    </div>
-                    <p className="text-sm text-gray-800 dark:text-gray-300 leading-relaxed text-justify font-normal border-l-2 border-transparent group-hover:border-orange-500/20 pl-2 transition-all">{candidate.territory}</p>
-                </div>
-
-                {/* Section 6 */}
-                <div className="group">
-                    <div className="flex justify-between items-end mb-2">
-                        <h4 className="text-xs font-black uppercase text-gray-400 dark:text-gray-500 tracking-widest flex items-center gap-2">
-                            <span className="w-1 h-3 bg-cyan-500 rounded-full"></span> Dinámica Interna
-                        </h4>
-                        <span className={`text-xs font-bold ${getScoreTextColor(candidate.scoring.internalDynamicsScore)}`}>{candidate.scoring.internalDynamicsScore}/100</span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full mb-3 overflow-hidden">
-                        <div className={`h-full rounded-full transition-all duration-1000 ${getScoreColor(candidate.scoring.internalDynamicsScore)}`} style={{width: `${candidate.scoring.internalDynamicsScore}%`}}></div>
-                    </div>
-                    <p className="text-sm text-gray-800 dark:text-gray-300 leading-relaxed text-justify font-normal border-l-2 border-transparent group-hover:border-cyan-500/20 pl-2 transition-all">{candidate.alliances}</p>
-                </div>
-            </div>
-        </div>
-    </div>
-);
-
 const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
     const [contenders, setContenders] = useState<string[]>(['', '']); 
     const [context, setContext] = useState('Análisis basado en Proyección Cámara Antioquia 2026 - Escenario A (Lista Abierta).');
@@ -519,6 +594,7 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
     const [sortBy, setSortBy] = useState<SortOption>('probability');
     const [sortDesc, setSortDesc] = useState(true);
     const [minProbFilter, setMinProbFilter] = useState(0);
+    const [isSampleMenuOpen, setIsSampleMenuOpen] = useState(false);
 
     const handleUpdateContender = (index: number, value: string) => {
         const newContenders = [...contenders];
@@ -538,8 +614,9 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
         }
     };
 
-    const handleLoadSampleData = () => {
-        setContenders([...DEFAULT_CANDIDATES]);
+    const handleLoadSampleData = (key: keyof typeof SAMPLE_DATASETS) => {
+        setContenders([...SAMPLE_DATASETS[key].candidates]);
+        setIsSampleMenuOpen(false);
     };
 
     const handleCompare = async () => {
@@ -657,13 +734,29 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                             <p className="text-xs text-gray-500 mt-1">Ingresa los nombres manualmente o carga la lista de muestra.</p>
                         </div>
                         <div className="flex gap-2">
-                            <button 
-                                onClick={handleLoadSampleData}
-                                className="px-3 py-1.5 bg-blue-900/30 text-blue-300 border border-blue-500/30 rounded-md text-xs font-bold hover:bg-blue-800/50 transition-colors flex items-center gap-2"
-                            >
-                                <UserGroupIcon className="w-4 h-4" />
-                                Cargar Muestra (Cámara ANT)
-                            </button>
+                            <div className="relative">
+                                <button 
+                                    onClick={() => setIsSampleMenuOpen(!isSampleMenuOpen)}
+                                    className="px-3 py-1.5 bg-blue-900/30 text-blue-300 border border-blue-500/30 rounded-md text-xs font-bold hover:bg-blue-800/50 transition-colors flex items-center gap-2"
+                                >
+                                    <UserGroupIcon className="w-4 h-4" />
+                                    Cargar Muestra
+                                    <ChevronDownIcon className="w-3 h-3" />
+                                </button>
+                                {isSampleMenuOpen && (
+                                    <div className="absolute right-0 top-full mt-2 w-48 bg-[#1a1410] border border-white/10 rounded-md shadow-xl z-50 overflow-hidden">
+                                        {Object.entries(SAMPLE_DATASETS).map(([key, data]) => (
+                                            <button
+                                                key={key}
+                                                onClick={() => handleLoadSampleData(key as keyof typeof SAMPLE_DATASETS)}
+                                                className="block w-full text-left px-4 py-3 text-xs text-gray-300 hover:bg-white/10 hover:text-white border-b border-white/5 last:border-0 transition-colors"
+                                            >
+                                                {data.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                             {comparison && (
                                 <button 
                                     onClick={handleExportPdf}
@@ -872,10 +965,16 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                         </div>
 
                         {/* DETAILED EXECUTIVE REPORT CARDS */}
-                        <h4 className="text-lg font-bold text-white uppercase tracking-widest mb-6 border-b border-white/10 pb-2 flex items-center gap-3">
-                            <ShareIcon className="w-5 h-5 text-brand-secondary" />
-                            Informe Ejecutivo Detallado
-                        </h4>
+                        <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-6">
+                            <h4 className="text-lg font-bold text-white uppercase tracking-widest flex items-center gap-3">
+                                <ShareIcon className="w-5 h-5 text-brand-secondary" />
+                                Auditoría Técnica Individual
+                            </h4>
+                            <div className="px-3 py-1 bg-white/5 rounded text-[10px] text-gray-400 font-mono border border-white/10 flex items-center gap-2">
+                                <ScaleIcon className="w-3 h-3" />
+                                Metodología de Ponderación Activa
+                            </div>
+                        </div>
                         <div className="space-y-6">
                             {sortedAndFilteredCandidates.length > 0 ? (
                                 sortedAndFilteredCandidates.map((cand, idx) => (
