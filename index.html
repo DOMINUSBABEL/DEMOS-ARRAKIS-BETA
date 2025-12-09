@@ -1,94 +1,60 @@
+
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DEMOS ARRAKIS</title>
+    <title>DEMOS INTEL - Sistema de Estrategia</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
-        darkMode: 'class',
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              mono: ['JetBrains Mono', 'monospace'],
-            },
-            backgroundImage: {
-              'arrakis-gradient': 'linear-gradient(to bottom right, #1c1611, #0f0a06)',
-              'glass-gradient': 'linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%)',
-              'glow-gradient': 'linear-gradient(to right, rgba(217, 119, 6, 0.2), transparent)',
-              'subtle-grid': 'radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)',
+              sans: ['Inter', 'sans-serif'], // UI Text
+              serif: ['Merriweather', 'serif'], // Headers for report feel
             },
             colors: {
               brand: {
-                primary: '#d97706',   // Amber 600 (Spice)
-                secondary: '#b45309', // Amber 700
-                glow: '#fbbf24',      // Amber 400 (Bright Spice)
-                accent: '#0ea5e9',    // Sky 500 (Water/Life)
-              },
-              dark: {
-                bg: '#050403',       // Deepest Void
-                surface: '#0f0a06',  // Deep Sand
-                card: '#1a1410',     // Rock
-                border: '#2a221b',   // Sandstone
-                'text-primary': '#f5e5d5', // Bone White
-                'text-secondary': '#a18f7c', // Dust
-                'text-muted': '#6b5a4e', // Shadow
+                primary: '#002855',   // Deep Navy Blue (Institucional)
+                secondary: '#B91C1C', // Deep Red (Acento/Alerta)
+                accent: '#0284C7',    // Sky Blue (Enlaces/Highlights)
+                neutral: '#F3F4F6',   // Light Gray (Fondos)
               },
               light: {
-                  bg: '#f8fafc',
-                  card: '#ffffff',
-                  border: '#e2e8f0',
-                  'text-primary': '#1e293b',
-                  'text-secondary': '#64748b',
+                  bg: '#FFFFFF',
+                  card: '#FFFFFF',
+                  border: '#E5E7EB',
+                  'text-primary': '#111827', // Almost Black
+                  'text-secondary': '#4B5563', // Dark Gray
+              },
+              // Dark mode colors kept as fallbacks but mapped to light for consistency if toggled accidentally
+              dark: {
+                bg: '#F9FAFB',       
+                surface: '#FFFFFF',  
+                card: '#FFFFFF',     
+                border: '#D1D5DB',   
+                'text-primary': '#1F2937', 
+                'text-secondary': '#6B7280', 
+                'text-muted': '#9CA3AF', 
               },
             },
             boxShadow: {
-              'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.5)',
-              'glow': '0 0 20px rgba(217, 119, 6, 0.15)',
-              'inner-light': 'inset 0 0 20px rgba(255, 255, 255, 0.02)',
-            },
-            backdropBlur: {
-              'xs': '2px',
+              'report': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              'report-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
             },
             animation: {
-              'fade-in': 'fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-              'fade-in-up': 'fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-              'slide-in-right': 'slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-              'pulse-slow': 'pulseSlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              'shimmer': 'shimmer 2.5s infinite linear',
-              'scanline': 'scanline 8s linear infinite',
+              'fade-in': 'fadeIn 0.4s ease-out forwards',
             },
             keyframes: {
               fadeIn: {
-                '0%': { opacity: 0 },
-                '100%': { opacity: 1 },
-              },
-              fadeInUp: {
-                '0%': { opacity: 0, transform: 'translateY(15px)' },
+                '0%': { opacity: 0, transform: 'translateY(5px)' },
                 '100%': { opacity: 1, transform: 'translateY(0)' },
               },
-              slideInRight: {
-                '0%': { opacity: 0, transform: 'translateX(-20px)' },
-                '100%': { opacity: 1, transform: 'translateX(0)' },
-              },
-              pulseSlow: {
-                '0%, 100%': { opacity: 0.4 },
-                '50%': { opacity: 0.7 },
-              },
-              shimmer: {
-                '0%': { transform: 'translateX(-100%)' },
-                '100%': { transform: 'translateX(100%)' },
-              },
-              scanline: {
-                '0%': { transform: 'translateY(-100%)' },
-                '100%': { transform: 'translateY(100%)' },
-              }
             }
           }
         }
@@ -112,93 +78,61 @@
 }
 </script>
 <style>
-  /* Custom Scrollbar - Minimalist */
+  /* Professional Scrollbar */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-track {
-    background: transparent; 
+    background: #F3F4F6; 
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(79, 66, 53, 0.5); 
-    border-radius: 3px;
+    background: #9CA3AF; 
+    border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #d97706; 
+    background: #6B7280; 
   }
   
-  /* Glassmorphism Utility */
+  /* Corporate Report Card Style replaces Glassmorphism */
   .glass-panel {
-    background: rgba(20, 16, 13, 0.4);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 0.5rem; /* 8px */
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
     position: relative;
     overflow: hidden;
   }
   
-  .glass-panel::before {
+  /* Top accent bar for cards */
+  .glass-panel::after {
     content: '';
     position: absolute;
     top: 0;
-    left: -100%;
-    width: 50%;
-    height: 100%;
-    background: linear-gradient(
-      to right,
-      transparent,
-      rgba(255, 255, 255, 0.03),
-      transparent
-    );
-    transform: skewX(-25deg);
-    transition: 0.5s;
-    pointer-events: none;
-  }
-
-  .glass-panel:hover::before {
-    animation: shimmer 1.5s infinite;
-  }
-  
-  .glass-panel:hover {
-    border-color: rgba(217, 119, 6, 0.3);
-    background: rgba(20, 16, 13, 0.5);
-    box-shadow: 0 0 20px rgba(217, 119, 6, 0.1);
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: #002855; /* Brand Primary */
   }
 
   .text-shadow-glow {
-    text-shadow: 0 0 15px rgba(217, 119, 6, 0.6);
+    /* Removed for clean look */
+    text-shadow: none;
   }
   
-  .chart-gradient-mask {
-    mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+  /* Removed Scanline Effect */
+  .scanline-overlay {
+    display: none;
   }
 
-  /* Scanline Effect */
-  .scanline-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      to bottom,
-      transparent 50%,
-      rgba(0, 0, 0, 0.05) 51%,
-      transparent 51%
-    );
-    background-size: 100% 4px;
-    pointer-events: none;
-    z-index: 9999;
-    opacity: 0.4;
+  body {
+    background-color: #F3F4F6; /* Light Gray Background */
   }
 
 </style>
 </head>
-  <body class="font-sans bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-dark-text-primary transition-colors duration-300 h-screen overflow-hidden selection:bg-brand-primary selection:text-white">
-    <div class="scanline-overlay"></div>
-    <div id="root" class="h-full w-full bg-subtle-grid bg-[length:40px_40px]"></div>
+  <body class="font-sans text-light-text-primary h-screen overflow-hidden selection:bg-brand-primary selection:text-white">
+    <div id="root" class="h-full w-full"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

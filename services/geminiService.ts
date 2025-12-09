@@ -318,41 +318,68 @@ export const generateMarketingStrategy = async (
     context: string
 ): Promise<MarketingStrategyResult> => {
     const prompt = `
-    Genera una estrategia de marketing político de guerra para capturar el voto elástico.
-    Objetivo: ${targetName} (${targetType}).
+    Genera una estrategia de "Marketing de Guerra Electoral" para: ${targetName} (${targetType}).
     Contexto: ${context}
+
+    TU MISIÓN ES DEFINIR LA ESTRATEGIA EN 3 FASES Y CREAR UN MATCH PERFECTO ENTRE 10 AVATARES DE VOTANTES Y 10 ÁNGULOS DEL CANDIDATO.
+
+    1. **CÁLCULO DE BASE ELECTORAL (Estimación):**
+       - Estima una "Base Electoral X" (número de votos) partiendo de estructuras, maquinaria histórica, alianzas probables y apoyos. Sé realista.
+
+    2. **PIPELINE DE INTELIGENCIA (3 Fases):**
+       - **Fase 1: Extracción y Diagnóstico:** Qué datos buscar (histórico E-14, escucha social, validación en terreno).
+       - **Fase 2: Ejecución de Precisión:** Tácticas de micro-segmentación y publicidad (Meta APIs, WhatsApp, Territorio).
+       - **Fase 3: Conexión y Conversión:** El objetivo final. Transformar el dato en voto efectivo.
+
+    3. **MATRIZ DE MATCH (10 vs 10):**
+       - Genera **10 Avatares de Votantes** (VoterPersonas) muy específicos (ej: "La Madre Cabeza de Familia en Barrio Popular", "El Joven Universitario Desencantado").
+       - Genera **10 Avatares de Candidato** (CandidatePersonas) que son "ángulos" o "máscaras" que el candidato debe adoptar para conectar con cada uno de esos votantes (ej: "El Protector", "El Innovador").
+       - Asegura que cada avatar de candidato esté diseñado para conectar con uno o más avatares de votantes.
+
+    FORMATO JSON ESTRICTO.
     `;
 
     const schema: Schema = {
         type: Type.OBJECT,
         properties: {
             candidateProfile: { type: Type.STRING },
-            elasticVoterPersona: {
+            calculatedBase: { type: Type.INTEGER, description: "Base electoral estimada partiendo de estructuras y maquinaria." },
+            pipeline: {
                 type: Type.OBJECT,
                 properties: {
-                    demographics: { type: Type.STRING },
-                    interests: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    painPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    mediaHabits: { type: Type.ARRAY, items: { type: Type.STRING } }
+                    phase1_extraction: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    phase2_execution: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    phase3_conversion: { type: Type.ARRAY, items: { type: Type.STRING } }
                 },
-                required: ['demographics', 'interests', 'painPoints', 'mediaHabits']
+                required: ['phase1_extraction', 'phase2_execution', 'phase3_conversion']
             },
-            campaignPillars: {
-                type: Type.OBJECT,
-                properties: {
-                    rational: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    emotional: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    slogans: { type: Type.ARRAY, items: { type: Type.STRING } }
-                },
-                required: ['rational', 'emotional', 'slogans']
+            voterAvatars: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        id: { type: Type.INTEGER },
+                        archetype: { type: Type.STRING },
+                        demographics: { type: Type.STRING },
+                        painPoint: { type: Type.STRING },
+                        channel: { type: Type.STRING }
+                    },
+                    required: ['id', 'archetype', 'demographics', 'painPoint', 'channel']
+                }
             },
-            tactics: {
-                type: Type.OBJECT,
-                properties: {
-                    digital: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    territory: { type: Type.ARRAY, items: { type: Type.STRING } }
-                },
-                required: ['digital', 'territory']
+            candidateAvatars: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        id: { type: Type.INTEGER },
+                        archetype: { type: Type.STRING },
+                        messaging_angle: { type: Type.STRING },
+                        visual_style: { type: Type.STRING },
+                        target_voter_ids: { type: Type.ARRAY, items: { type: Type.INTEGER } }
+                    },
+                    required: ['id', 'archetype', 'messaging_angle', 'visual_style', 'target_voter_ids']
+                }
             },
             kpis: {
                 type: Type.ARRAY,
@@ -363,7 +390,7 @@ export const generateMarketingStrategy = async (
                 }
             }
         },
-        required: ['candidateProfile', 'elasticVoterPersona', 'campaignPillars', 'tactics', 'kpis']
+        required: ['candidateProfile', 'calculatedBase', 'pipeline', 'voterAvatars', 'candidateAvatars', 'kpis']
     };
 
     try {
@@ -389,7 +416,7 @@ export const generateCandidateProfile = async (
 ): Promise<CandidateProfileResult> => {
     const prompt = `
     ROL: Analista de Inteligencia Política y Electoral.
-    OBJETIVO: Generar un perfil integral de un candidato político para uso en simulaciones electorales.
+    OBJETIVO: Generar un perfil integral de un candidato político.
     
     CANDIDATO: ${candidateName}
     CONTEXTO ADICIONAL: ${context}
@@ -398,10 +425,10 @@ export const generateCandidateProfile = async (
     ${JSON.stringify(historicalData, null, 2)}
 
     INSTRUCCIONES:
-    1.  **Analiza la Opinión Pública (Google Search):** Busca noticias recientes, polémicas, logros y percepción general. ¿Es favorable? ¿Polarizante?
-    2.  **Analiza la Gestión (Google Search):** Si ha tenido cargos públicos (Alcalde, Concejal, Congresista), resume sus hitos de gestión o proyectos de ley. Si no, analiza su trayectoria profesional.
-    3.  **Proyección Electoral (Simulación):** Basado en su historial y el "momentum" actual (opinión), sugiere un "Poder Electoral Base" para una simulación actual. Define un techo y un piso realistas.
-    4.  **Parámetros de Simulación:** Define la volatilidad de su voto (¿es un voto duro o de opinión volátil?) y su tendencia de crecimiento.
+    1.  **Analiza la Opinión Pública (Google Search):** Noticias, polémicas, logros.
+    2.  **Analiza la Gestión (Google Search):** Cargos públicos previos.
+    3.  **Proyección Electoral:** Sugiere un "Poder Electoral Base" realista.
+    4.  **Parámetros de Simulación:** Volatilidad y tendencia.
 
     FORMATO DE RESPUESTA: JSON Estricto.
     `;
@@ -453,37 +480,30 @@ export const generateCandidateComparison = async (
     context: string
 ): Promise<CandidateComparisonResult> => {
     const prompt = `
-    ROL: Consultor Senior de Riesgo Político y Estrategia Electoral.
-    OBJETIVO: Realizar una "Due Diligence" rigurosa y técnica de los siguientes candidatos: ${candidates.join(', ')}.
+    ROL: Consultor Senior de Estrategia Electoral (War Games).
+    OBJETIVO: Realizar una "Due Diligence" rigurosa de los siguientes candidatos: ${candidates.join(', ')}.
 
     CONTEXTO ELECTORAL: ${context}
     
-    *** BASE DE DATOS DE REFERENCIA ***
-    Referencia: "Proyección Cámara Antioquia 2026 - Escenario A (Lista Abierta)".
+    *** INSTRUCCIONES CLAVE DE ANÁLISIS ***
+    Para cada candidato, debes realizar lo siguiente:
 
-    *** INSTRUCCIONES DE ANÁLISIS CUANTITATIVO Y PONDERACIÓN ***
-    Debes calcular un 'probabilityScore' (0-100%) para cada candidato. NO ADIVINES. Usa esta fórmula de ponderación para derivar la probabilidad:
-    
-    1.  **Estructura y Maquinaria (30%):** Capacidad de movilización, endosos de alcaldes/concejales, apoyos tradicionales.
-    2.  **Fortaleza Territorial (20%):** Capilaridad geográfica, presencia en municipios clave.
-    3.  **Trayectoria y Reconocimiento (15%):** Peso histórico del nombre, recordación de marca personal.
-    4.  **Gestión y Resultados (15%):** Hitos tangibles, ejecución presupuestal previa, leyes/acuerdos.
-    5.  **Dinámica Interna (20%):** Cohesión con el partido, alianzas con cabezas de lista, rivalidades.
-    6.  **PENALIZACIÓN (Escándalos/Ruido):** Resta hasta 20 puntos por investigaciones activas, ruido mediático negativo o riesgo reputacional.
+    1.  **CÁLCULO DE BASE ELECTORAL X:**
+        Estima un número concreto de votos base (piso sólido) analizando sus estructuras, maquinarias, historial electoral (votos previos), alianzas con clanes/partidos y apoyos financieros/políticos. NO ADIVINES, deduce lógicamente.
 
-    *** REQUISITO DE AVATARES DE VOTANTES (NUEVO) ***
-    Para cada candidato, genera **2 Avatares de Votantes** (Buyer Personas) que representen su base electoral principal.
-    - **Archetype:** Un nombre creativo (ej. "El Joven Indignado", "La Señora de Parroquia").
-    - **Demographics:** Edad, ubicación, nivel socioeconómico.
-    - **Motivation:** ¿Por qué vota por este candidato?
-    - **Pain Point:** ¿Qué le preocupa o molesta?
+    2.  **PIPELINE ESTRATÉGICO (3 Fases):**
+        Define brevemente cómo debe ejecutar su campaña en 3 fases: Extracción/Diagnóstico, Ejecución de Precisión, y Conexión/Conversión.
 
-    *** ESCENARIOS DE CURULES (AJUSTE DINÁMICO) ***
-    **IMPORTANTE:** Los escenarios deben ser LÓGICOS y RAZONABLES para el partido al que pertenecen los candidatos.
-    - NO ASUMAS QUE TODOS LOS PARTIDOS TIENEN UN PISO DE 5 CURULES como el Centro Democrático.
-    - Si los candidatos son de un partido pequeño (ej. Dignidad), el Escenario A podría ser 0 curules, B 1 curul, C 2 curules.
-    - Si son de un partido mediano (ej. Verde), ajusta acorde (ej. 2-3 curules).
-    - Ajusta las proyecciones de votos en 'scenarios' para que sumen totales realistas para ese partido específico.
+    3.  **MATRIZ DE MATCH (10 vs 10):**
+        Genera EXACTAMENTE:
+        - **10 Avatares de Votantes** (VoterPersonas) detallados que componen su target.
+        - **10 Avatares de Candidato** (CandidatePersonas/Ángulos) que el candidato debe adoptar para conectar con esos votantes.
+
+    4.  **PONDERACIÓN (Scoring):**
+        Calcula el 'probabilityScore' basado en: Estructura (30%), Territorio (20%), Trayectoria (15%), Gestión (15%), Dinámica Interna (20%) y penaliza por Escándalos.
+
+    *** ESCENARIOS DE CURULES ***
+    Genera escenarios realistas (A, B, C) basados en la fuerza real de los partidos involucrados.
 
     FORMATO DE RESPUESTA: JSON Estricto.
     `;
@@ -491,7 +511,7 @@ export const generateCandidateComparison = async (
     const schema: Schema = {
         type: Type.OBJECT,
         properties: {
-            listVerdict: { type: Type.STRING, description: "Análisis estratégico ejecutivo de la viabilidad de la lista." },
+            listVerdict: { type: Type.STRING },
             partyMetrics: {
                 type: Type.OBJECT,
                 properties: {
@@ -508,14 +528,24 @@ export const generateCandidateComparison = async (
                     type: Type.OBJECT,
                     properties: {
                         name: { type: Type.STRING },
-                        probabilityScore: { type: Type.NUMBER, description: "Probabilidad Ponderada Final (0-100)." },
-                        trajectory: { type: Type.STRING, description: "Análisis técnico de trayectoria y peso electoral histórico." },
-                        scandals: { type: Type.STRING, description: "Evaluación de riesgo reputacional y jurídico." },
-                        image: { type: Type.STRING, description: "Análisis de imagen y percepción." },
-                        structure: { type: Type.STRING, description: "Detalle de estructura, maquinaria y apoyos territoriales." },
-                        management: { type: Type.STRING, description: "Hitos de gestión o legislativos." },
-                        territory: { type: Type.STRING, description: "Desglose de fortalezas geográficas." },
-                        alliances: { type: Type.STRING, description: "Dinámica de alianzas internas y rivalidades." },
+                        probabilityScore: { type: Type.NUMBER },
+                        calculatedBase: { type: Type.INTEGER, description: "Base electoral calculada según estructura y maquinaria." },
+                        trajectory: { type: Type.STRING },
+                        scandals: { type: Type.STRING },
+                        image: { type: Type.STRING },
+                        structure: { type: Type.STRING },
+                        management: { type: Type.STRING },
+                        territory: { type: Type.STRING },
+                        alliances: { type: Type.STRING },
+                        pipeline: {
+                            type: Type.OBJECT,
+                            properties: {
+                                phase1_extraction: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                phase2_execution: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                phase3_conversion: { type: Type.ARRAY, items: { type: Type.STRING } }
+                            },
+                            required: ['phase1_extraction', 'phase2_execution', 'phase3_conversion']
+                        },
                         scoring: {
                             type: Type.OBJECT,
                             properties: {
@@ -528,21 +558,36 @@ export const generateCandidateComparison = async (
                             },
                             required: ['trajectoryScore', 'structureScore', 'territoryScore', 'managementScore', 'internalDynamicsScore', 'scandalPenalty']
                         },
-                        avatars: {
+                        voterAvatars: {
                             type: Type.ARRAY,
                             items: {
                                 type: Type.OBJECT,
                                 properties: {
+                                    id: { type: Type.INTEGER },
                                     archetype: { type: Type.STRING },
                                     demographics: { type: Type.STRING },
-                                    motivation: { type: Type.STRING },
-                                    painPoint: { type: Type.STRING }
+                                    painPoint: { type: Type.STRING },
+                                    channel: { type: Type.STRING }
                                 },
-                                required: ['archetype', 'demographics', 'motivation', 'painPoint']
+                                required: ['id', 'archetype', 'demographics', 'painPoint', 'channel']
+                            }
+                        },
+                        candidateAvatars: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    id: { type: Type.INTEGER },
+                                    archetype: { type: Type.STRING },
+                                    messaging_angle: { type: Type.STRING },
+                                    visual_style: { type: Type.STRING },
+                                    target_voter_ids: { type: Type.ARRAY, items: { type: Type.INTEGER } }
+                                },
+                                required: ['id', 'archetype', 'messaging_angle', 'visual_style', 'target_voter_ids']
                             }
                         }
                     },
-                    required: ['name', 'probabilityScore', 'trajectory', 'scandals', 'image', 'structure', 'management', 'territory', 'alliances', 'scoring', 'avatars']
+                    required: ['name', 'probabilityScore', 'calculatedBase', 'trajectory', 'scandals', 'structure', 'pipeline', 'scoring', 'voterAvatars', 'candidateAvatars']
                 }
             },
             scenarios: {

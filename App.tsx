@@ -12,7 +12,7 @@ import { LoadingSpinner, WarningIcon, CheckCircleIcon } from './components/Icons
 import Papa from 'papaparse';
 import { defaultDatasets } from './services/defaultDatasets';
 
-type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap' | 'marketing' | 'candidate_intelligence';
+type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap' | 'marketing' | 'candidate_intelligence' | 'comparative_analysis';
 type DataSource = 'local' | 'remote';
 
 function App() {
@@ -22,9 +22,8 @@ function App() {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('theme') as 'light' | 'dark') || 'dark';
-  });
+  // Forced Light Theme for Professional Style
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [activeTab, setActiveTab] = useState<Tab>('data_manager');
   const defaultsLoaded = useRef(false);
 
@@ -36,16 +35,14 @@ function App() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+    // Always remove dark class
+    document.documentElement.classList.remove('dark');
+    localStorage.setItem('theme', 'light');
+  }, []);
 
   const toggleTheme = () => {
-    setTheme(prevTheme => (prevTheme === 'dark' ? 'light' : 'dark'));
+    // Disabled theme toggling to maintain corporate identity
+    setTheme('light'); 
   };
   
   const processAndSetData = useCallback(async (csvTexts: string[], datasetName: string, isMerge = false, idsToMerge: string[] = [], silent = false) => {
@@ -219,7 +216,7 @@ function App() {
         
         setIsLoading(false);
         setLoadingMessage('');
-        setSuccessMessage('Conjuntos de datos de ejemplo cargados. ¡Ya puedes comenzar a explorar!');
+        setSuccessMessage('Conjuntos de datos de ejemplo cargados.');
         setActiveTab('general');
         setTimeout(() => setSuccessMessage(null), 5000);
     };
@@ -271,10 +268,9 @@ function App() {
             Object.entries(classified).forEach(([partyName, ideology]) => {
                 const data = newAnalysis.get(partyName);
                 if (data) {
-                    // Create a new object to ensure immutability
                     const newData: PartyAnalysisData = {
                         name: data.name,
-                        history: data.history, // history is already an array of new objects
+                        history: data.history,
                         color: data.color,
                         ideology: ideology,
                     };
@@ -361,11 +357,9 @@ function App() {
     setError(null);
     setSuccessMessage(null);
 
-    // MOCK API CALL
     await new Promise(resolve => setTimeout(resolve, 1500)); 
     
     try {
-        // In a real app, this would be a fetch call to a backend
         let mockDataset;
         if (type === 'prediction' && year === 2026 && scenario) {
             mockDataset = defaultDatasets.find(d => d.name.includes(String(year)) && d.name.includes(`Escenario ${scenario}`));
@@ -404,8 +398,7 @@ function App() {
   
 
   return (
-    <div className={`flex h-screen bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-dark-text-primary font-sans transition-colors duration-300 ${theme}`}>
-      {/* Overlay for mobile sidebar */}
+    <div className={`flex h-screen bg-light-bg text-light-text-primary font-sans transition-colors duration-300 ${theme}`}>
       {isMobileSidebarOpen && (
         <div 
             className="fixed inset-0 bg-black/60 z-30 lg:hidden backdrop-blur-sm transition-opacity duration-300" 
@@ -417,7 +410,7 @@ function App() {
         activeTab={activeTab} 
         setActiveTab={(tab) => {
             setActiveTab(tab);
-            setIsMobileSidebarOpen(false); // Close sidebar on selection for mobile
+            setIsMobileSidebarOpen(false); 
         }} 
         loadRemoteData={loadRemoteData} 
         isOpen={isMobileSidebarOpen}
@@ -432,18 +425,17 @@ function App() {
         />
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
           {successMessage && (
-            <div className="mb-4 flex items-center p-4 bg-green-900/50 border border-green-500 text-green-300 rounded-lg">
-              <CheckCircleIcon className="w-5 h-5 mr-2"/>
+            <div className="mb-4 flex items-center p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg shadow-sm">
+              <CheckCircleIcon className="w-5 h-5 mr-2 text-green-600"/>
               <span>{successMessage}</span>
             </div>
           )}
           {error && (
-            <div className="mb-4 flex items-center p-4 bg-red-900/50 border border-red-500 text-red-300 rounded-lg">
-              <WarningIcon className="w-5 h-5 mr-2"/>
+            <div className="mb-4 flex items-center p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg shadow-sm">
+              <WarningIcon className="w-5 h-5 mr-2 text-red-600"/>
               <span>{error}</span>
             </div>
           )}
-          {/* FIX: Add all required props to the Dashboard component. */}
           <Dashboard 
             activeTab={activeTab} 
             setActiveTab={setActiveTab}

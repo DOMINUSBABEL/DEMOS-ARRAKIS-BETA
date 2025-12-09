@@ -198,23 +198,34 @@ export interface ListAnalysisAIResponse {
   };
 }
 
+export interface StrategyPipeline {
+    phase1_extraction: string[]; // Análisis Histórico y Georreferenciación
+    phase2_execution: string[]; // Minería de Datos y Escucha Social + Publicidad
+    phase3_conversion: string[]; // Validación Rigurosa y Match Perfecto
+}
+
+export interface VoterAvatar {
+    id: number;
+    archetype: string; // e.g. "El Joven Indignado"
+    demographics: string; // e.g. "Universitario, 22 años, Medellín"
+    painPoint: string; // What worries them
+    channel: string; // Where to find them (FB, IG, WA, Calle)
+}
+
+export interface CandidateAvatar {
+    id: number;
+    archetype: string; // e.g. "El Gestor Eficiente", "El Amigo del Barrio"
+    messaging_angle: string; // The narrative hook
+    visual_style: string; // How they should appear
+    target_voter_ids: number[]; // IDs of VoterAvatars this persona targets
+}
+
 export interface MarketingStrategyResult {
     candidateProfile: string;
-    elasticVoterPersona: {
-        demographics: string;
-        interests: string[];
-        painPoints: string[];
-        mediaHabits: string[];
-    };
-    campaignPillars: {
-        rational: string[];
-        emotional: string[];
-        slogans: string[];
-    };
-    tactics: {
-        digital: string[];
-        territory: string[];
-    };
+    calculatedBase: number; // Base Electoral X
+    pipeline: StrategyPipeline;
+    voterAvatars: VoterAvatar[]; // 10 Avatars
+    candidateAvatars: CandidateAvatar[]; // 10 Avatars
     kpis: {
         metric: string;
         target: string;
@@ -252,31 +263,29 @@ export interface ScoringBreakdown {
     scandalPenalty: number; // 0-100 (Penalización por Ruido)
 }
 
-export interface VoterAvatar {
-    archetype: string; // e.g. "El Joven Indignado"
-    demographics: string; // e.g. "Universitario, 22 años, Medellín"
-    motivation: string; // Why they vote for this candidate
-    painPoint: string; // What worries them
-}
-
 export interface CandidateAnalysis {
     name: string;
-    probabilityScore: number; // 0-100 (Chance of Seat/Win) - Calculated Weighted Score
+    probabilityScore: number; // 0-100 (Chance of Seat/Win)
+    calculatedBase: number; // Base Electoral X Calculated by AI based on structure/history
     
     // Deep Dive Fields
-    trajectory: string; // Resumen técnico de carrera política
-    scandals: string; // Análisis de riesgo reputacional
-    image: string; // Percepción pública
-    structure: string; // Capacidad de endoso y maquinaria
-    management: string; // Evaluación de resultados (KPIs cualitativos)
-    territory: string; // Capilaridad geográfica
-    alliances: string; // Alineación con factores de poder
+    trajectory: string; 
+    scandals: string; 
+    image: string; 
+    structure: string; 
+    management: string; 
+    territory: string; 
+    alliances: string; 
     
+    // Strategy
+    pipeline: StrategyPipeline;
+
     // For Radar Chart and Weighting
     scoring: ScoringBreakdown;
     
-    // New: Voter Personas
-    avatars: VoterAvatar[];
+    // The 10+10 Match
+    voterAvatars: VoterAvatar[];
+    candidateAvatars: CandidateAvatar[];
 }
 
 export interface PartyMetrics {

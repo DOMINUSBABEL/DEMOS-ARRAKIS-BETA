@@ -1,10 +1,10 @@
 
 import React, { useState, useRef, useMemo } from 'react';
 import AnalysisCard from './AnalysisCard';
-import { UserGroupIcon, LoadingSpinner, ScaleIcon, PlusIcon, TrashIcon, ChartBarIcon, FingerPrintIcon, CpuChipIcon, FilePdfIcon, BuildingOfficeIcon, ShareIcon, WarningIcon, FunnelIcon, ArrowsUpDownIcon, ChevronDownIcon, ClipboardDocumentIcon } from './Icons';
+import { UserGroupIcon, LoadingSpinner, ScaleIcon, PlusIcon, TrashIcon, ChartBarIcon, FingerPrintIcon, CpuChipIcon, FilePdfIcon, BuildingOfficeIcon, ShareIcon, WarningIcon, FunnelIcon, ArrowsUpDownIcon, ChevronDownIcon, ClipboardDocumentIcon, MegaphoneIcon } from './Icons';
 import { generateCandidateComparison } from '../services/geminiService';
 import { generateStrategicReportPDF } from '../services/reportGenerator';
-import { CandidateComparisonResult, ComparisonScenario, CandidateAnalysis, PartyMetrics, VoterAvatar } from '../types';
+import { CandidateComparisonResult, ComparisonScenario, CandidateAnalysis, PartyMetrics, VoterAvatar, CandidateAvatar } from '../types';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, PieChart, Pie, Cell } from 'recharts';
 
 interface ComparativeAnalysisProps {
@@ -168,31 +168,40 @@ const AttributeRow: React.FC<{
     );
 };
 
-// --- Voter Avatar Card ---
-const VoterAvatarCard: React.FC<{ avatar: VoterAvatar, index: number }> = ({ avatar, index }) => (
-    <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg p-3 flex flex-col gap-2 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
-        <div className="flex items-center gap-2 border-b border-gray-200 dark:border-white/10 pb-2">
-            <div className="p-1.5 rounded-full bg-brand-primary/20 text-brand-primary">
-                <UserGroupIcon className="w-4 h-4" />
+// --- Avatar Component ---
+const AvatarPair: React.FC<{ voter: VoterAvatar, candidate: CandidateAvatar }> = ({ voter, candidate }) => (
+    <div className="min-w-[280px] bg-white/5 border border-white/10 rounded-lg p-3 hover:bg-white/10 transition-colors flex flex-col gap-3">
+        {/* Voter Side */}
+        <div className="pb-2 border-b border-white/10">
+            <div className="flex items-center gap-2 mb-1">
+                <div className="p-1 rounded bg-blue-500/20 text-blue-400">
+                    <UserGroupIcon className="w-3 h-3" />
+                </div>
+                <span className="text-[10px] font-bold uppercase text-blue-400 tracking-wider">Votante #{voter.id}</span>
             </div>
-            <div className="overflow-hidden">
-                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Avatar {index + 1}</p>
-                <h5 className="text-sm font-bold text-gray-900 dark:text-white truncate" title={avatar.archetype}>{avatar.archetype}</h5>
+            <h5 className="text-xs font-bold text-white mb-1 truncate" title={voter.archetype}>{voter.archetype}</h5>
+            <p className="text-[10px] text-gray-400 leading-tight line-clamp-2" title={voter.demographics}>{voter.demographics}</p>
+            <p className="text-[10px] text-gray-500 mt-1 italic line-clamp-1">Dolor: {voter.painPoint}</p>
+        </div>
+        
+        {/* Connection Icon */}
+        <div className="flex justify-center -my-4 relative z-10">
+            <div className="bg-brand-primary rounded-full p-1 border-2 border-[#15100d]">
+                <ArrowsUpDownIcon className="w-3 h-3 text-white" />
             </div>
         </div>
-        <div className="space-y-2 text-xs">
-            <div>
-                <span className="text-gray-500 font-bold block mb-0.5">Perfil:</span>
-                <p className="text-gray-700 dark:text-gray-300 leading-tight">{avatar.demographics}</p>
+
+        {/* Candidate Side */}
+        <div className="pt-2">
+            <div className="flex items-center gap-2 mb-1">
+                <div className="p-1 rounded bg-brand-primary/20 text-brand-primary">
+                    <MegaphoneIcon className="w-3 h-3" />
+                </div>
+                <span className="text-[10px] font-bold uppercase text-brand-primary tracking-wider">Ángulo #{candidate.id}</span>
             </div>
-            <div>
-                <span className="text-blue-600 dark:text-blue-400 font-bold block mb-0.5">Motivación:</span>
-                <p className="text-gray-700 dark:text-gray-300 leading-tight">{avatar.motivation}</p>
-            </div>
-            <div>
-                <span className="text-red-600 dark:text-red-400 font-bold block mb-0.5">Dolor/Miedo:</span>
-                <p className="text-gray-700 dark:text-gray-300 leading-tight">{avatar.painPoint}</p>
-            </div>
+            <h5 className="text-xs font-bold text-white mb-1 truncate" title={candidate.archetype}>{candidate.archetype}</h5>
+            <p className="text-[10px] text-gray-300 leading-tight line-clamp-2" title={candidate.messaging_angle}>{candidate.messaging_angle}</p>
+            <p className="text-[10px] text-gray-500 mt-1 line-clamp-1">Estilo: {candidate.visual_style}</p>
         </div>
     </div>
 );
@@ -216,6 +225,16 @@ const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: num
                         )}
                     </div>
                     <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white font-sans tracking-tight">{candidate.name}</h3>
+                    
+                    {/* Calculated Base Display */}
+                    <div className="mt-3 flex items-center gap-4">
+                        <div className="px-3 py-1.5 bg-brand-primary/10 border border-brand-primary/30 rounded-lg">
+                            <span className="text-[10px] text-brand-primary uppercase font-bold tracking-wider block">Base Electoral Calculada (X)</span>
+                            <span className="text-lg font-mono font-bold text-brand-glow">
+                                {candidate.calculatedBase ? candidate.calculatedBase.toLocaleString('es-CO') : 'N/A'}
+                            </span>
+                        </div>
+                    </div>
                 </div>
                 
                 <div className="bg-gray-100 dark:bg-black/40 p-6 border-l border-gray-200 dark:border-white/10 min-w-[180px] flex flex-col justify-center items-end">
@@ -305,17 +324,59 @@ const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: num
                 </div>
             </div>
 
-            {/* Voter Avatars Section */}
-            {candidate.avatars && candidate.avatars.length > 0 && (
-                <div className="p-6 border-t border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/20">
-                    <h5 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                        <UserGroupIcon className="w-4 h-4" />
-                        Avatares de Votantes Objetivo (Base Electoral)
+            {/* Strategy Pipeline Section */}
+            {candidate.pipeline && (
+                <div className="p-6 border-t border-white/10 bg-black/30">
+                    <h5 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                        <ChartBarIcon className="w-4 h-4" />
+                        Pipeline Estratégico (3 Fases)
                     </h5>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {candidate.avatars.map((avatar, idx) => (
-                            <VoterAvatarCard key={idx} avatar={avatar} index={idx} />
-                        ))}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="p-3 bg-blue-900/10 border border-blue-500/20 rounded-lg">
+                            <h6 className="text-[10px] font-bold text-blue-400 uppercase mb-2">1. Extracción & Diagnóstico</h6>
+                            <ul className="text-xs text-gray-400 space-y-1 list-disc pl-4">
+                                {candidate.pipeline.phase1_extraction.slice(0,3).map((item, i) => <li key={i}>{item}</li>)}
+                            </ul>
+                        </div>
+                        <div className="p-3 bg-purple-900/10 border border-purple-500/20 rounded-lg">
+                            <h6 className="text-[10px] font-bold text-purple-400 uppercase mb-2">2. Ejecución de Precisión</h6>
+                            <ul className="text-xs text-gray-400 space-y-1 list-disc pl-4">
+                                {candidate.pipeline.phase2_execution.slice(0,3).map((item, i) => <li key={i}>{item}</li>)}
+                            </ul>
+                        </div>
+                        <div className="p-3 bg-green-900/10 border border-green-500/20 rounded-lg">
+                            <h6 className="text-[10px] font-bold text-green-400 uppercase mb-2">3. Conexión & Conversión</h6>
+                            <ul className="text-xs text-gray-400 space-y-1 list-disc pl-4">
+                                {candidate.pipeline.phase3_conversion.slice(0,3).map((item, i) => <li key={i}>{item}</li>)}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Voter Avatars Section - Horizontal Scroll */}
+            {candidate.voterAvatars && candidate.voterAvatars.length > 0 && (
+                <div className="p-6 border-t border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/20">
+                    <div className="flex justify-between items-center mb-4">
+                        <h5 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                            <UserGroupIcon className="w-4 h-4" />
+                            Matriz de Match (10 vs 10)
+                        </h5>
+                        <span className="text-[10px] text-gray-500 italic">Desliza para ver todos</span>
+                    </div>
+                    
+                    <div className="flex overflow-x-auto gap-4 pb-4 custom-scrollbar snap-x">
+                        {candidate.voterAvatars.map((voter, idx) => {
+                            const candidateAvatar = candidate.candidateAvatars && candidate.candidateAvatars[idx] 
+                                ? candidate.candidateAvatars[idx] 
+                                : { id: 0, archetype: "N/A", messaging_angle: "N/A", visual_style: "N/A", target_voter_ids: [] };
+                            
+                            return (
+                                <div key={idx} className="snap-center">
+                                    <AvatarPair voter={voter} candidate={candidateAvatar} />
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}

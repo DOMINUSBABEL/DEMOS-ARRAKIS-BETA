@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import AnalysisCard from './AnalysisCard';
-import { FingerPrintIcon, LoadingSpinner, SparklesIcon, WarningIcon, ChartBarIcon, MapIcon, ShareIcon, BeakerIcon, ClipboardDocumentIcon, TableCellsIcon, ChevronDownIcon, ScaleIcon, PlusIcon, TrashIcon, UserGroupIcon, FilePdfIcon, CpuChipIcon, DatabaseIcon } from './Icons';
+import { FingerPrintIcon, LoadingSpinner, SparklesIcon, WarningIcon, ChartBarIcon, MapIcon, ShareIcon, BeakerIcon, ClipboardDocumentIcon, TableCellsIcon, ChevronDownIcon, ScaleIcon, PlusIcon, TrashIcon, UserGroupIcon, FilePdfIcon, CpuChipIcon, DatabaseIcon, ArrowsUpDownIcon, MegaphoneIcon } from './Icons';
 import { generateCandidateProfile, generateCandidateComparison } from '../services/geminiService';
 import { generateStrategicReportPDF } from '../services/reportGenerator';
 import { CandidateProfileResult, ElectoralDataset, PartyData, ProcessedElectionData, CandidateComparisonResult, ComparisonScenario, HistoricalDataset, CandidateAnalysis } from '../types';
@@ -184,6 +184,10 @@ const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: num
             <div>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-brand-primary mb-1 block">Candidato #{index + 1}</span>
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white font-sans">{candidate.name}</h3>
+                <div className="mt-2 inline-flex items-center gap-2 px-2 py-1 bg-brand-primary/10 rounded border border-brand-primary/20">
+                    <span className="text-[10px] font-bold text-brand-primary uppercase">Base Calculada:</span>
+                    <span className="text-sm font-mono font-bold text-white">{candidate.calculatedBase.toLocaleString('es-CO')}</span>
+                </div>
             </div>
             <div className="text-right">
                 <div className="text-3xl font-bold text-brand-primary">{candidate.probabilityScore}%</div>
@@ -223,8 +227,29 @@ const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: num
             </div>
         </div>
         
-        {/* Mini Attributes Bar for quick glance - UPDATED TO USE SCORING */}
-        <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/5 grid grid-cols-5 gap-2">
+        {/* Avatars Preview */}
+        {candidate.voterAvatars && candidate.voterAvatars.length > 0 && (
+            <div className="mt-6 pt-4 border-t border-white/5">
+                <h4 className="text-xs font-bold uppercase text-gray-500 mb-3 flex items-center gap-2">
+                    <UserGroupIcon className="w-4 h-4"/> Match Preview (10 vs 10)
+                </h4>
+                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                    {candidate.voterAvatars.slice(0, 5).map((voter, i) => (
+                        <div key={i} className="min-w-[150px] p-2 bg-white/5 rounded border border-white/10">
+                            <p className="text-[10px] font-bold text-blue-400 truncate">{voter.archetype}</p>
+                            <div className="flex justify-center my-1"><ArrowsUpDownIcon className="w-3 h-3 text-gray-600"/></div>
+                            <p className="text-[10px] font-bold text-brand-primary truncate">{candidate.candidateAvatars[i]?.archetype || 'N/A'}</p>
+                        </div>
+                    ))}
+                    <div className="min-w-[100px] flex items-center justify-center bg-white/5 rounded border border-white/10 text-xs text-gray-500">
+                        +5 más
+                    </div>
+                </div>
+            </div>
+        )}
+        
+        {/* Mini Attributes Bar for quick glance */}
+        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-white/5 grid grid-cols-5 gap-2">
             <div className="text-center">
                 <div className="text-[9px] uppercase text-gray-500 mb-1">Trayectoria</div>
                 <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
