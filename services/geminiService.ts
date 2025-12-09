@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type, GenerateContentResponse, Schema } from "@google/genai";
 import { CandidateRanking, ProbabilityResult, SimulationResults, HistoricalDataset, PartyAnalysisData, PartyData, ListAnalysisAIResponse, ProcessedElectionData, MarketingStrategyResult, CandidateProfileResult, CandidateComparisonResult } from '../types';
 
@@ -470,16 +471,21 @@ export const generateCandidateComparison = async (
     5.  **Dinámica Interna (20%):** Cohesión con el partido, alianzas con cabezas de lista, rivalidades.
     6.  **PENALIZACIÓN (Escándalos/Ruido):** Resta hasta 20 puntos por investigaciones activas, ruido mediático negativo o riesgo reputacional.
 
-    *** INSTRUCCIONES DE ANÁLISIS CUALITATIVO (LENGUAJE TÉCNICO) ***
-    Utiliza terminología de ciencia política: "Voto de opinión", "Estructura endosable", "Desgaste de gobierno", "Techo electoral", "Costo de curul", "Riesgo jurídico".
-    
-    *** ESCENARIOS DE CURULES (REGLA DE ORO) ***
-    *   **Escenario A (Piso - 5 Curules):** Probabilidad > 85%.
-    *   **Escenario B (Media - 6 Curules):** Probabilidad ~50-65%.
-    *   **Escenario C (Techo - 7 Curules):** Probabilidad ~20-30%.
-    *   **Fracaso (<5 Curules):** Descartado.
+    *** REQUISITO DE AVATARES DE VOTANTES (NUEVO) ***
+    Para cada candidato, genera **2 Avatares de Votantes** (Buyer Personas) que representen su base electoral principal.
+    - **Archetype:** Un nombre creativo (ej. "El Joven Indignado", "La Señora de Parroquia").
+    - **Demographics:** Edad, ubicación, nivel socioeconómico.
+    - **Motivation:** ¿Por qué vota por este candidato?
+    - **Pain Point:** ¿Qué le preocupa o molesta?
 
-    FORMATO DE RESPUESTA: JSON Estricto. Debes devolver los puntajes individuales (scoring) para que puedan ser graficados.
+    *** ESCENARIOS DE CURULES (AJUSTE DINÁMICO) ***
+    **IMPORTANTE:** Los escenarios deben ser LÓGICOS y RAZONABLES para el partido al que pertenecen los candidatos.
+    - NO ASUMAS QUE TODOS LOS PARTIDOS TIENEN UN PISO DE 5 CURULES como el Centro Democrático.
+    - Si los candidatos son de un partido pequeño (ej. Dignidad), el Escenario A podría ser 0 curules, B 1 curul, C 2 curules.
+    - Si son de un partido mediano (ej. Verde), ajusta acorde (ej. 2-3 curules).
+    - Ajusta las proyecciones de votos en 'scenarios' para que sumen totales realistas para ese partido específico.
+
+    FORMATO DE RESPUESTA: JSON Estricto.
     `;
 
     const schema: Schema = {
@@ -521,9 +527,22 @@ export const generateCandidateComparison = async (
                                 scandalPenalty: { type: Type.NUMBER },
                             },
                             required: ['trajectoryScore', 'structureScore', 'territoryScore', 'managementScore', 'internalDynamicsScore', 'scandalPenalty']
+                        },
+                        avatars: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    archetype: { type: Type.STRING },
+                                    demographics: { type: Type.STRING },
+                                    motivation: { type: Type.STRING },
+                                    painPoint: { type: Type.STRING }
+                                },
+                                required: ['archetype', 'demographics', 'motivation', 'painPoint']
+                            }
                         }
                     },
-                    required: ['name', 'probabilityScore', 'trajectory', 'scandals', 'image', 'structure', 'management', 'territory', 'alliances', 'scoring']
+                    required: ['name', 'probabilityScore', 'trajectory', 'scandals', 'image', 'structure', 'management', 'territory', 'alliances', 'scoring', 'avatars']
                 }
             },
             scenarios: {

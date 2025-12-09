@@ -252,6 +252,13 @@ export interface ScoringBreakdown {
     scandalPenalty: number; // 0-100 (Penalización por Ruido)
 }
 
+export interface VoterAvatar {
+    archetype: string; // e.g. "El Joven Indignado"
+    demographics: string; // e.g. "Universitario, 22 años, Medellín"
+    motivation: string; // Why they vote for this candidate
+    painPoint: string; // What worries them
+}
+
 export interface CandidateAnalysis {
     name: string;
     probabilityScore: number; // 0-100 (Chance of Seat/Win) - Calculated Weighted Score
@@ -267,6 +274,9 @@ export interface CandidateAnalysis {
     
     // For Radar Chart and Weighting
     scoring: ScoringBreakdown;
+    
+    // New: Voter Personas
+    avatars: VoterAvatar[];
 }
 
 export interface PartyMetrics {

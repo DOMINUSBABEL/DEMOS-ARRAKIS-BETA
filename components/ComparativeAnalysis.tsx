@@ -4,7 +4,7 @@ import AnalysisCard from './AnalysisCard';
 import { UserGroupIcon, LoadingSpinner, ScaleIcon, PlusIcon, TrashIcon, ChartBarIcon, FingerPrintIcon, CpuChipIcon, FilePdfIcon, BuildingOfficeIcon, ShareIcon, WarningIcon, FunnelIcon, ArrowsUpDownIcon, ChevronDownIcon, ClipboardDocumentIcon } from './Icons';
 import { generateCandidateComparison } from '../services/geminiService';
 import { generateStrategicReportPDF } from '../services/reportGenerator';
-import { CandidateComparisonResult, ComparisonScenario, CandidateAnalysis, PartyMetrics } from '../types';
+import { CandidateComparisonResult, ComparisonScenario, CandidateAnalysis, PartyMetrics, VoterAvatar } from '../types';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, PieChart, Pie, Cell } from 'recharts';
 
 interface ComparativeAnalysisProps {
@@ -119,9 +119,9 @@ const getScoreColor = (score: number) => {
 };
 
 const getScoreTextColor = (score: number) => {
-    if (score >= 80) return 'text-emerald-400';
-    if (score >= 50) return 'text-yellow-400';
-    return 'text-red-400';
+    if (score >= 80) return 'text-emerald-700 dark:text-emerald-400';
+    if (score >= 50) return 'text-yellow-700 dark:text-yellow-400';
+    return 'text-red-700 dark:text-red-400';
 };
 
 // --- Attribute Row Component for Detailed Card ---
@@ -134,30 +134,31 @@ const AttributeRow: React.FC<{
     barColor: string; 
 }> = ({ label, score, weight, text, colorClass, barColor }) => {
     // Determine context style based on score
+    // Updated for Light/Dark mode compatibility
     const contextStyle = score >= 70 
-        ? 'bg-emerald-900/10 border-emerald-500/20 text-emerald-100' 
+        ? 'bg-emerald-50 border-emerald-200 text-emerald-900 dark:bg-emerald-900/10 dark:border-emerald-500/20 dark:text-emerald-100' 
         : score >= 40 
-            ? 'bg-yellow-900/10 border-yellow-500/20 text-yellow-100' 
-            : 'bg-red-900/10 border-red-500/20 text-red-100';
+            ? 'bg-yellow-50 border-yellow-200 text-yellow-900 dark:bg-yellow-900/10 dark:border-yellow-500/20 dark:text-yellow-100' 
+            : 'bg-red-50 border-red-200 text-red-900 dark:bg-red-900/10 dark:border-red-500/20 dark:text-red-100';
 
     return (
         <div className="mb-6 last:mb-0 group">
             <div className="flex justify-between items-end mb-1">
                 <div className="flex items-center gap-2">
                     <span className={`w-1 h-4 rounded-full ${barColor.replace('bg-gradient-to-r from-', 'bg-').split(' ')[0]}`}></span>
-                    <h4 className="text-xs font-black uppercase text-gray-300 tracking-widest">{label}</h4>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500 font-mono border border-white/5">Weight: {weight}</span>
+                    <h4 className="text-xs font-black uppercase text-gray-600 dark:text-gray-300 tracking-widest">{label}</h4>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-500 font-mono border border-gray-200 dark:border-white/5">Weight: {weight}</span>
                 </div>
                 <span className={`text-sm font-bold font-mono ${colorClass}`}>{score}/100</span>
             </div>
             
             {/* Progress Bar */}
-            <div className="w-full bg-black/40 h-2 rounded-full mb-3 overflow-hidden border border-white/5">
+            <div className="w-full bg-gray-200 dark:bg-black/40 h-2 rounded-full mb-3 overflow-hidden border border-gray-300 dark:border-white/5">
                 <div className={`h-full rounded-full transition-all duration-1000 ${barColor}`} style={{width: `${score}%`}}></div>
             </div>
             
             {/* Technical Justification Block */}
-            <div className={`p-3 rounded-md border text-xs leading-relaxed font-sans text-justify ${contextStyle} transition-all hover:bg-opacity-20`}>
+            <div className={`p-3 rounded-md border text-xs leading-relaxed font-sans text-justify ${contextStyle} transition-all hover:bg-opacity-80 dark:hover:bg-opacity-20`}>
                 <p className="opacity-90">
                     <strong className="uppercase text-[9px] tracking-wider opacity-70 block mb-1">Justificación Técnica:</strong>
                     {text}
@@ -167,28 +168,57 @@ const AttributeRow: React.FC<{
     );
 };
 
+// --- Voter Avatar Card ---
+const VoterAvatarCard: React.FC<{ avatar: VoterAvatar, index: number }> = ({ avatar, index }) => (
+    <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg p-3 flex flex-col gap-2 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+        <div className="flex items-center gap-2 border-b border-gray-200 dark:border-white/10 pb-2">
+            <div className="p-1.5 rounded-full bg-brand-primary/20 text-brand-primary">
+                <UserGroupIcon className="w-4 h-4" />
+            </div>
+            <div className="overflow-hidden">
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Avatar {index + 1}</p>
+                <h5 className="text-sm font-bold text-gray-900 dark:text-white truncate" title={avatar.archetype}>{avatar.archetype}</h5>
+            </div>
+        </div>
+        <div className="space-y-2 text-xs">
+            <div>
+                <span className="text-gray-500 font-bold block mb-0.5">Perfil:</span>
+                <p className="text-gray-700 dark:text-gray-300 leading-tight">{avatar.demographics}</p>
+            </div>
+            <div>
+                <span className="text-blue-600 dark:text-blue-400 font-bold block mb-0.5">Motivación:</span>
+                <p className="text-gray-700 dark:text-gray-300 leading-tight">{avatar.motivation}</p>
+            </div>
+            <div>
+                <span className="text-red-600 dark:text-red-400 font-bold block mb-0.5">Dolor/Miedo:</span>
+                <p className="text-gray-700 dark:text-gray-300 leading-tight">{avatar.painPoint}</p>
+            </div>
+        </div>
+    </div>
+);
+
 
 const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: number }> = ({ candidate, index }) => {
     
     return (
-        <div className="break-inside-avoid bg-[#15100d] p-0 rounded-xl border border-white/10 shadow-lg mb-8 transition-transform hover:scale-[1.005] overflow-hidden">
+        <div className="break-inside-avoid bg-white dark:bg-[#15100d] p-0 rounded-xl border border-gray-200 dark:border-white/10 shadow-lg mb-8 transition-transform hover:scale-[1.005] overflow-hidden">
             {/* Header: Candidate Identity & Probability */}
-            <header className="flex flex-col md:flex-row justify-between items-stretch border-b border-white/10 bg-gradient-to-r from-black/40 to-transparent">
+            <header className="flex flex-col md:flex-row justify-between items-stretch border-b border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-gradient-to-r dark:from-black/40 dark:to-transparent">
                 <div className="p-6 flex-1">
                     <div className="flex items-center gap-3 mb-2">
                         <span className="px-2 py-0.5 bg-brand-primary/20 text-brand-primary border border-brand-primary/30 rounded text-[10px] font-bold uppercase tracking-widest">
                             Candidato #{index + 1}
                         </span>
                         {candidate.probabilityScore > 80 && (
-                            <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
+                            <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
                                 <ScaleIcon className="w-3 h-3" /> Alta Probabilidad
                             </span>
                         )}
                     </div>
-                    <h3 className="text-2xl md:text-3xl font-bold text-white font-sans tracking-tight">{candidate.name}</h3>
+                    <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white font-sans tracking-tight">{candidate.name}</h3>
                 </div>
                 
-                <div className="bg-black/40 p-6 border-l border-white/10 min-w-[180px] flex flex-col justify-center items-end">
+                <div className="bg-gray-100 dark:bg-black/40 p-6 border-l border-gray-200 dark:border-white/10 min-w-[180px] flex flex-col justify-center items-end">
                     <div className={`text-4xl font-black font-mono ${getScoreTextColor(candidate.probabilityScore)} tracking-tighter`}>
                         {candidate.probabilityScore}%
                     </div>
@@ -198,7 +228,7 @@ const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: num
 
             <div className="grid grid-cols-1 lg:grid-cols-2">
                 {/* Column 1: Political Assets (Positive Drivers) */}
-                <div className="p-6 border-r border-white/10 space-y-6">
+                <div className="p-6 border-r border-gray-200 dark:border-white/10 space-y-6">
                     <h5 className="text-xs font-bold text-brand-primary uppercase tracking-[0.2em] mb-4 border-b border-brand-primary/20 pb-2 flex items-center gap-2">
                         <CpuChipIcon className="w-4 h-4" />
                         Auditoría de Activos Políticos
@@ -233,8 +263,8 @@ const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: num
                 </div>
 
                 {/* Column 2: Qualitative Metrics & Risk (Soft Power & Liabilities) */}
-                <div className="p-6 space-y-6 bg-white/[0.02]">
-                    <h5 className="text-xs font-bold text-blue-400 uppercase tracking-[0.2em] mb-4 border-b border-blue-500/20 pb-2 flex items-center gap-2">
+                <div className="p-6 space-y-6 bg-white dark:bg-white/[0.02]">
+                    <h5 className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-[0.2em] mb-4 border-b border-blue-500/20 pb-2 flex items-center gap-2">
                         <ClipboardDocumentIcon className="w-4 h-4" />
                         Métricas Cualitativas y Riesgo
                     </h5>
@@ -258,22 +288,37 @@ const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: num
                     />
 
                     {/* Risk Section is Special */}
-                    <div className="mt-8 pt-4 border-t border-white/5">
+                    <div className="mt-8 pt-4 border-t border-gray-200 dark:border-white/5">
                         <div className="flex justify-between items-center mb-2">
-                            <h4 className="text-xs font-black uppercase text-red-400 tracking-widest flex items-center gap-2">
+                            <h4 className="text-xs font-black uppercase text-red-600 dark:text-red-400 tracking-widest flex items-center gap-2">
                                 <WarningIcon className="w-4 h-4" /> Penalización por Riesgo
                             </h4>
-                            <span className="text-xs font-bold text-red-400 bg-red-900/20 px-2 py-1 rounded font-mono border border-red-500/30">
+                            <span className="text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded font-mono border border-red-200 dark:border-red-500/30">
                                 -{candidate.scoring.scandalPenalty} pts
                             </span>
                         </div>
-                        <div className="p-3 rounded-md bg-red-950/30 border border-red-500/20 text-xs text-red-200/80 leading-relaxed font-sans text-justify">
-                            <strong className="uppercase text-[9px] tracking-wider opacity-70 block mb-1 text-red-400">Análisis de Vulnerabilidad:</strong>
+                        <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-900 dark:bg-red-950/30 dark:border-red-500/20 dark:text-red-200/80 text-xs leading-relaxed font-sans text-justify">
+                            <strong className="uppercase text-[9px] tracking-wider opacity-70 block mb-1 text-red-600 dark:text-red-400">Análisis de Vulnerabilidad:</strong>
                             {candidate.scandals}
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Voter Avatars Section */}
+            {candidate.avatars && candidate.avatars.length > 0 && (
+                <div className="p-6 border-t border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/20">
+                    <h5 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                        <UserGroupIcon className="w-4 h-4" />
+                        Avatares de Votantes Objetivo (Base Electoral)
+                    </h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {candidate.avatars.map((avatar, idx) => (
+                            <VoterAvatarCard key={idx} avatar={avatar} index={idx} />
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

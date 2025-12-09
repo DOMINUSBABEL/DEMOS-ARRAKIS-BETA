@@ -25,15 +25,15 @@ const addElementAsImage = async (
         scale: 2,
         backgroundColor: '#ffffff', // Use white background for PDF
         useCORS: true,
-        // Force text color to black for the capture to ensure contrast on white background
+        // CRITICAL: Force light mode by removing the 'dark' class from the cloned document's root.
+        // This ensures Tailwind processes 'dark:' variants as false, rendering the light mode styles.
         onclone: (clonedDoc) => {
-            const element = clonedDoc.querySelector(`[data-pdf-target="true"]`) as HTMLElement; 
-            if (element) {
-                element.style.color = '#000000';
-            }
-            // Also force specific text classes if needed
-            const texts = clonedDoc.querySelectorAll('.text-white, .text-gray-200, .text-gray-300, .text-gray-400, .text-gray-500, .text-gray-700, .text-gray-800, .text-light-text-primary, .dark\\:text-dark-text-primary, .dark\\:text-gray-200, .dark\\:text-gray-300');
-            texts.forEach((t: any) => t.style.color = '#000000');
+            clonedDoc.documentElement.classList.remove('dark');
+            clonedDoc.body.classList.remove('dark');
+            
+            // Optional: Ensure body background is white in the clone
+            clonedDoc.body.style.backgroundColor = '#ffffff';
+            clonedDoc.body.style.color = '#000000';
         }
     });
     // Use JPEG for compression and smaller file size
@@ -168,30 +168,12 @@ export const generateStrategicReportPDF = async (element: HTMLElement, fileName:
     const clonedElement = element.cloneNode(true) as HTMLElement;
     clonedElement.style.width = `${element.scrollWidth}px`;
     clonedElement.style.padding = '20px';
-    // Force text colors to black for the PDF capture
-    const allText = clonedElement.querySelectorAll('*');
-    allText.forEach((el: any) => {
-        const style = window.getComputedStyle(el);
-        // Ensure non-transparent text becomes black
-        if (style.color !== 'rgba(0, 0, 0, 0)' && style.color !== 'transparent') { 
-             el.style.color = '#000000';
-             el.style.textShadow = 'none';
-        }
-        // Force background of cards to be light gray for contrast
-        if (el.classList.contains('bg-white/5') || el.classList.contains('glass-panel') || el.classList.contains('bg-black/20') || el.classList.contains('bg-white') || el.classList.contains('dark:bg-[#1a1410]')) {
-            el.style.backgroundColor = '#f3f4f6'; // Light gray background for cards
-            el.style.borderColor = '#ccc';
-            el.style.boxShadow = 'none';
-            el.style.backgroundImage = 'none';
-        }
-        // Specifically for DetailedCandidateCard backgrounds
-        if(el.classList.contains('dark:bg-[#1a1410]')) {
-             el.style.backgroundColor = '#ffffff';
-             el.style.border = '1px solid #e5e7eb';
-        }
-    });
-    // Remove dark backgrounds
+    
+    // We are now relying on html2canvas's onclone to strip the 'dark' class from the document root.
+    // This allows Tailwind's light mode classes to take effect automatically.
+    // However, we still ensure the container background is white.
     clonedElement.style.backgroundColor = '#ffffff';
+    clonedElement.style.color = '#000000';
     clonedElement.style.backgroundImage = 'none';
 
     document.body.appendChild(clonedElement); // Append to body to render
@@ -202,6 +184,16 @@ export const generateStrategicReportPDF = async (element: HTMLElement, fileName:
         useCORS: true,
         windowWidth: clonedElement.scrollWidth,
         windowHeight: clonedElement.scrollHeight,
+        onclone: (clonedDoc) => {
+            // THE FIX: Remove the 'dark' class from the cloned document's html and body tags.
+            // This forces the captured content to render in Light Mode styles.
+            clonedDoc.documentElement.classList.remove('dark');
+            clonedDoc.body.classList.remove('dark');
+            
+            // Ensure background is white
+            clonedDoc.body.style.backgroundColor = '#ffffff';
+            clonedDoc.body.style.color = '#000000';
+        }
     });
     
     document.body.removeChild(clonedElement); // Clean up
