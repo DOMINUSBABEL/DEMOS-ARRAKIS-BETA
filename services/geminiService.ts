@@ -568,19 +568,6 @@ export const generateCandidateComparison = async (
         const jsonText = response.text || "{}";
         const result = JSON.parse(jsonText);
         
-        // Map the new 'scoring' object to the old 'attributes' expected by the UI for backward compatibility 
-        // while we update the UI components.
-        result.candidates = result.candidates.map((c: any) => ({
-            ...c,
-            attributes: {
-                structure: c.scoring.structureScore,
-                opinion: c.scoring.trajectoryScore, // Mapping trajectory to opinion for chart
-                resources: c.scoring.managementScore, // Mapping management to resources/capacity
-                territory: c.scoring.territoryScore,
-                momentum: c.scoring.internalDynamicsScore // Mapping internal to momentum
-            }
-        }));
-
         return result as CandidateComparisonResult;
     } catch (error) {
         console.error("Error generating comparison:", error);

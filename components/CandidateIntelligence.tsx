@@ -122,10 +122,10 @@ const ScenarioChart: React.FC<{ scenarios: ComparisonScenario[] }> = ({ scenario
 const AttributeRadarChart: React.FC<{ candidates: CandidateAnalysis[] }> = ({ candidates }) => {
     const data = [
         { subject: 'Estructura', fullMark: 100 },
-        { subject: 'Opinión', fullMark: 100 },
-        { subject: 'Recursos', fullMark: 100 },
+        { subject: 'Trayectoria', fullMark: 100 }, // Was Opinión
+        { subject: 'Gestión', fullMark: 100 }, // Was Recursos
         { subject: 'Territorio', fullMark: 100 },
-        { subject: 'Momentum', fullMark: 100 },
+        { subject: 'Cohesión', fullMark: 100 }, // Was Momentum
     ];
 
     const candidateColors = [
@@ -137,12 +137,15 @@ const AttributeRadarChart: React.FC<{ candidates: CandidateAnalysis[] }> = ({ ca
     const chartData = data.map(dim => {
         const point: any = { subject: dim.subject, fullMark: 100 };
         candidates.forEach(c => {
-            const key = dim.subject.toLowerCase() === 'estructura' ? 'structure' :
-                        dim.subject.toLowerCase() === 'opinión' ? 'opinion' :
-                        dim.subject.toLowerCase() === 'recursos' ? 'resources' :
-                        dim.subject.toLowerCase() === 'territorio' ? 'territory' : 'momentum';
-            // @ts-ignore
-            point[c.name] = c.attributes[key];
+            let val = 0;
+            switch(dim.subject) {
+                case 'Estructura': val = c.scoring.structureScore; break;
+                case 'Trayectoria': val = c.scoring.trajectoryScore; break;
+                case 'Gestión': val = c.scoring.managementScore; break;
+                case 'Territorio': val = c.scoring.territoryScore; break;
+                case 'Cohesión': val = c.scoring.internalDynamicsScore; break;
+            }
+            point[c.name] = val;
         });
         return point;
     });
@@ -220,17 +223,43 @@ const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: num
             </div>
         </div>
         
-        {/* Mini Attributes Bar for quick glance */}
+        {/* Mini Attributes Bar for quick glance - UPDATED TO USE SCORING */}
         <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/5 grid grid-cols-5 gap-2">
-            {Object.entries(candidate.attributes).map(([key, value]) => (
-                <div key={key} className="text-center">
-                    <div className="text-[9px] uppercase text-gray-500 mb-1">{key}</div>
-                    <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-brand-primary" style={{width: `${value}%`}}></div>
-                    </div>
-                    <div className="text-[10px] font-bold mt-1 text-gray-700 dark:text-gray-300">{value}</div>
+            <div className="text-center">
+                <div className="text-[9px] uppercase text-gray-500 mb-1">Trayectoria</div>
+                <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500" style={{width: `${candidate.scoring.trajectoryScore}%`}}></div>
                 </div>
-            ))}
+                <div className="text-[10px] font-bold mt-1 text-gray-700 dark:text-gray-300">{candidate.scoring.trajectoryScore}</div>
+            </div>
+            <div className="text-center">
+                <div className="text-[9px] uppercase text-gray-500 mb-1">Gestión</div>
+                <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500" style={{width: `${candidate.scoring.managementScore}%`}}></div>
+                </div>
+                <div className="text-[10px] font-bold mt-1 text-gray-700 dark:text-gray-300">{candidate.scoring.managementScore}</div>
+            </div>
+            <div className="text-center">
+                <div className="text-[9px] uppercase text-gray-500 mb-1">Estructura</div>
+                <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-purple-500" style={{width: `${candidate.scoring.structureScore}%`}}></div>
+                </div>
+                <div className="text-[10px] font-bold mt-1 text-gray-700 dark:text-gray-300">{candidate.scoring.structureScore}</div>
+            </div>
+            <div className="text-center">
+                <div className="text-[9px] uppercase text-gray-500 mb-1">Territorio</div>
+                <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-orange-500" style={{width: `${candidate.scoring.territoryScore}%`}}></div>
+                </div>
+                <div className="text-[10px] font-bold mt-1 text-gray-700 dark:text-gray-300">{candidate.scoring.territoryScore}</div>
+            </div>
+            <div className="text-center">
+                <div className="text-[9px] uppercase text-gray-500 mb-1">Cohesión</div>
+                <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-cyan-500" style={{width: `${candidate.scoring.internalDynamicsScore}%`}}></div>
+                </div>
+                <div className="text-[10px] font-bold mt-1 text-gray-700 dark:text-gray-300">{candidate.scoring.internalDynamicsScore}</div>
+            </div>
         </div>
     </div>
 );

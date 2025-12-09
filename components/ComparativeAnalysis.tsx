@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+
+import React, { useState, useRef, useMemo } from 'react';
 import AnalysisCard from './AnalysisCard';
-import { UserGroupIcon, LoadingSpinner, ScaleIcon, PlusIcon, TrashIcon, ChartBarIcon, FingerPrintIcon, CpuChipIcon, FilePdfIcon, BuildingOfficeIcon, ShareIcon, WarningIcon } from './Icons';
+import { UserGroupIcon, LoadingSpinner, ScaleIcon, PlusIcon, TrashIcon, ChartBarIcon, FingerPrintIcon, CpuChipIcon, FilePdfIcon, BuildingOfficeIcon, ShareIcon, WarningIcon, FunnelIcon, ArrowsUpDownIcon } from './Icons';
 import { generateCandidateComparison } from '../services/geminiService';
 import { generateStrategicReportPDF } from '../services/reportGenerator';
 import { CandidateComparisonResult, ComparisonScenario, CandidateAnalysis, PartyMetrics } from '../types';
@@ -29,6 +30,9 @@ const DEFAULT_CANDIDATES = [
     "116 David Toledo Ospina",
     "117 Ana Ligia Mora Martínez"
 ];
+
+// --- Types for Sorting ---
+type SortOption = 'probability' | 'name' | 'structure' | 'territory' | 'trajectory' | 'management' | 'internal' | 'scandal';
 
 // --- Custom Tooltips for Enhanced Visualization ---
 
@@ -161,7 +165,109 @@ const ScenarioChart: React.FC<{ scenarios: ComparisonScenario[], visibleCandidat
     );
 };
 
+const DetailedScenarioBreakdown: React.FC<{ scenarios: ComparisonScenario[], metrics?: PartyMetrics }> = ({ scenarios, metrics }) => {
+    // Generate colors
+    const getBarColor = (name: string, index: number) => {
+        if (name === 'VOTO POR LOGO/LISTA') return '#6b7280'; // Gray for Logo
+        const colors = [
+            '#d97706', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', 
+            '#ec4899', '#14b8a6', '#f59e0b', '#6366f1', '#84cc16'
+        ];
+        return colors[index % colors.length];
+    };
+
+    if (!metrics) return null;
+
+    return (
+        <div className="space-y-8">
+            {scenarios.map((scenario, sIdx) => {
+                // Prepare Data: Combine candidates + Logo
+                const data = [
+                    ...scenario.voteProjections.map(vp => ({ 
+                        name: vp.candidateName, 
+                        votes: vp.votes,
+                        isLogo: false
+                    })),
+                    { 
+                        name: 'VOTO POR LOGO/LISTA', 
+                        votes: metrics.logoVotes, // Using static logo votes, could be scaled if scenario implies specific turnout change
+                        isLogo: true
+                    }
+                ].sort((a, b) => b.votes - a.votes);
+
+                // Calculate dynamic height based on number of items
+                const height = Math.max(400, data.length * 35);
+
+                return (
+                    <div key={sIdx} className="bg-black/20 p-6 rounded-xl border border-white/5">
+                        <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
+                            <div>
+                                <h4 className="text-lg font-bold text-white uppercase tracking-widest">{scenario.name}</h4>
+                                <p className="text-xs text-gray-400 mt-1">{scenario.description}</p>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-xs font-bold text-brand-primary uppercase">Total Proyectado</span>
+                                <p className="text-xl font-bold text-white font-mono">
+                                    {(data.reduce((sum, item) => sum + item.votes, 0)).toLocaleString('es-CO')}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div style={{ width: '100%', height: `${height}px` }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart
+                                    layout="vertical"
+                                    data={data}
+                                    margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                    <XAxis type="number" stroke="#6b7280" tick={{ fontSize: 10 }} tickFormatter={(val) => `${(val/1000).toFixed(0)}k`} />
+                                    <YAxis 
+                                        type="category" 
+                                        dataKey="name" 
+                                        stroke="#9ca3af" 
+                                        tick={{ fontSize: 11, width: 200 }} 
+                                        width={180}
+                                    />
+                                    <Tooltip 
+                                        cursor={{fill: 'rgba(255,255,255,0.03)'}}
+                                        content={({ active, payload }) => {
+                                            if (active && payload && payload.length) {
+                                                const d = payload[0].payload;
+                                                return (
+                                                    <div className="bg-[#0f0a06]/95 border border-white/10 p-3 rounded-lg shadow-xl backdrop-blur-md">
+                                                        <p className="text-xs text-gray-400 mb-1 font-mono uppercase">{d.name}</p>
+                                                        <p className="text-lg font-bold text-white font-mono">{d.votes.toLocaleString('es-CO')} votos</p>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        }}
+                                    />
+                                    <Bar dataKey="votes" barSize={18} radius={[0, 4, 4, 0]}>
+                                        {data.map((entry, index) => (
+                                            <Cell 
+                                                key={`cell-${index}`} 
+                                                fill={getBarColor(entry.name, index)} 
+                                                fillOpacity={entry.isLogo ? 0.6 : 1}
+                                                stroke={entry.isLogo ? '#9ca3af' : 'none'}
+                                                strokeWidth={entry.isLogo ? 1 : 0}
+                                            />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
 const ListCompositionChart: React.FC<{ metrics: PartyMetrics }> = ({ metrics }) => {
+    if (!metrics) return null;
+    
     const data = [
         { name: 'Votos Candidatos', value: metrics.candidateVotesSubtotal, color: '#3b82f6' },
         { name: 'Votos por Logo/Lista', value: metrics.logoVotes, color: '#9ca3af' }
@@ -409,6 +515,11 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
     // State to toggle candidate visibility in charts without deleting data
     const [visibleCandidates, setVisibleCandidates] = useState<Set<string>>(new Set());
 
+    // Sorting and Filtering State
+    const [sortBy, setSortBy] = useState<SortOption>('probability');
+    const [sortDesc, setSortDesc] = useState(true);
+    const [minProbFilter, setMinProbFilter] = useState(0);
+
     const handleUpdateContender = (index: number, value: string) => {
         const newContenders = [...contenders];
         newContenders[index] = value;
@@ -468,6 +579,68 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
             return newSet;
         });
     };
+
+    // Filter and Sort Candidates
+    const sortedAndFilteredCandidates = useMemo(() => {
+        if (!comparison) return [];
+
+        let result = comparison.candidates.filter(c => visibleCandidates.has(c.name));
+
+        // Filter by Probability
+        if (minProbFilter > 0) {
+            result = result.filter(c => c.probabilityScore >= minProbFilter);
+        }
+
+        // Sort
+        result.sort((a, b) => {
+            let valA: number | string = 0;
+            let valB: number | string = 0;
+
+            switch (sortBy) {
+                case 'probability':
+                    valA = a.probabilityScore;
+                    valB = b.probabilityScore;
+                    break;
+                case 'name':
+                    valA = a.name;
+                    valB = b.name;
+                    break;
+                case 'structure':
+                    valA = a.scoring.structureScore;
+                    valB = b.scoring.structureScore;
+                    break;
+                case 'territory':
+                    valA = a.scoring.territoryScore;
+                    valB = b.scoring.territoryScore;
+                    break;
+                case 'trajectory':
+                    valA = a.scoring.trajectoryScore;
+                    valB = b.scoring.trajectoryScore;
+                    break;
+                case 'management':
+                    valA = a.scoring.managementScore;
+                    valB = b.scoring.managementScore;
+                    break;
+                case 'internal':
+                    valA = a.scoring.internalDynamicsScore;
+                    valB = b.scoring.internalDynamicsScore;
+                    break;
+                case 'scandal':
+                    valA = a.scoring.scandalPenalty;
+                    valB = b.scoring.scandalPenalty;
+                    break;
+            }
+
+            if (typeof valA === 'string' && typeof valB === 'string') {
+                return sortDesc ? valB.localeCompare(valA) : valA.localeCompare(valB);
+            }
+            // @ts-ignore
+            return sortDesc ? valB - valA : valA - valB;
+        });
+
+        return result;
+    }, [comparison, visibleCandidates, sortBy, sortDesc, minProbFilter]);
+
 
     return (
         <div className="space-y-8 animate-fade-in-up">
@@ -562,26 +735,30 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
             {comparison && (
                 <div className="mt-8 relative animate-fade-in" data-pdf-target="true">
                     
-                    {/* VISIBILITY CONTROL PANEL */}
-                    <div className="mb-6 p-4 bg-black/40 rounded-xl border border-white/10">
-                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                            <FingerPrintIcon className="w-4 h-4" />
-                            Panel de Visualización (Filtrar Gráficas)
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                            <button 
-                                onClick={() => setVisibleCandidates(new Set(comparison.candidates.map(c => c.name)))}
-                                className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-xs text-white border border-white/10 transition-colors"
-                            >
-                                Ver Todos
-                            </button>
-                            <button 
-                                onClick={() => setVisibleCandidates(new Set())}
-                                className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-xs text-white border border-white/10 transition-colors"
-                            >
-                                Ocultar Todos
-                            </button>
-                            <div className="w-px h-6 bg-white/10 mx-2"></div>
+                    {/* VISIBILITY & FILTERING CONTROL PANEL */}
+                    <div className="mb-6 p-4 bg-black/40 rounded-xl border border-white/10 space-y-4">
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-4 border-b border-white/5 pb-4">
+                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                <FingerPrintIcon className="w-4 h-4" />
+                                Panel de Visualización (Filtrar Gráficas)
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                                <button 
+                                    onClick={() => setVisibleCandidates(new Set(comparison.candidates.map(c => c.name)))}
+                                    className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-xs text-white border border-white/10 transition-colors"
+                                >
+                                    Ver Todos
+                                </button>
+                                <button 
+                                    onClick={() => setVisibleCandidates(new Set())}
+                                    className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-xs text-white border border-white/10 transition-colors"
+                                >
+                                    Ocultar Todos
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto custom-scrollbar">
                             {comparison.candidates.map((c, i) => (
                                 <button
                                     key={i}
@@ -634,15 +811,81 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                             </div>
                         </div>
 
+                        {/* DETAILED SCENARIO BREAKDOWN - GUARDED TO PREVENT CRASH */}
+                        {comparison.partyMetrics && (
+                            <>
+                                <h4 className="text-lg font-bold text-white uppercase tracking-widest mb-6 border-b border-white/10 pb-2 flex items-center gap-3">
+                                    <ChartBarIcon className="w-5 h-5 text-brand-secondary" />
+                                    Desglose Detallado de Escenarios
+                                </h4>
+                                <DetailedScenarioBreakdown scenarios={comparison.scenarios} metrics={comparison.partyMetrics} />
+                            </>
+                        )}
+
+                        {/* SORTING & FILTERING TOOLBAR FOR LIST */}
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-black/30 p-4 rounded-lg border border-white/5 mb-6 mt-8 sticky top-0 z-20 backdrop-blur-md">
+                            <div className="flex items-center gap-4 w-full md:w-auto">
+                                <FunnelIcon className="w-5 h-5 text-brand-primary" />
+                                <div className="flex flex-col w-full">
+                                    <label className="text-[10px] uppercase text-gray-500 font-bold tracking-wider mb-1">Filtrar por Probabilidad Mínima</label>
+                                    <div className="flex items-center gap-3">
+                                        <input 
+                                            type="range" 
+                                            min="0" 
+                                            max="90" 
+                                            step="5" 
+                                            value={minProbFilter} 
+                                            onChange={(e) => setMinProbFilter(parseInt(e.target.value))}
+                                            className="w-32 h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-brand-primary"
+                                        />
+                                        <span className="text-xs font-bold text-brand-glow w-8">{minProbFilter}%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 w-full md:w-auto">
+                                <div className="flex flex-col flex-1">
+                                    <label className="text-[10px] uppercase text-gray-500 font-bold tracking-wider mb-1">Ordenar Por</label>
+                                    <select 
+                                        value={sortBy} 
+                                        onChange={(e) => setSortBy(e.target.value as SortOption)}
+                                        className="bg-black/40 border border-white/10 text-white text-xs rounded-md p-2 focus:ring-brand-primary focus:border-brand-primary"
+                                    >
+                                        <option value="probability">Probabilidad General</option>
+                                        <option value="structure">Estructura y Maquinaria</option>
+                                        <option value="territory">Fortaleza Territorial</option>
+                                        <option value="trajectory">Trayectoria Política</option>
+                                        <option value="management">Gestión y Resultados</option>
+                                        <option value="internal">Dinámica Interna</option>
+                                        <option value="scandal">Nivel de Riesgo (Escándalos)</option>
+                                        <option value="name">Nombre (Alfabético)</option>
+                                    </select>
+                                </div>
+                                <button 
+                                    onClick={() => setSortDesc(!sortDesc)}
+                                    className="p-2 mt-4 bg-white/5 hover:bg-white/10 rounded-md border border-white/10 transition-colors"
+                                    title={sortDesc ? "Orden Descendente" : "Orden Ascendente"}
+                                >
+                                    <ArrowsUpDownIcon className={`w-4 h-4 text-gray-300 transition-transform ${sortDesc ? 'rotate-0' : 'rotate-180'}`} />
+                                </button>
+                            </div>
+                        </div>
+
                         {/* DETAILED EXECUTIVE REPORT CARDS */}
                         <h4 className="text-lg font-bold text-white uppercase tracking-widest mb-6 border-b border-white/10 pb-2 flex items-center gap-3">
                             <ShareIcon className="w-5 h-5 text-brand-secondary" />
                             Informe Ejecutivo Detallado
                         </h4>
                         <div className="space-y-6">
-                            {comparison.candidates.map((cand, idx) => (
-                                <DetailedCandidateCard key={idx} candidate={cand} index={idx} />
-                            ))}
+                            {sortedAndFilteredCandidates.length > 0 ? (
+                                sortedAndFilteredCandidates.map((cand, idx) => (
+                                    <DetailedCandidateCard key={cand.name} candidate={cand} index={idx} />
+                                ))
+                            ) : (
+                                <div className="text-center py-12 border-2 border-dashed border-gray-700 rounded-xl">
+                                    <p className="text-gray-500">No hay candidatos que cumplan con los filtros actuales.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

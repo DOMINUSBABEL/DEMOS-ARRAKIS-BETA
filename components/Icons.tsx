@@ -118,6 +118,18 @@ export const MenuIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
+export const FunnelIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z" />
+  </svg>
+);
+
+export const ArrowsUpDownIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5L7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5" />
+  </svg>
+);
+
 // --- NEW ICONS FOR SIDEBAR ---
 export const DatabaseIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -133,7 +145,7 @@ export const ScaleIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 export const BeakerIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c.239.05.48.093.723.127a25.045 25.045 0 0 1 4.543 0c.243-.034.484-.077.723-.127M9.75 3.104a2.25 2.25 0 0 0-2.25 2.25v5.714a2.25 2.25 0 0 0 .659 1.591L9.75 14.5M14.25 3.104v5.714a2.25 2.25 0 0 0 .659 1.591L19 14.5M14.25 3.104c-.239.05-.48.093-.723.127a25.045 25.045 0 0 0-4.543 0c-.243-.034-.484-.077-.723-.127m9 5.096a2.25 2.25 0 0 1-2.25 2.25v5.714a2.25 2.25 0 0 1-.659 1.591L14.25 14.5M14.25 14.5L14.25 19.5m0 0a2.25 2.25 0 0 1-2.25 2.25h-1.5a2.25 2.25 0 0 1-2.25-2.25m0 0V14.5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c.239.05.48.093.723.127a25.045 25.045 0 0 1 4.543 0c.243-.034.484-.077.723-.127M9.75 3.104a2.25 2.25 0 0 0-2.25 2.25v5.714a2.25 2.25 0 0 0 .659 1.591L9.75 14.5M14.25 3.104v5.714a2.25 2.25 0 0 0 .659 1.591L19 14.5M14.25 3.104c-.239.05-.48.093-.723.127a25.045 25.045 0 0 0-4.543 0c-.243-.034-.484-.077-.723-.127m9 5.096a2.25 2.25 0 0 1-2.25 2.25v5.714a2.25 2.25 0 0 1-.659 1.591L14.25 14.5L14.25 19.5m0 0a2.25 2.25 0 0 1-2.25 2.25h-1.5a2.25 2.25 0 0 1-2.25-2.25m0 0V14.5" />
   </svg>
 );
 
@@ -167,7 +179,7 @@ export const CpuChipIcon: React.FC<{ className?: string }> = ({ className }) => 
 export const MapIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.5-12v12m0 0-3.75-3.75M15.5 21a2.25 2.25 0 0 1-2.25-2.25v-1.5a2.25 2.25 0 0 1 2.25-2.25Z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.5v-7.5A2.25 2.25 0 0 1 5.25 3.75h13.5A2.25 2.25 0 0 1 21 6v7.5m-18 0a2.25 2.25 0 0 0 2.25 2.25h13.5A2.25 2.25 0 0 0 21 13.5m-18 0h18" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125v-7.5A2.25 2.25 0 0 1 5.25 3.75h13.5A2.25 2.25 0 0 1 21 6v7.5m-18 0a2.25 2.25 0 0 0 2.25 2.25h13.5A2.25 2.25 0 0 0 21 13.5m-18 0h18" />
   </svg>
 );
 
