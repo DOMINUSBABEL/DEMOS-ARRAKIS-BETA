@@ -273,19 +273,42 @@ export interface TacticalCampaignResult {
     groundEvents: string[];
 }
 
+// --- 500% BOOSTED CRONOPOSTING TYPES ---
+
+export interface CronopostingConfig {
+    duration: string;
+    startDate: string;
+    goal: string;
+    context: string;
+    // New Advanced Parameters
+    platforms: string[]; // Instagram, TikTok, X, LinkedIn, Facebook
+    frequency: 'Baja (Calidad)' | 'Media (Constancia)' | 'Alta (Dominancia)' | 'Enjambre (Viral)';
+    tone: 'Institucional' | 'Disruptivo' | 'Empático' | 'Autoridad' | 'Cercano';
+    contentMix: 'Educativo (70/20/10)' | 'Promocional (Agresivo)' | 'Entretenimiento (Viral)' | 'Storytelling (Marca)';
+    keyFormats: string[]; // Reels, Carruseles, Hilos, Historias
+    kpiFocus: 'Alcance' | 'Engagement' | 'Conversión (Votos)' | 'Tráfico';
+    resourcesLevel: 'Bajo (Orgánico)' | 'Medio (Semi-Pro)' | 'Alto (Producción)';
+}
+
 export interface CronopostingEntry {
     date: string;
     platform: string;
     format: string;
     contentTheme: string;
     objective: string;
-    asset_prompt: string; // NEW: Detailed visual prompt for every day
-    copy_angle: string; // NEW: Specific angle for the copy
+    // Advanced Fields
+    asset_prompt: string; // Detailed Midjourney/DALL-E prompt
+    copy_angle: string; // Psychological angle
+    copywriting_framework: string; // AIDA, PAS, BAB
+    hashtags: string[]; // Strategic hashtag mix
+    best_time: string; // Suggested posting time
+    visual_composition: string; // e.g. "Rule of thirds, high contrast"
 }
 
 export interface CronopostingResult {
     overview: string;
     schedule: CronopostingEntry[];
+    strategic_rationale: string; // Explanation of the grid logic
 }
 
 // --- END NEW TYPES ---

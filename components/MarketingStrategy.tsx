@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AnalysisCard from './AnalysisCard';
-import { MegaphoneIcon, LoadingSpinner, UserGroupIcon, ChartBarIcon, MapIcon, SparklesIcon, WarningIcon, CpuChipIcon, ArrowsUpDownIcon, DatabaseIcon, PencilIcon, PhotoIcon, ChatBubbleBottomCenterTextIcon, RocketLaunchIcon, CalendarIcon, ClockIcon, EyeIcon } from './Icons';
+import { MegaphoneIcon, LoadingSpinner, UserGroupIcon, ChartBarIcon, MapIcon, SparklesIcon, WarningIcon, CpuChipIcon, ArrowsUpDownIcon, DatabaseIcon, PencilIcon, PhotoIcon, ChatBubbleBottomCenterTextIcon, RocketLaunchIcon, CalendarIcon, ClockIcon, EyeIcon, FilePdfIcon } from './Icons';
 import { generateMarketingStrategy, generateTacticalCampaign, generateCronoposting } from '../services/geminiService';
-import { MarketingStrategyResult, TacticalCampaignResult, CronopostingResult } from '../types';
+import { generateMarketingFullReportPDF } from '../services/reportGenerator';
+import { MarketingStrategyResult, TacticalCampaignResult, CronopostingResult, CronopostingConfig } from '../types';
 
 const MarketingStrategy: React.FC = () => {
     // Initial State Pre-filled with Simulation Data for John Jairo Berrío
@@ -11,6 +12,10 @@ const MarketingStrategy: React.FC = () => {
     const [targetType, setTargetType] = useState<'candidate' | 'party'>('candidate');
     const [context, setContext] = useState('Diputado de Antioquia (Centro Democrático). Base: Medellín, Bello, Norte del Valle de Aburrá. Enfoque: Seguridad y Obras.');
     const [isLoading, setIsLoading] = useState(false);
+    
+    // Ref for Full Report Export
+    const marketingRef = useRef<HTMLDivElement>(null);
+
     const [strategy, setStrategy] = useState<MarketingStrategyResult | null>({
         candidateProfile: "Perfil: 'El Hombre del Orden y las Obras'. John Jairo Berrío se posiciona como la figura de autoridad necesaria para recuperar la seguridad en Medellín y el Valle de Aburrá. Su discurso evita tecnicismos fiscales, traduciendo 'gestión de recursos' en 'cemento y patrullas'. Representa la tradición política antioqueña combinada con resultados tangibles.",
         calculatedBase: 34425,
@@ -77,12 +82,45 @@ const MarketingStrategy: React.FC = () => {
     const [isGeneratingTactics, setIsGeneratingTactics] = useState(false);
     const [tacticalPlan, setTacticalPlan] = useState<TacticalCampaignResult | null>(null);
     
-    // Cronoposting State
+    // Advanced Cronoposting State (500% more parameters)
     const [isGeneratingCronoposting, setIsGeneratingCronoposting] = useState(false);
     const [cronopostingResult, setCronopostingResult] = useState<CronopostingResult | null>(null);
-    const [cronoDuration, setCronoDuration] = useState('1 mes');
-    const [cronoStartDate, setCronoStartDate] = useState(new Date().toISOString().split('T')[0]);
-    const [cronoGoal, setCronoGoal] = useState('Incrementar reconocimiento de marca en un 20%');
+    
+    const [cronoConfig, setCronoConfig] = useState<CronopostingConfig>({
+        duration: '1 mes',
+        startDate: new Date().toISOString().split('T')[0],
+        goal: 'Incrementar reconocimiento de marca en un 20%',
+        context: '',
+        platforms: ['Instagram', 'TikTok'],
+        frequency: 'Media (Constancia)',
+        tone: 'Cercano',
+        contentMix: 'Educativo (70/20/10)',
+        keyFormats: ['Reels', 'Historias'],
+        kpiFocus: 'Engagement',
+        resourcesLevel: 'Medio (Semi-Pro)'
+    });
+
+    const handleCronoConfigChange = (key: keyof CronopostingConfig, value: any) => {
+        setCronoConfig(prev => ({ ...prev, [key]: value }));
+    };
+
+    const togglePlatform = (platform: string) => {
+        setCronoConfig(prev => {
+            const newPlatforms = prev.platforms.includes(platform)
+                ? prev.platforms.filter(p => p !== platform)
+                : [...prev.platforms, platform];
+            return { ...prev, platforms: newPlatforms };
+        });
+    };
+
+    const toggleFormat = (format: string) => {
+        setCronoConfig(prev => {
+            const newFormats = prev.keyFormats.includes(format)
+                ? prev.keyFormats.filter(f => f !== format)
+                : [...prev.keyFormats, format];
+            return { ...prev, keyFormats: newFormats };
+        });
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -118,7 +156,7 @@ const MarketingStrategy: React.FC = () => {
 
         setIsGeneratingTactics(true);
         setTacticalPlan(null);
-        setCronopostingResult(null); // Clear previous crono when changing tactics
+        setCronopostingResult(null); 
         setError(null);
 
         try {
@@ -152,8 +190,10 @@ const MarketingStrategy: React.FC = () => {
             Foco Geográfico: ${tacticalPlan.geographicFocus.join(', ')}
         `;
 
+        const fullConfig = { ...cronoConfig, context: enhancedContext };
+
         try {
-            const result = await generateCronoposting(cronoDuration, cronoStartDate, cronoGoal, enhancedContext);
+            const result = await generateCronoposting(fullConfig);
             setCronopostingResult(result);
         } catch (err: any) {
             setError(err.message || "Error al generar el cronograma.");
@@ -162,13 +202,37 @@ const MarketingStrategy: React.FC = () => {
         }
     };
 
+    const handleExportFullReport = () => {
+        if (marketingRef.current) {
+            generateMarketingFullReportPDF(marketingRef.current, `Dossier_Marketing_${targetName.replace(/\s+/g, '_')}.pdf`);
+        }
+    };
+
     return (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-8 animate-fade-in" ref={marketingRef}>
+            <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <h2 className="text-xl font-bold text-gray-800 flex items-center gap-3">
+                    <MegaphoneIcon className="w-6 h-6 text-brand-primary" />
+                    Marketing de Guerra Electoral
+                </h2>
+                {strategy && (
+                    <button 
+                        onClick={handleExportFullReport}
+                        className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-all shadow-md flex items-center gap-2 text-sm"
+                    >
+                        <FilePdfIcon className="w-5 h-5" />
+                        Exportar Dossier Completo (PDF)
+                    </button>
+                )}
+            </div>
+
             <AnalysisCard
-                title="Estrategia de Marketing Dinámico (Guerra Electoral)"
-                explanation="Generación de pipeline estratégico, avatares de votantes y matrices de contenido táctico con cronogramas inteligentes."
+                title="Configuración de Objetivo"
+                explanation="Define el candidato o partido y el contexto estratégico para iniciar la generación de inteligencia de marketing."
                 icon={<MegaphoneIcon />}
                 fullscreenable={false}
+                collapsible={true}
+                defaultCollapsed={!!strategy}
             >
                 <form onSubmit={handleSubmit} className="p-6 grid grid-cols-1 gap-6 bg-white rounded-b-lg">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -588,56 +652,177 @@ const MarketingStrategy: React.FC = () => {
                                     </div>
                                 </div>
 
-                                {/* CRONOPOSTING GENERATOR SECTION */}
+                                {/* ADVANCED CRONOPOSTING GENERATOR SECTION */}
                                 <div className="mt-8 border-t-2 border-gray-100 pt-8">
                                     <div className="flex items-center gap-3 mb-6">
                                         <CalendarIcon className="w-6 h-6 text-brand-primary" />
-                                        <h3 className="text-lg font-bold font-serif text-gray-800">GENERADOR DE CRONOPOSTING (Contenidos Temporales)</h3>
+                                        <div>
+                                            <h3 className="text-lg font-bold font-serif text-gray-800">GENERADOR DE CRONOPOSTING (PROFESIONAL)</h3>
+                                            <p className="text-xs text-gray-500">Configuración Avanzada de Matriz de Contenidos - Alta Frecuencia</p>
+                                        </div>
                                     </div>
                                     
-                                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                                            <div>
-                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Duración</label>
-                                                <select 
-                                                    value={cronoDuration}
-                                                    onChange={(e) => setCronoDuration(e.target.value)}
-                                                    className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-primary"
-                                                >
-                                                    <option value="1 semana">1 Semana</option>
-                                                    <option value="2 semanas">2 Semanas</option>
-                                                    <option value="1 mes">1 Mes</option>
-                                                    <option value="2 meses">2 Meses</option>
-                                                </select>
+                                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                                            {/* Column 1: Basics */}
+                                            <div className="space-y-4">
+                                                <h5 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-1">Parámetros Temporales</h5>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Duración</label>
+                                                    <select 
+                                                        value={cronoConfig.duration}
+                                                        onChange={(e) => handleCronoConfigChange('duration', e.target.value)}
+                                                        className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-primary"
+                                                    >
+                                                        <option value="1 semana">1 Semana (Intensiva)</option>
+                                                        <option value="2 semanas">2 Semanas (Campaña)</option>
+                                                        <option value="1 mes">1 Mes (Sostenimiento)</option>
+                                                        <option value="2 meses">2 Meses (Largo Plazo)</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fecha de Inicio</label>
+                                                    <input 
+                                                        type="date" 
+                                                        value={cronoConfig.startDate}
+                                                        onChange={(e) => handleCronoConfigChange('startDate', e.target.value)}
+                                                        className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-primary"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Frecuencia de Publicación</label>
+                                                    <select 
+                                                        value={cronoConfig.frequency}
+                                                        onChange={(e) => handleCronoConfigChange('frequency', e.target.value)}
+                                                        className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-primary"
+                                                    >
+                                                        <option value="Baja (Calidad)">Baja (Enfoque en Calidad)</option>
+                                                        <option value="Media (Constancia)">Media (Constancia Diaria)</option>
+                                                        <option value="Alta (Dominancia)">Alta (Dominancia de Algoritmo)</option>
+                                                        <option value="Enjambre (Viral)">Enjambre (Viral/Ataque)</option>
+                                                    </select>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fecha de Inicio (X)</label>
-                                                <input 
-                                                    type="date" 
-                                                    value={cronoStartDate}
-                                                    onChange={(e) => setCronoStartDate(e.target.value)}
-                                                    className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-primary"
-                                                />
+
+                                            {/* Column 2: Strategy */}
+                                            <div className="space-y-4">
+                                                <h5 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-1">Estrategia de Contenido</h5>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tono de Comunicación</label>
+                                                    <select 
+                                                        value={cronoConfig.tone}
+                                                        onChange={(e) => handleCronoConfigChange('tone', e.target.value)}
+                                                        className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-primary"
+                                                    >
+                                                        <option value="Institucional">Institucional / Serio</option>
+                                                        <option value="Cercano">Cercano / Ciudadano</option>
+                                                        <option value="Disruptivo">Disruptivo / Polémico</option>
+                                                        <option value="Empático">Empático / Emocional</option>
+                                                        <option value="Autoridad">Autoridad / Experto</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Mix de Contenido (Regla)</label>
+                                                    <select 
+                                                        value={cronoConfig.contentMix}
+                                                        onChange={(e) => handleCronoConfigChange('contentMix', e.target.value)}
+                                                        className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-primary"
+                                                    >
+                                                        <option value="Educativo (70/20/10)">Educativo (70/20/10)</option>
+                                                        <option value="Promocional (Agresivo)">Promocional (Venta Directa)</option>
+                                                        <option value="Entretenimiento (Viral)">Entretenimiento (Viralidad)</option>
+                                                        <option value="Storytelling (Marca)">Storytelling (Construcción de Marca)</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">KPI Principal</label>
+                                                    <select 
+                                                        value={cronoConfig.kpiFocus}
+                                                        onChange={(e) => handleCronoConfigChange('kpiFocus', e.target.value)}
+                                                        className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-primary"
+                                                    >
+                                                        <option value="Alcance">Alcance (Visibilidad)</option>
+                                                        <option value="Engagement">Engagement (Interacción)</option>
+                                                        <option value="Conversión (Votos)">Conversión (Intención de Voto)</option>
+                                                        <option value="Tráfico">Tráfico (Web/WhatsApp)</option>
+                                                    </select>
+                                                </div>
                                             </div>
-                                            <div className="md:col-span-2">
-                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Objetivo Estratégico (Y)</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={cronoGoal}
-                                                    onChange={(e) => setCronoGoal(e.target.value)}
-                                                    placeholder="Ej: Aumentar reconocimiento en jóvenes en un 15%"
-                                                    className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-primary"
-                                                />
+
+                                            {/* Column 3: Logistics */}
+                                            <div className="space-y-4">
+                                                <h5 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-1">Canales y Recursos</h5>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nivel de Recursos (Producción)</label>
+                                                    <select 
+                                                        value={cronoConfig.resourcesLevel}
+                                                        onChange={(e) => handleCronoConfigChange('resourcesLevel', e.target.value)}
+                                                        className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-primary"
+                                                    >
+                                                        <option value="Bajo (Orgánico)">Bajo (Orgánico/Selfie)</option>
+                                                        <option value="Medio (Semi-Pro)">Medio (Semi-Pro/Edición)</option>
+                                                        <option value="Alto (Producción)">Alto (Producción/Estudio)</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Plataformas Activas</label>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {['Instagram', 'TikTok', 'X', 'Facebook', 'LinkedIn'].map(p => (
+                                                            <button
+                                                                key={p}
+                                                                type="button"
+                                                                onClick={() => togglePlatform(p)}
+                                                                className={`px-3 py-1 text-xs rounded-full border transition-all ${
+                                                                    cronoConfig.platforms.includes(p) 
+                                                                    ? 'bg-brand-primary text-white border-brand-primary' 
+                                                                    : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'
+                                                                }`}
+                                                            >
+                                                                {p}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Formatos Clave</label>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {['Reels', 'Historias', 'Carruseles', 'Hilos', 'Video Largo', 'Imagen Estática'].map(f => (
+                                                            <button
+                                                                key={f}
+                                                                type="button"
+                                                                onClick={() => toggleFormat(f)}
+                                                                className={`px-3 py-1 text-xs rounded-full border transition-all ${
+                                                                    cronoConfig.keyFormats.includes(f) 
+                                                                    ? 'bg-brand-secondary text-white border-brand-secondary' 
+                                                                    : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'
+                                                                }`}
+                                                            >
+                                                                {f}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="mt-4 flex justify-end">
+
+                                        <div className="mb-6">
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Objetivo Estratégico (Y)</label>
+                                            <input 
+                                                type="text" 
+                                                value={cronoConfig.goal}
+                                                onChange={(e) => handleCronoConfigChange('goal', e.target.value)}
+                                                className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-primary font-medium"
+                                            />
+                                        </div>
+
+                                        <div className="flex justify-end">
                                             <button 
                                                 onClick={handleGenerateCronoposting}
-                                                disabled={isGeneratingCronoposting}
-                                                className="bg-brand-secondary hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 text-sm shadow-md"
+                                                disabled={isGeneratingCronoposting || cronoConfig.platforms.length === 0}
+                                                className="bg-brand-secondary hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 text-sm shadow-md"
                                             >
-                                                {isGeneratingCronoposting ? <LoadingSpinner className="w-4 h-4"/> : <ClockIcon className="w-4 h-4"/>}
-                                                {isGeneratingCronoposting ? 'Generando Calendario...' : 'Proyectar Cronoposting'}
+                                                {isGeneratingCronoposting ? <LoadingSpinner className="w-5 h-5"/> : <ClockIcon className="w-5 h-5"/>}
+                                                {isGeneratingCronoposting ? 'Diseñando Matriz...' : 'Proyectar Cronoposting Profesional'}
                                             </button>
                                         </div>
                                     </div>
@@ -646,42 +831,80 @@ const MarketingStrategy: React.FC = () => {
                                     {cronopostingResult && (
                                         <div className="mt-6 animate-fade-in-up">
                                             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                                                <div className="bg-brand-secondary/10 p-4 border-b border-brand-secondary/20">
-                                                    <h4 className="text-sm font-bold text-brand-secondary uppercase tracking-widest">Plan Maestro de Contenidos</h4>
-                                                    <p className="text-xs text-gray-600 mt-1">{cronopostingResult.overview}</p>
+                                                <div className="bg-brand-secondary/10 p-6 border-b border-brand-secondary/20">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <h4 className="text-lg font-bold text-brand-secondary uppercase tracking-widest font-serif">Matriz Maestra de Contenidos</h4>
+                                                            <p className="text-sm text-gray-600 mt-2 max-w-4xl italic">
+                                                                "{cronopostingResult.strategic_rationale}"
+                                                            </p>
+                                                        </div>
+                                                        <div className="text-right hidden md:block">
+                                                            <div className="inline-block bg-white px-3 py-1 rounded border border-brand-secondary/30 text-xs font-bold text-brand-secondary shadow-sm">
+                                                                Plan {cronoConfig.frequency}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-4 p-3 bg-white/50 rounded-lg border border-brand-secondary/10 text-xs text-gray-700">
+                                                        <strong>Overview:</strong> {cronopostingResult.overview}
+                                                    </div>
                                                 </div>
+                                                
                                                 <div className="overflow-x-auto">
-                                                    <table className="min-w-full text-sm">
-                                                        <thead className="bg-gray-50 text-xs text-gray-500 uppercase font-bold">
+                                                    <table className="min-w-full text-xs">
+                                                        <thead className="bg-gray-50 text-gray-500 uppercase font-bold border-b border-gray-200">
                                                             <tr>
-                                                                <th className="px-4 py-3 text-left">Fecha</th>
-                                                                <th className="px-4 py-3 text-left">Plataforma</th>
-                                                                <th className="px-4 py-3 text-left">Formato</th>
-                                                                <th className="px-4 py-3 text-left w-1/4">Tema/Hook</th>
-                                                                <th className="px-4 py-3 text-left">Copy Angle</th>
-                                                                <th className="px-4 py-3 text-left w-1/4">Visual Prompt (Asset)</th>
+                                                                <th className="px-4 py-3 text-left w-24">Fecha/Hora</th>
+                                                                <th className="px-4 py-3 text-left w-24">Canal</th>
+                                                                <th className="px-4 py-3 text-left w-24">Formato</th>
+                                                                <th className="px-4 py-3 text-left w-1/5">Tema & Objetivo</th>
+                                                                <th className="px-4 py-3 text-left w-1/4">Estrategia Copy (Copywriting)</th>
+                                                                <th className="px-4 py-3 text-left">Dirección de Arte (Asset Prompt)</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody className="divide-y divide-gray-100">
                                                             {cronopostingResult.schedule.map((entry, idx) => (
-                                                                <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                                                                    <td className="px-4 py-3 font-mono text-xs text-gray-600 font-bold whitespace-nowrap">{entry.date}</td>
-                                                                    <td className="px-4 py-3">
-                                                                        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                                                                <tr key={idx} className="hover:bg-gray-50 transition-colors group">
+                                                                    <td className="px-4 py-3 align-top">
+                                                                        <div className="font-mono font-bold text-gray-700">{entry.date}</div>
+                                                                        <div className="text-[10px] text-gray-500 mt-1 bg-gray-100 px-1 rounded inline-block">{entry.best_time}</div>
+                                                                    </td>
+                                                                    <td className="px-4 py-3 align-top">
+                                                                        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase block w-fit mb-1 ${
                                                                             entry.platform.toLowerCase().includes('instagram') ? 'bg-pink-100 text-pink-600' :
-                                                                            entry.platform.toLowerCase().includes('tiktok') ? 'bg-gray-200 text-gray-800' :
+                                                                            entry.platform.toLowerCase().includes('tiktok') ? 'bg-gray-800 text-white' :
                                                                             entry.platform.toLowerCase().includes('twitter') || entry.platform.toLowerCase().includes('x') ? 'bg-blue-100 text-blue-600' :
+                                                                            entry.platform.toLowerCase().includes('linkedin') ? 'bg-blue-800 text-white' :
                                                                             'bg-green-100 text-green-600'
                                                                         }`}>
                                                                             {entry.platform}
                                                                         </span>
                                                                     </td>
-                                                                    <td className="px-4 py-3 text-xs text-gray-600">{entry.format}</td>
-                                                                    <td className="px-4 py-3 text-gray-800 font-medium text-xs leading-snug">{entry.contentTheme}</td>
-                                                                    <td className="px-4 py-3 text-xs text-gray-500 italic">{entry.copy_angle}</td>
-                                                                    <td className="px-4 py-3 text-xs">
-                                                                        <div className="bg-gray-100 p-2 rounded border border-gray-200 font-mono text-[9px] text-gray-600">
+                                                                    <td className="px-4 py-3 align-top text-gray-600 font-medium">{entry.format}</td>
+                                                                    <td className="px-4 py-3 align-top">
+                                                                        <p className="font-bold text-gray-800 leading-tight mb-1">{entry.contentTheme}</p>
+                                                                        <p className="text-[10px] text-gray-500 italic">Obj: {entry.objective}</p>
+                                                                    </td>
+                                                                    <td className="px-4 py-3 align-top">
+                                                                        <div className="mb-1">
+                                                                            <span className="text-[9px] font-bold uppercase text-purple-600 bg-purple-50 px-1 rounded border border-purple-100 mr-2">
+                                                                                {entry.copywriting_framework}
+                                                                            </span>
+                                                                            <span className="text-[10px] font-medium text-gray-700">{entry.copy_angle}</span>
+                                                                        </div>
+                                                                        <div className="flex flex-wrap gap-1 mt-2">
+                                                                            {entry.hashtags.slice(0, 3).map((tag, tIdx) => (
+                                                                                <span key={tIdx} className="text-[9px] text-blue-500">#{tag}</span>
+                                                                            ))}
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="px-4 py-3 align-top">
+                                                                        <div className="bg-gray-100 p-2 rounded border border-gray-200 font-mono text-[9px] text-gray-600 leading-relaxed mb-1">
+                                                                            <span className="font-bold text-gray-400 block mb-1">PROMPT:</span>
                                                                             {entry.asset_prompt}
+                                                                        </div>
+                                                                        <div className="text-[9px] text-gray-400 italic">
+                                                                            Comp: {entry.visual_composition}
                                                                         </div>
                                                                     </td>
                                                                 </tr>

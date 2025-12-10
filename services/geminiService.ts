@@ -3,7 +3,7 @@ import { GoogleGenAI, Type, GenerateContentResponse, Schema } from "@google/gena
 import { 
     CandidateRanking, ProbabilityResult, SimulationResults, HistoricalDataset, PartyAnalysisData, PartyData, 
     ListAnalysisAIResponse, ProcessedElectionData, MarketingStrategyResult, CandidateProfileResult, 
-    CandidateComparisonResult, TacticalCampaignResult, CronopostingResult, 
+    CandidateComparisonResult, TacticalCampaignResult, CronopostingResult, CronopostingConfig,
     SocialListeningResponse, CampaignPlanResponse, ContentCalendarResponse,
     IntelReport, StrategyReport, CommsReport, CounterReport, OpsReport 
 } from '../types';
@@ -585,34 +585,40 @@ export const generateTacticalCampaign = async (
 };
 
 export const generateCronoposting = async (
-    duration: string,
-    startDate: string,
-    goal: string,
-    context: string
+    config: CronopostingConfig
 ): Promise<CronopostingResult> => {
-    // UPDATED PROMPT FOR G4 AGENT DEPTH - ENFORCING SPANISH
+    // UPDATED PROMPT FOR G4 AGENT DEPTH - 500% BOOST
     const prompt = `
-    ROL: Director Creativo G4 (Comms Director) especializado en Cronoposting de Alta Frecuencia.
+    ROL: Director Creativo G4 (Chief Digital Officer) especializado en Cronoposting de Alta Frecuencia y Guerra Cognitiva.
     
-    TAREA: Generar una "Cronoposting Matrix" detallada para dominar la narrativa digital.
+    TAREA: Generar una "Cronoposting Matrix" EXTREMADAMENTE DETALLADA Y PROFESIONAL.
     
     IDIOMA DE SALIDA: ESPAÑOL.
 
-    PARÁMETROS:
-    - Duración: ${duration}
-    - Fecha Inicio: ${startDate}
-    - Objetivo: ${goal}
-    - Contexto: ${context}
+    PARÁMETROS DE CONFIGURACIÓN AVANZADA:
+    - Duración: ${config.duration}
+    - Fecha Inicio: ${config.startDate}
+    - Objetivo: ${config.goal}
+    - Contexto: ${config.context}
+    - Plataformas: ${config.platforms.join(', ')}
+    - Frecuencia: ${config.frequency}
+    - Tono: ${config.tone}
+    - Mix de Contenido: ${config.contentMix}
+    - Formatos Clave: ${config.keyFormats.join(', ')}
+    - Enfoque KPI: ${config.kpiFocus}
+    - Nivel de Recursos: ${config.resourcesLevel}
 
-    INSTRUCCIONES DE ALTA CAPACIDAD:
-    1.  Calcula fechas exactas.
-    2.  Diseña una secuencia narrativa (no posts aleatorios).
-    3.  Para CADA post, define:
-        - Plataforma y Formato.
-        - Tema de Contenido.
-        - Objetivo Táctico (Micro-Objetivo).
-        - **Asset Prompt (CRÍTICO):** Un prompt detallado para generar la imagen/miniatura en IA (Midjourney/DALL-E).
-        - **Copy Angle:** El ángulo psicológico del texto.
+    INSTRUCCIONES DE ALTA CAPACIDAD (PROFESIONALISMO EXTREMO):
+    1.  Calcula fechas exactas y reales.
+    2.  Diseña una secuencia narrativa coherente (Storytelling Arc), no posts aleatorios.
+    3.  Aplica la regla 70-20-10 o la definida en el mix.
+    4.  Para CADA post, define:
+        - **Asset Prompt (CRÍTICO):** Un prompt técnico para Midjourney/DALL-E (incluye: tipo de lente, iluminación, estilo, sujeto).
+        - **Copy Angle:** El ángulo psicológico exacto.
+        - **Copywriting Framework:** Especifica si usar AIDA, PAS, BAB, StoryBrand, etc.
+        - **Hashtags:** Mix de nicho y masivos.
+        - **Best Time:** Hora sugerida basada en comportamiento digital LATAM.
+        - **Visual Composition:** Reglas de composición visual (ej. Regla de tercios, Espacio negativo).
 
     FORMATO JSON ESTRICTO.
     `;
@@ -620,7 +626,8 @@ export const generateCronoposting = async (
     const schema: Schema = {
         type: Type.OBJECT,
         properties: {
-            overview: { type: Type.STRING, description: "Resumen estratégico del plan." },
+            strategic_rationale: { type: Type.STRING, description: "Justificación de alto nivel de la estrategia de contenidos." },
+            overview: { type: Type.STRING, description: "Resumen ejecutivo del plan." },
             schedule: {
                 type: Type.ARRAY,
                 items: {
@@ -632,13 +639,17 @@ export const generateCronoposting = async (
                         contentTheme: { type: Type.STRING },
                         objective: { type: Type.STRING },
                         asset_prompt: { type: Type.STRING },
-                        copy_angle: { type: Type.STRING }
+                        copy_angle: { type: Type.STRING },
+                        copywriting_framework: { type: Type.STRING },
+                        hashtags: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        best_time: { type: Type.STRING },
+                        visual_composition: { type: Type.STRING }
                     },
-                    required: ['date', 'platform', 'format', 'contentTheme', 'objective', 'asset_prompt', 'copy_angle']
+                    required: ['date', 'platform', 'format', 'contentTheme', 'objective', 'asset_prompt', 'copy_angle', 'copywriting_framework', 'hashtags', 'best_time', 'visual_composition']
                 }
             }
         },
-        required: ['overview', 'schedule']
+        required: ['strategic_rationale', 'overview', 'schedule']
     };
 
     try {
@@ -653,7 +664,7 @@ export const generateCronoposting = async (
         return JSON.parse(response.text || '{}');
     } catch (error) {
         console.error("Error generating cronoposting:", error);
-        throw new Error("No se pudo generar el cronoposting.");
+        throw new Error("No se pudo generar el cronoposting avanzado.");
     }
 };
 

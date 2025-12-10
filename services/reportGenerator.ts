@@ -216,3 +216,72 @@ export const generateStrategicReportPDF = async (element: HTMLElement, fileName:
 
     doc.save(fileName);
 };
+
+export const generateMarketingFullReportPDF = async (element: HTMLElement, fileName: string) => {
+    // Uses the same robust logic as strategic report but tailored for the full marketing view
+    // which is potentially very long.
+    const doc = new jsPDF({ orientation: 'p', unit: 'px', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    
+    doc.setFontSize(22);
+    doc.setTextColor(0, 40, 85); // Brand Primary
+    doc.text('Dossier de Estrategia de Marketing Digital', margin, margin + 20);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generado: ${new Date().toLocaleDateString()}`, margin, margin + 35);
+
+    // Clone element to modify styles for PDF capture without affecting UI
+    const clonedElement = element.cloneNode(true) as HTMLElement;
+    clonedElement.style.width = '1200px'; // Force wide width for better chart resolution
+    clonedElement.style.padding = '40px';
+    clonedElement.style.backgroundColor = '#ffffff';
+    
+    // Hide buttons or interactive elements that shouldn't appear in print
+    const buttons = clonedElement.querySelectorAll('button');
+    buttons.forEach(btn => btn.style.display = 'none');
+    
+    // Expand all AnalysisCards in the clone (hacky but necessary if they are collapsed)
+    const collapsed = clonedElement.querySelectorAll('.max-h-0');
+    collapsed.forEach((el) => {
+        (el as HTMLElement).style.maxHeight = 'none';
+        (el as HTMLElement).style.opacity = '1';
+    });
+
+    document.body.appendChild(clonedElement); 
+
+    try {
+        const canvas = await html2canvas(clonedElement, {
+            scale: 1.5, // Balance quality/size
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            windowWidth: 1200,
+            onclone: (clonedDoc) => {
+                clonedDoc.documentElement.classList.remove('dark');
+                clonedDoc.body.classList.remove('dark');
+            }
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.85);
+        const imgProps = doc.getImageProperties(imgData);
+        const imgHeight = (imgProps.height * (pageWidth - margin * 2)) / imgProps.width;
+        let heightLeft = imgHeight;
+        let position = 60; // Start lower due to header
+
+        doc.addImage(imgData, 'JPEG', margin, position, pageWidth - margin * 2, imgHeight);
+        heightLeft -= (pageHeight - 80);
+
+        while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            doc.addPage();
+            doc.addImage(imgData, 'JPEG', margin, -20, pageWidth - margin * 2, imgHeight); // -20 to pull up next page
+            heightLeft -= pageHeight;
+        }
+
+        doc.save(fileName);
+    } finally {
+        document.body.removeChild(clonedElement);
+    }
+};
