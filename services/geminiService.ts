@@ -475,12 +475,14 @@ export const generateTacticalCampaign = async (
     angleProfile: string,
     context: string
 ): Promise<TacticalCampaignResult> => {
-    // UPDATED PROMPT FOR G4/G2 AGENT DEPTH
+    // UPDATED PROMPT FOR G4/G2 AGENT DEPTH - ENFORCING SPANISH
     const prompt = `
     ROL: Comandante Estratégico Conjunto (Integrando G2 Inteligencia y G4 Comunicaciones).
     
     TAREA: Diseñar una campaña táctica de "Guerra de Guerrillas" digital y territorial para conectar al CANDIDATO con el VOTANTE OBJETIVO.
     
+    IDIOMA DE SALIDA: ESPAÑOL.
+
     ENTRADA:
     - Candidato: ${candidateName}
     - Ángulo del Candidato: ${angleProfile}
@@ -588,12 +590,14 @@ export const generateCronoposting = async (
     goal: string,
     context: string
 ): Promise<CronopostingResult> => {
-    // UPDATED PROMPT FOR G4 AGENT DEPTH
+    // UPDATED PROMPT FOR G4 AGENT DEPTH - ENFORCING SPANISH
     const prompt = `
     ROL: Director Creativo G4 (Comms Director) especializado en Cronoposting de Alta Frecuencia.
     
     TAREA: Generar una "Cronoposting Matrix" detallada para dominar la narrativa digital.
     
+    IDIOMA DE SALIDA: ESPAÑOL.
+
     PARÁMETROS:
     - Duración: ${duration}
     - Fecha Inicio: ${startDate}
