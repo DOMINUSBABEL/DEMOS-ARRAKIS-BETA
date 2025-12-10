@@ -235,7 +235,12 @@ export const generateMarketingFullReportPDF = async (element: HTMLElement, fileN
 
     // Clone element to modify styles for PDF capture without affecting UI
     const clonedElement = element.cloneNode(true) as HTMLElement;
+    
+    // Explicitly set dimensions to ensure charts render well
     clonedElement.style.width = '1200px'; // Force wide width for better chart resolution
+    clonedElement.style.height = 'auto';
+    clonedElement.style.position = 'absolute';
+    clonedElement.style.left = '-9999px'; // Hide offscreen
     clonedElement.style.padding = '40px';
     clonedElement.style.backgroundColor = '#ffffff';
     
@@ -248,6 +253,7 @@ export const generateMarketingFullReportPDF = async (element: HTMLElement, fileN
     collapsed.forEach((el) => {
         (el as HTMLElement).style.maxHeight = 'none';
         (el as HTMLElement).style.opacity = '1';
+        (el as HTMLElement).style.overflow = 'visible';
     });
 
     document.body.appendChild(clonedElement); 
