@@ -218,7 +218,7 @@ const DHondtResults: React.FC<DHondtResultsProps> = ({ analysis, parties, partyA
                     <div className="text-[10px] uppercase tracking-[0.2em] text-dark-text-secondary mt-2 font-bold">Votos Totales</div>
                 </div>
                  <div className="glass-panel p-5 rounded border border-white/5 relative overflow-hidden">
-                    <div className="text-xl font-bold text-white truncate font-mono" title={analysis.lastSeatWinner?.party}>{analysis.lastSeatWinner ? shorten(analysis.lastSeatWinner.party) : 'N/A'}</div>
+                    <div className="text-xl font-bold text-brand-primary truncate font-mono" title={analysis.lastSeatWinner?.party}>{analysis.lastSeatWinner ? shorten(analysis.lastSeatWinner.party) : 'N/A'}</div>
                     <div className="text-[10px] uppercase tracking-[0.2em] text-brand-primary mt-2 font-bold">Ganador Última Curul</div>
                 </div>
                  <div className="glass-panel p-5 rounded border border-white/5 relative overflow-hidden">

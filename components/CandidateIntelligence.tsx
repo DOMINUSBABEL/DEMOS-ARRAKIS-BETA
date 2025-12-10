@@ -186,7 +186,7 @@ const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: num
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white font-sans">{candidate.name}</h3>
                 <div className="mt-2 inline-flex items-center gap-2 px-2 py-1 bg-brand-primary/10 rounded border border-brand-primary/20">
                     <span className="text-[10px] font-bold text-brand-primary uppercase">Base Calculada:</span>
-                    <span className="text-sm font-mono font-bold text-white">{candidate.calculatedBase.toLocaleString('es-CO')}</span>
+                    <span className="text-sm font-mono font-bold text-brand-primary">{candidate.calculatedBase.toLocaleString('es-CO')}</span>
                 </div>
             </div>
             <div className="text-right">

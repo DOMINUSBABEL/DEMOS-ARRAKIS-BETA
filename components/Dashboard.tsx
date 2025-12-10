@@ -332,7 +332,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                         <div className="glass-panel p-4 rounded-lg border border-brand-primary/20 flex items-center justify-between group">
                             <div>
                                 <p className="text-[10px] text-dark-text-secondary uppercase tracking-[0.2em] font-mono mb-1 group-hover:text-brand-primary transition-colors">Participación Total</p>
-                                <p className="text-2xl font-bold text-white font-mono">{(grandTotal || 0).toLocaleString('es-CO')}</p>
+                                <p className="text-2xl font-bold text-brand-primary font-mono">{(grandTotal || 0).toLocaleString('es-CO')}</p>
                             </div>
                             <UserGroupIcon className="w-8 h-8 text-brand-primary/50 group-hover:text-brand-primary transition-colors" />
                         </div>

@@ -230,7 +230,7 @@ const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: num
                     <div className="mt-3 flex items-center gap-4">
                         <div className="px-3 py-1.5 bg-brand-primary/10 border border-brand-primary/30 rounded-lg">
                             <span className="text-[10px] text-brand-primary uppercase font-bold tracking-wider block">Base Electoral Calculada (X)</span>
-                            <span className="text-lg font-mono font-bold text-brand-glow">
+                            <span className="text-lg font-mono font-bold text-brand-primary">
                                 {candidate.calculatedBase ? candidate.calculatedBase.toLocaleString('es-CO') : 'N/A'}
                             </span>
                         </div>
