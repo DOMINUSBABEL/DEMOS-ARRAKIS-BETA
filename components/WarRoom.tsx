@@ -304,6 +304,7 @@ const OpsPanel: React.FC<{ data: OpsReport }> = ({ data }) => (
 
 const WarRoom: React.FC = () => {
     const [activeDirector, setActiveDirector] = useState<DirectorType>('G2');
+    const [jointMode, setJointMode] = useState(false);
     const [query, setQuery] = useState('');
     const [context, setContext] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -322,27 +323,44 @@ const WarRoom: React.FC = () => {
         setIsProcessing(true);
 
         try {
-            switch (activeDirector) {
-                case 'G2':
-                    const r2 = await runIntelDirector(query, context);
-                    setG2Report(r2);
-                    break;
-                case 'G3':
-                    const r3 = await runStrategyDirector(query, context);
-                    setG3Report(r3);
-                    break;
-                case 'G4':
-                    const r4 = await runCommsDirector(query, context);
-                    setG4Report(r4);
-                    break;
-                case 'G5':
-                    const r5 = await runCounterDirector(query, context);
-                    setG5Report(r5);
-                    break;
-                case 'G1':
-                    const r1 = await runOpsDirector(query, context);
-                    setG1Report(r1);
-                    break;
+            if (jointMode) {
+                // Execute Joint Operation (All Agents)
+                const [r2, r3, r4, r5, r1] = await Promise.all([
+                    runIntelDirector(query, context),
+                    runStrategyDirector(query, context),
+                    runCommsDirector(query, context),
+                    runCounterDirector(query, context),
+                    runOpsDirector(query, context)
+                ]);
+                setG2Report(r2);
+                setG3Report(r3);
+                setG4Report(r4);
+                setG5Report(r5);
+                setG1Report(r1);
+            } else {
+                // Single Agent Execution
+                switch (activeDirector) {
+                    case 'G2':
+                        const r2 = await runIntelDirector(query, context);
+                        setG2Report(r2);
+                        break;
+                    case 'G3':
+                        const r3 = await runStrategyDirector(query, context);
+                        setG3Report(r3);
+                        break;
+                    case 'G4':
+                        const r4 = await runCommsDirector(query, context);
+                        setG4Report(r4);
+                        break;
+                    case 'G5':
+                        const r5 = await runCounterDirector(query, context);
+                        setG5Report(r5);
+                        break;
+                    case 'G1':
+                        const r1 = await runOpsDirector(query, context);
+                        setG1Report(r1);
+                        break;
+                }
             }
         } catch (error) {
             console.error("Execution failed:", error);
@@ -353,11 +371,11 @@ const WarRoom: React.FC = () => {
 
     const DirectorTab = ({ id, label, icon, color }: { id: DirectorType, label: string, icon: React.ReactNode, color: string }) => (
         <button
-            onClick={() => setActiveDirector(id)}
-            className={`flex flex-col items-center justify-center p-4 border-b-2 transition-all w-full ${activeDirector === id ? `border-${color}-500 bg-white/5` : 'border-transparent opacity-50 hover:opacity-80'}`}
+            onClick={() => { setActiveDirector(id); setJointMode(false); }}
+            className={`flex flex-col items-center justify-center p-4 border-b-2 transition-all w-full ${activeDirector === id && !jointMode ? `border-${color}-500 bg-white/5` : 'border-transparent opacity-50 hover:opacity-80'}`}
         >
             <div className={`mb-2 text-${color}-400`}>{icon}</div>
-            <span className={`text-xs font-bold uppercase tracking-widest ${activeDirector === id ? 'text-white' : 'text-gray-500'}`}>{id} - {label}</span>
+            <span className={`text-xs font-bold uppercase tracking-widest ${activeDirector === id && !jointMode ? 'text-white' : 'text-gray-500'}`}>{id} - {label}</span>
         </button>
     );
 
@@ -380,6 +398,15 @@ const WarRoom: React.FC = () => {
                 
                 {/* Left: Navigation & Context */}
                 <div className="w-full lg:w-64 bg-[#140f0b] border-r border-white/10 flex flex-col">
+                    <div className="p-4 border-b border-white/10">
+                        <button 
+                            onClick={() => setJointMode(!jointMode)}
+                            className={`w-full py-3 rounded-lg border flex items-center justify-center gap-2 transition-all ${jointMode ? 'bg-red-600 border-red-500 text-white shadow-[0_0_20px_rgba(220,38,38,0.4)] animate-pulse' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
+                        >
+                            <WarningIcon className="w-4 h-4" />
+                            <span className="text-xs font-bold uppercase tracking-widest">Operación Conjunta</span>
+                        </button>
+                    </div>
                     <div className="flex-1 overflow-y-auto">
                         <DirectorTab id="G2" label="Inteligencia" icon={<EyeIcon className="w-6 h-6"/>} color="blue" />
                         <DirectorTab id="G3" label="Estrategia" icon={<ChartBarIcon className="w-6 h-6"/>} color="purple" />
@@ -412,11 +439,23 @@ const WarRoom: React.FC = () => {
                         )}
 
                         {/* Rendering Active Report */}
-                        {activeDirector === 'G2' && g2Report && <IntelConsole data={g2Report} />}
-                        {activeDirector === 'G3' && g3Report && <StrategyTable data={g3Report} />}
-                        {activeDirector === 'G4' && g4Report && <CommsGrid data={g4Report} />}
-                        {activeDirector === 'G5' && g5Report && <ThreatMonitor data={g5Report} />}
-                        {activeDirector === 'G1' && g1Report && <OpsPanel data={g1Report} />}
+                        {jointMode ? (
+                            <div className="space-y-12">
+                                {g2Report && <div className="border-b border-white/10 pb-8"><h3 className="text-xl font-bold text-blue-500 mb-4">G2: INTELIGENCIA</h3><IntelConsole data={g2Report} /></div>}
+                                {g3Report && <div className="border-b border-white/10 pb-8"><h3 className="text-xl font-bold text-purple-500 mb-4">G3: ESTRATEGIA</h3><StrategyTable data={g3Report} /></div>}
+                                {g4Report && <div className="border-b border-white/10 pb-8"><h3 className="text-xl font-bold text-pink-500 mb-4">G4: COMUNICACIONES</h3><CommsGrid data={g4Report} /></div>}
+                                {g5Report && <div className="border-b border-white/10 pb-8"><h3 className="text-xl font-bold text-red-500 mb-4">G5: CONTRA-INTELIGENCIA</h3><ThreatMonitor data={g5Report} /></div>}
+                                {g1Report && <div><h3 className="text-xl font-bold text-orange-500 mb-4">G1: OPERACIONES</h3><OpsPanel data={g1Report} /></div>}
+                            </div>
+                        ) : (
+                            <>
+                                {activeDirector === 'G2' && g2Report && <IntelConsole data={g2Report} />}
+                                {activeDirector === 'G3' && g3Report && <StrategyTable data={g3Report} />}
+                                {activeDirector === 'G4' && g4Report && <CommsGrid data={g4Report} />}
+                                {activeDirector === 'G5' && g5Report && <ThreatMonitor data={g5Report} />}
+                                {activeDirector === 'G1' && g1Report && <OpsPanel data={g1Report} />}
+                            </>
+                        )}
                     </div>
 
                     {/* Input Area */}
@@ -429,7 +468,7 @@ const WarRoom: React.FC = () => {
                                     onChange={(e) => setQuery(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && !isProcessing && handleExecute()}
                                     className="w-full bg-[#0f0a06] border border-white/10 rounded-lg py-4 pl-6 pr-4 text-gray-200 placeholder-gray-600 focus:ring-1 focus:ring-brand-primary focus:border-brand-primary outline-none transition-all font-mono text-sm"
-                                    placeholder={`Orden para Director ${activeDirector}...`}
+                                    placeholder={jointMode ? "Orden Ejecutiva para el Estado Mayor Conjunto..." : `Orden para Director ${activeDirector}...`}
                                 />
                                 {isProcessing && (
                                     <div className="absolute right-4 top-4">

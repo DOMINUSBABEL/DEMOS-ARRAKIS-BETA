@@ -584,6 +584,62 @@ export const generateTacticalCampaign = async (
     }
 };
 
+export const autoConfigureCronoposting = async (userPrompt: string): Promise<Partial<CronopostingConfig>> => {
+    const prompt = `
+    ROL: Analista Senior de Estrategia Digital.
+    TAREA: Traducir una solicitud en lenguaje natural de un usuario a una configuración técnica estructurada para una campaña de Cronoposting.
+    
+    SOLICITUD DEL USUARIO: "${userPrompt}"
+    
+    TU OBJETIVO:
+    Inferir los mejores parámetros (plataformas, tono, mix, etc.) basándote en la solicitud. Sé estratégico.
+    
+    Salida JSON Estricta:
+    {
+        "duration": "string (ej: 1 mes, 2 semanas)",
+        "goal": "string (Objetivo estratégico conciso)",
+        "platforms": ["array de strings (Instagram, TikTok, X, Facebook, LinkedIn)"],
+        "frequency": "string (Baja (Calidad) | Media (Constancia) | Alta (Dominancia) | Enjambre (Viral))",
+        "tone": "string (Institucional | Disruptivo | Empático | Autoridad | Cercano)",
+        "contentMix": "string (Educativo (70/20/10) | Promocional (Agresivo) | Entretenimiento (Viral) | Storytelling (Marca))",
+        "keyFormats": ["array de strings (Reels, Historias, Carruseles, Hilos, Video Largo, Imagen Estática)"],
+        "kpiFocus": "string (Alcance | Engagement | Conversión (Votos) | Tráfico)",
+        "resourcesLevel": "string (Bajo (Orgánico) | Medio (Semi-Pro) | Alto (Producción))"
+    }
+    `;
+
+    const schema: Schema = {
+        type: Type.OBJECT,
+        properties: {
+            duration: { type: Type.STRING },
+            goal: { type: Type.STRING },
+            platforms: { type: Type.ARRAY, items: { type: Type.STRING } },
+            frequency: { type: Type.STRING, enum: ['Baja (Calidad)', 'Media (Constancia)', 'Alta (Dominancia)', 'Enjambre (Viral)'] },
+            tone: { type: Type.STRING, enum: ['Institucional', 'Disruptivo', 'Empático', 'Autoridad', 'Cercano'] },
+            contentMix: { type: Type.STRING, enum: ['Educativo (70/20/10)', 'Promocional (Agresivo)', 'Entretenimiento (Viral)', 'Storytelling (Marca)'] },
+            keyFormats: { type: Type.ARRAY, items: { type: Type.STRING } },
+            kpiFocus: { type: Type.STRING, enum: ['Alcance', 'Engagement', 'Conversión (Votos)', 'Tráfico'] },
+            resourcesLevel: { type: Type.STRING, enum: ['Bajo (Orgánico)', 'Medio (Semi-Pro)', 'Alto (Producción)'] }
+        },
+        required: ['duration', 'goal', 'platforms', 'frequency', 'tone', 'contentMix', 'keyFormats', 'kpiFocus', 'resourcesLevel']
+    };
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: schema
+            }
+        });
+        return JSON.parse(response.text || '{}');
+    } catch (error) {
+        console.error("Error auto-configuring cronoposting:", error);
+        return {};
+    }
+}
+
 export const generateCronoposting = async (
     config: CronopostingConfig
 ): Promise<CronopostingResult> => {

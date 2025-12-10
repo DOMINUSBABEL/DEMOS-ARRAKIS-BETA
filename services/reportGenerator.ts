@@ -218,8 +218,7 @@ export const generateStrategicReportPDF = async (element: HTMLElement, fileName:
 };
 
 export const generateMarketingFullReportPDF = async (element: HTMLElement, fileName: string) => {
-    // Uses the same robust logic as strategic report but tailored for the full marketing view
-    // which is potentially very long.
+    // Robust logic for ultra-long content export (e.g. Cronoposting matrices)
     const doc = new jsPDF({ orientation: 'p', unit: 'px', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -238,11 +237,13 @@ export const generateMarketingFullReportPDF = async (element: HTMLElement, fileN
     
     // Explicitly set dimensions to ensure charts render well
     clonedElement.style.width = '1200px'; // Force wide width for better chart resolution
-    clonedElement.style.height = 'auto';
+    clonedElement.style.height = 'auto'; // Allow full expansion
     clonedElement.style.position = 'absolute';
     clonedElement.style.left = '-9999px'; // Hide offscreen
+    clonedElement.style.top = '0';
     clonedElement.style.padding = '40px';
     clonedElement.style.backgroundColor = '#ffffff';
+    clonedElement.style.overflow = 'visible'; // Force overflow visibility
     
     // Hide buttons or interactive elements that shouldn't appear in print
     const buttons = clonedElement.querySelectorAll('button');
@@ -256,7 +257,18 @@ export const generateMarketingFullReportPDF = async (element: HTMLElement, fileN
         (el as HTMLElement).style.overflow = 'visible';
     });
 
+    // Fix internal scroll containers to be full height/width
+    const scrollables = clonedElement.querySelectorAll('.overflow-x-auto, .overflow-y-auto, .custom-scrollbar');
+    scrollables.forEach((el) => {
+        (el as HTMLElement).style.overflow = 'visible';
+        (el as HTMLElement).style.height = 'auto';
+        (el as HTMLElement).style.maxHeight = 'none';
+    });
+
     document.body.appendChild(clonedElement); 
+    
+    // Calculate total height needed
+    const fullHeight = clonedElement.scrollHeight + 100;
 
     try {
         const canvas = await html2canvas(clonedElement, {
@@ -264,6 +276,8 @@ export const generateMarketingFullReportPDF = async (element: HTMLElement, fileN
             backgroundColor: '#ffffff',
             useCORS: true,
             windowWidth: 1200,
+            windowHeight: fullHeight, // CRITICAL: Capture full height regardless of viewport
+            height: fullHeight,
             onclone: (clonedDoc) => {
                 clonedDoc.documentElement.classList.remove('dark');
                 clonedDoc.body.classList.remove('dark');
@@ -273,17 +287,34 @@ export const generateMarketingFullReportPDF = async (element: HTMLElement, fileN
         const imgData = canvas.toDataURL('image/jpeg', 0.85);
         const imgProps = doc.getImageProperties(imgData);
         const imgHeight = (imgProps.height * (pageWidth - margin * 2)) / imgProps.width;
+        
         let heightLeft = imgHeight;
         let position = 60; // Start lower due to header
 
         doc.addImage(imgData, 'JPEG', margin, position, pageWidth - margin * 2, imgHeight);
         heightLeft -= (pageHeight - 80);
 
-        while (heightLeft >= 0) {
-            position = heightLeft - imgHeight;
+        while (heightLeft > 0) {
+            position = 20 - (imgHeight - heightLeft); // Adjust position to render the next slice
             doc.addPage();
-            doc.addImage(imgData, 'JPEG', margin, -20, pageWidth - margin * 2, imgHeight); // -20 to pull up next page
-            heightLeft -= pageHeight;
+            // Calculate y-offset for the image on new page
+            // We basically move the image UP so the next chunk is visible in the viewport
+            const shift = (pageHeight - 40) * (doc.getNumberOfPages() - 1);
+            
+            // Standard approach: place huge image at negative coordinate
+            // Initial Y was 60. Page 1 covered (PH - 80).
+            // Page 2 needs to start showing from pixel (PH - 80).
+            // So we place image at Y = 20 - (PH - 80) = 100 - PH? No.
+            // Better logic:
+            // Page 1: Y=60.
+            // Page 2: Y = 60 - (PageHeight - 80).
+            // Page 3: Y = 60 - 2*(PageHeight - 80).
+            
+            const effectivePageHeight = pageHeight - 40; // Top 20, Bottom 20 margin
+            const yPos = 60 - (effectivePageHeight * (doc.getNumberOfPages() - 1)) + (doc.getNumberOfPages() > 1 ? 40 : 0); // adjust slightly
+
+            doc.addImage(imgData, 'JPEG', margin, yPos, pageWidth - margin * 2, imgHeight);
+            heightLeft -= effectivePageHeight;
         }
 
         doc.save(fileName);

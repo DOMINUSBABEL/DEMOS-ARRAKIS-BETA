@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import AnalysisCard from './AnalysisCard';
 import { MegaphoneIcon, LoadingSpinner, UserGroupIcon, ChartBarIcon, MapIcon, SparklesIcon, WarningIcon, CpuChipIcon, ArrowsUpDownIcon, DatabaseIcon, PencilIcon, PhotoIcon, ChatBubbleBottomCenterTextIcon, RocketLaunchIcon, CalendarIcon, ClockIcon, EyeIcon, FilePdfIcon } from './Icons';
-import { generateMarketingStrategy, generateTacticalCampaign, generateCronoposting } from '../services/geminiService';
+import { generateMarketingStrategy, generateTacticalCampaign, generateCronoposting, autoConfigureCronoposting } from '../services/geminiService';
 import { generateMarketingFullReportPDF } from '../services/reportGenerator';
 import { MarketingStrategyResult, TacticalCampaignResult, CronopostingResult, CronopostingConfig } from '../types';
 
@@ -84,7 +84,9 @@ const MarketingStrategy: React.FC = () => {
     
     // Advanced Cronoposting State (500% more parameters)
     const [isGeneratingCronoposting, setIsGeneratingCronoposting] = useState(false);
+    const [isAutoConfiguring, setIsAutoConfiguring] = useState(false);
     const [cronopostingResult, setCronopostingResult] = useState<CronopostingResult | null>(null);
+    const [magicPrompt, setMagicPrompt] = useState('');
     
     const [cronoConfig, setCronoConfig] = useState<CronopostingConfig>({
         duration: '1 mes',
@@ -120,6 +122,24 @@ const MarketingStrategy: React.FC = () => {
                 : [...prev.keyFormats, format];
             return { ...prev, keyFormats: newFormats };
         });
+    };
+
+    const handleAutoConfigure = async () => {
+        if (!magicPrompt.trim()) return;
+        setIsAutoConfiguring(true);
+        try {
+            const config = await autoConfigureCronoposting(magicPrompt);
+            setCronoConfig(prev => ({
+                ...prev,
+                ...config,
+                // Ensure date is valid or keep current if not provided
+                startDate: config.startDate || prev.startDate
+            }));
+        } catch (e) {
+            console.error("Auto-config failed", e);
+        } finally {
+            setIsAutoConfiguring(false);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -662,6 +682,36 @@ const MarketingStrategy: React.FC = () => {
                                         </div>
                                     </div>
                                     
+                                    {/* MAGIC PROMPT SECTION */}
+                                    <div className="mb-6 p-4 bg-gradient-to-r from-brand-primary/5 to-white border border-brand-primary/20 rounded-xl">
+                                        <div className="flex flex-col md:flex-row gap-4 items-start">
+                                            <div className="flex-1 w-full">
+                                                <label className="block text-xs font-bold text-brand-primary uppercase mb-2 flex items-center gap-2">
+                                                    <SparklesIcon className="w-4 h-4" />
+                                                    Autoconfiguración Táctica (Magic Prompt)
+                                                </label>
+                                                <div className="relative">
+                                                    <textarea 
+                                                        value={magicPrompt}
+                                                        onChange={(e) => setMagicPrompt(e.target.value)}
+                                                        placeholder="Ej: Necesito una campaña de 2 semanas muy agresiva para TikTok e Instagram enfocada en atacar la inseguridad, tono disruptivo para jóvenes."
+                                                        className="w-full bg-white border border-brand-primary/30 rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-primary focus:border-brand-primary pr-12 min-h-[80px]"
+                                                    />
+                                                    <button 
+                                                        onClick={handleAutoConfigure}
+                                                        disabled={isAutoConfiguring || !magicPrompt}
+                                                        className="absolute bottom-3 right-3 p-2 bg-brand-primary text-white rounded-full hover:bg-brand-secondary transition-colors disabled:opacity-50"
+                                                        title="Autoconfigurar con IA"
+                                                    >
+                                                        {isAutoConfiguring ? <LoadingSpinner className="w-4 h-4" /> : <SparklesIcon className="w-4 h-4" />}
+                                                    </button>
+                                                </div>
+                                                <p className="text-[10px] text-gray-500 mt-1 italic">Describe tu objetivo y la IA ajustará todos los parámetros técnicos automáticamente.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* MANUAL CONFIGURATION MATRIX */}
                                     <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm">
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
                                             {/* Column 1: Basics */}
@@ -774,7 +824,7 @@ const MarketingStrategy: React.FC = () => {
                                                                 onClick={() => togglePlatform(p)}
                                                                 className={`px-3 py-1 text-xs rounded-full border transition-all ${
                                                                     cronoConfig.platforms.includes(p) 
-                                                                    ? 'bg-brand-primary text-white border-brand-primary' 
+                                                                    ? 'bg-brand-primary text-white border-brand-primary shadow-sm' 
                                                                     : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'
                                                                 }`}
                                                             >
@@ -793,7 +843,7 @@ const MarketingStrategy: React.FC = () => {
                                                                 onClick={() => toggleFormat(f)}
                                                                 className={`px-3 py-1 text-xs rounded-full border transition-all ${
                                                                     cronoConfig.keyFormats.includes(f) 
-                                                                    ? 'bg-brand-secondary text-white border-brand-secondary' 
+                                                                    ? 'bg-brand-secondary text-white border-brand-secondary shadow-sm' 
                                                                     : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'
                                                                 }`}
                                                             >
