@@ -1,7 +1,8 @@
 
 # DEMOS ARRAKIS - Sistema de Inteligencia y Predicción Electoral
 
-**Versión:** Beta 1.2
+**Versión:** 2.5 (2025)
+**Desarrollado por:** Consultora Talleyrand
 **Motor:** React + TypeScript + Google Gemini AI
 
 ## 📋 Descripción General
@@ -105,24 +106,7 @@ Módulo de investigación profunda sobre individuos.
     npm run dev
     ```
 
-### Estructura de Archivos Clave
-*   `components/Dashboard.tsx`: Orquestador principal de la interfaz.
-*   `components/DHondtSimulator.tsx`: Lógica matemática de asignación de escaños.
-*   `components/CandidateIntelligence.tsx`: Módulo de perfiles, desglose de formularios y comparación de candidatos.
-*   `services/geminiService.ts`: Todas las llamadas a la IA (Prompts, extracción de datos, análisis).
-*   `services/reportGenerator.ts`: Generación de informes PDF optimizados para impresión (texto negro de alto contraste).
-
 ---
 
-## 📚 Glosario Metodológico
-
-*   **PEB (Poder Electoral Base):** Promedio ponderado de votos históricos ajustado por factores como si fue cabeza de lista o no.
-*   **Voto Elástico:** Votante indeciso o de opinión que puede cambiar su preferencia fácilmente.
-*   **Voto Inelástico (Estructural):** Voto duro, leal o de maquinaria.
-*   **Cifra Repartidora:** El cociente más bajo que permite asignar la última curul en el sistema D'Hondt.
-*   **Umbral:** Votación mínima necesaria para que una lista entre en la repartición de escaños.
-
----
-
-**DEMOS ARRAKIS**
-*Intelligence for the Political Battlefield.*
+**DEMOS ARRAKIS v2.5**
+*Desarrollado por Consultora Talleyrand © 2025*

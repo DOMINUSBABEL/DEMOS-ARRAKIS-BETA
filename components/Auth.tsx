@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { FingerPrintIcon, UserGroupIcon, LoadingSpinner, WarningIcon } from './Icons';
+import { FingerPrintIcon, UserGroupIcon, LoadingSpinner, WarningIcon, TalleyrandLogoIcon } from './Icons';
 import { User } from '../types';
 
 interface AuthProps {
@@ -41,13 +41,27 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     };
 
     return (
-        <div className="min-h-screen bg-light-bg flex flex-col justify-center items-center p-4">
+        <div className="min-h-screen bg-light-bg flex flex-col justify-center items-center p-4 relative">
+            {/* Branding Corner Logo */}
+            <div className="absolute top-6 left-6 flex items-center gap-3 opacity-90 hover:opacity-100 transition-opacity">
+                <TalleyrandLogoIcon className="w-12 h-12" />
+                <div className="flex flex-col">
+                    <span className="text-xl font-serif font-bold text-brand-primary tracking-wide leading-none">CONSULTORA</span>
+                    <span className="text-lg font-serif font-bold text-brand-primary tracking-[0.2em] leading-none">TALLEYRAND</span>
+                </div>
+            </div>
+
             <div className="mb-8 text-center animate-fade-in-up">
                 <div className="inline-flex items-center justify-center p-4 bg-brand-primary rounded-xl shadow-lg mb-4">
                     <FingerPrintIcon className="w-12 h-12 text-white" />
                 </div>
                 <h1 className="text-3xl font-black text-brand-primary tracking-tight font-serif">DEMOS ARRAKIS</h1>
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-[0.3em] mt-2">Sistema de Inteligencia Electoral</p>
+                <div className="mt-3 inline-block px-3 py-1 bg-white border border-gray-200 rounded-full shadow-sm">
+                    <p className="text-[10px] text-brand-primary font-serif font-bold uppercase tracking-widest flex items-center gap-1">
+                        <span className="text-gray-400">By</span> Consultora Talleyrand
+                    </p>
+                </div>
             </div>
 
             <div className="bg-white w-full max-w-md p-8 rounded-xl shadow-report-lg border border-gray-200 relative overflow-hidden animate-fade-in">
@@ -101,10 +115,15 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                 </form>
             </div>
             
-            <p className="mt-8 text-[10px] text-gray-400 font-mono text-center max-w-xs">
-                SISTEMA DE USO EXCLUSIVO PARA PERSONAL AUTORIZADO. <br/>
-                DEMOS ARRAKIS v2.1
-            </p>
+            <div className="mt-8 text-center max-w-xs space-y-2">
+                <p className="text-[10px] text-gray-400 font-mono">
+                    SISTEMA DE USO EXCLUSIVO PARA PERSONAL AUTORIZADO. <br/>
+                    DEMOS ARRAKIS v2.5
+                </p>
+                <p className="text-[9px] text-brand-primary/60 font-serif italic border-t border-gray-200 pt-2">
+                    Desarrollado por Consultora Talleyrand © 2025
+                </p>
+            </div>
         </div>
     );
 };

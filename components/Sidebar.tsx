@@ -78,7 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteDa
                 DEMOS
             </h1>
             <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase mt-0.5">
-                ARRAKIS INTEL
+                ARRAKIS v2.5
             </span>
           </div>
         </div>
@@ -161,9 +161,18 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteDa
       
       {/* Footer */}
       <div className="p-4 border-t border-gray-200 bg-gray-50">
-        <div className="flex items-center gap-2 justify-center">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold font-mono">Sistema Online v2.1</p>
+        <div className="flex flex-col items-center gap-2 justify-center text-center">
+            <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold font-mono">Sistema Online v2.5</p>
+            </div>
+            <div className="mt-1 pt-2 border-t border-gray-100 w-full">
+                <p className="text-[9px] text-slate-400 font-serif leading-tight">
+                    Desarrollado por<br/>
+                    <span className="font-bold text-brand-primary">CONSULTORA TALLEYRAND</span><br/>
+                    © 2025
+                </p>
+            </div>
         </div>
       </div>
     </aside>
