@@ -351,6 +351,27 @@ export interface CandidateComparisonResult {
     scenarios: ComparisonScenario[];
 }
 
+// Sankey Diagram Types
+export interface SankeyNodePayload {
+    name: string;
+    x?: number;
+    y?: number;
+    dx?: number;
+    dy?: number;
+    value?: number;
+}
+
+export interface SankeyLinkPayload {
+    source: number;
+    target: number;
+    value: number;
+}
+
+export interface SankeyData {
+    nodes: SankeyNodePayload[];
+    links: SankeyLinkPayload[];
+}
+
 // AUTH TYPES
 export interface User {
     username: string;

