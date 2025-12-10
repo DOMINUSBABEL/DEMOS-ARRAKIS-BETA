@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import AnalysisCard from './AnalysisCard';
-import { MegaphoneIcon, LoadingSpinner, UserGroupIcon, ChartBarIcon, MapIcon, SparklesIcon, WarningIcon, CpuChipIcon, ArrowsUpDownIcon, DatabaseIcon, PencilIcon, PhotoIcon, ChatBubbleBottomCenterTextIcon, RocketLaunchIcon } from './Icons';
-import { generateMarketingStrategy, generateTacticalCampaign } from '../services/geminiService';
-import { MarketingStrategyResult, TacticalCampaignResult } from '../types';
+import { MegaphoneIcon, LoadingSpinner, UserGroupIcon, ChartBarIcon, MapIcon, SparklesIcon, WarningIcon, CpuChipIcon, ArrowsUpDownIcon, DatabaseIcon, PencilIcon, PhotoIcon, ChatBubbleBottomCenterTextIcon, RocketLaunchIcon, CalendarIcon, ClockIcon } from './Icons';
+import { generateMarketingStrategy, generateTacticalCampaign, generateCronoposting } from '../services/geminiService';
+import { MarketingStrategyResult, TacticalCampaignResult, CronopostingResult } from '../types';
 
 const MarketingStrategy: React.FC = () => {
     // Initial State Pre-filled with Simulation Data for John Jairo Berrío
@@ -72,10 +72,17 @@ const MarketingStrategy: React.FC = () => {
     });
     const [error, setError] = useState<string | null>(null);
 
-    // --- New States for Tactical Interaction ---
+    // --- New States for Tactical Interaction & Cronoposting ---
     const [selectedAvatarId, setSelectedAvatarId] = useState<number | null>(null);
     const [isGeneratingTactics, setIsGeneratingTactics] = useState(false);
     const [tacticalPlan, setTacticalPlan] = useState<TacticalCampaignResult | null>(null);
+    
+    // Cronoposting State
+    const [isGeneratingCronoposting, setIsGeneratingCronoposting] = useState(false);
+    const [cronopostingResult, setCronopostingResult] = useState<CronopostingResult | null>(null);
+    const [cronoDuration, setCronoDuration] = useState('1 mes');
+    const [cronoStartDate, setCronoStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [cronoGoal, setCronoGoal] = useState('Incrementar reconocimiento de marca en un 20%');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -88,6 +95,7 @@ const MarketingStrategy: React.FC = () => {
         setError(null);
         setStrategy(null);
         setTacticalPlan(null);
+        setCronopostingResult(null);
         setSelectedAvatarId(null);
 
         try {
@@ -110,6 +118,7 @@ const MarketingStrategy: React.FC = () => {
 
         setIsGeneratingTactics(true);
         setTacticalPlan(null);
+        setCronopostingResult(null); // Clear previous crono when changing tactics
         setError(null);
 
         try {
@@ -127,11 +136,37 @@ const MarketingStrategy: React.FC = () => {
         }
     };
 
+    const handleGenerateCronoposting = async () => {
+        if (!tacticalPlan || !strategy) return;
+        
+        setIsGeneratingCronoposting(true);
+        setCronopostingResult(null);
+        setError(null);
+
+        // Enhance context with the specific tactical plan details
+        const enhancedContext = `
+            ${context}
+            Perfil Táctico Seleccionado:
+            Justificación: ${tacticalPlan.technicalJustification}
+            Adaptación Demográfica: ${tacticalPlan.demographicAdaptation}
+            Foco Geográfico: ${tacticalPlan.geographicFocus.join(', ')}
+        `;
+
+        try {
+            const result = await generateCronoposting(cronoDuration, cronoStartDate, cronoGoal, enhancedContext);
+            setCronopostingResult(result);
+        } catch (err: any) {
+            setError(err.message || "Error al generar el cronograma.");
+        } finally {
+            setIsGeneratingCronoposting(false);
+        }
+    };
+
     return (
         <div className="space-y-8 animate-fade-in">
             <AnalysisCard
-                title="Estrategia de Campaña y Marketing Político"
-                explanation="Generación de pipeline estratégico, avatares de votantes y mensajes clave basados en inteligencia de datos."
+                title="Estrategia de Marketing Dinámico (Guerra Electoral)"
+                explanation="Generación de pipeline estratégico, avatares de votantes y matrices de contenido táctico con cronogramas inteligentes."
                 icon={<MegaphoneIcon />}
                 fullscreenable={false}
             >
@@ -306,6 +341,7 @@ const MarketingStrategy: React.FC = () => {
                                             onClick={() => {
                                                 setSelectedAvatarId(voter.id);
                                                 setTacticalPlan(null); // Reset plan when changing selection
+                                                setCronopostingResult(null);
                                             }}
                                             className={`snap-center min-w-[320px] bg-white border cursor-pointer transition-all duration-200 rounded-xl shadow-sm flex flex-col overflow-hidden relative group hover:-translate-y-1 hover:shadow-md
                                                 ${isSelected ? 'border-brand-primary ring-2 ring-brand-primary ring-offset-2' : 'border-gray-200 hover:border-gray-300'}
@@ -380,19 +416,39 @@ const MarketingStrategy: React.FC = () => {
                                     <h3 className="text-lg font-bold font-serif tracking-wide">CENTRO DE COMANDO TÁCTICO</h3>
                                 </div>
                                 <p className="text-sm text-blue-100 opacity-90 max-w-3xl">
-                                    Despliegue operativo personalizado para conectar el ángulo del candidato con el votante seleccionado.
+                                    Despliegue operativo personalizado para conectar el ángulo del candidato con el votante seleccionado con alto rigor técnico.
                                 </p>
                             </div>
 
                             <div className="p-8 space-y-8">
-                                {/* Technical Justification */}
-                                <div className="bg-gray-50 border-l-4 border-brand-primary p-5 rounded-r-lg">
-                                    <h4 className="text-xs font-bold text-brand-primary uppercase tracking-widest mb-2 flex items-center gap-2">
-                                        <CpuChipIcon className="w-4 h-4"/> Justificación Técnica
-                                    </h4>
-                                    <p className="text-sm text-gray-700 leading-relaxed text-justify">
-                                        {tacticalPlan.technicalJustification}
-                                    </p>
+                                {/* Technical Justification & Geographic Projection */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div className="bg-gray-50 border-l-4 border-brand-primary p-5 rounded-r-lg">
+                                        <h4 className="text-xs font-bold text-brand-primary uppercase tracking-widest mb-2 flex items-center gap-2">
+                                            <CpuChipIcon className="w-4 h-4"/> Justificación Técnica
+                                        </h4>
+                                        <p className="text-sm text-gray-700 leading-relaxed text-justify">
+                                            {tacticalPlan.technicalJustification}
+                                        </p>
+                                    </div>
+                                    <div className="bg-blue-50 border-l-4 border-blue-500 p-5 rounded-r-lg">
+                                        <h4 className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                            <MapIcon className="w-4 h-4"/> Proyección Geográfica (Zonas Objetivo)
+                                        </h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {tacticalPlan.geographicFocus?.map((zone, idx) => (
+                                                <span key={idx} className="px-3 py-1 bg-white border border-blue-200 rounded-full text-xs font-bold text-blue-700 shadow-sm">
+                                                    {zone}
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <h4 className="text-xs font-bold text-blue-600 uppercase tracking-widest mt-4 mb-2 flex items-center gap-2">
+                                            <UserGroupIcon className="w-4 h-4"/> Adaptación Demográfica
+                                        </h4>
+                                        <p className="text-xs text-gray-600 italic leading-relaxed">
+                                            "{tacticalPlan.demographicAdaptation}"
+                                        </p>
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -471,6 +527,106 @@ const MarketingStrategy: React.FC = () => {
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+
+                                {/* CRONOPOSTING GENERATOR SECTION */}
+                                <div className="mt-8 border-t-2 border-gray-100 pt-8">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <CalendarIcon className="w-6 h-6 text-brand-primary" />
+                                        <h3 className="text-lg font-bold font-serif text-gray-800">GENERADOR DE CRONOPOSTING (Contenidos Temporales)</h3>
+                                    </div>
+                                    
+                                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Duración</label>
+                                                <select 
+                                                    value={cronoDuration}
+                                                    onChange={(e) => setCronoDuration(e.target.value)}
+                                                    className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-primary"
+                                                >
+                                                    <option value="1 semana">1 Semana</option>
+                                                    <option value="2 semanas">2 Semanas</option>
+                                                    <option value="1 mes">1 Mes</option>
+                                                    <option value="2 meses">2 Meses</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fecha de Inicio (X)</label>
+                                                <input 
+                                                    type="date" 
+                                                    value={cronoStartDate}
+                                                    onChange={(e) => setCronoStartDate(e.target.value)}
+                                                    className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-primary"
+                                                />
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Objetivo Estratégico (Y)</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={cronoGoal}
+                                                    onChange={(e) => setCronoGoal(e.target.value)}
+                                                    placeholder="Ej: Aumentar reconocimiento en jóvenes en un 15%"
+                                                    className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-primary"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="mt-4 flex justify-end">
+                                            <button 
+                                                onClick={handleGenerateCronoposting}
+                                                disabled={isGeneratingCronoposting}
+                                                className="bg-brand-secondary hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 text-sm shadow-md"
+                                            >
+                                                {isGeneratingCronoposting ? <LoadingSpinner className="w-4 h-4"/> : <ClockIcon className="w-4 h-4"/>}
+                                                {isGeneratingCronoposting ? 'Generando Calendario...' : 'Proyectar Cronoposting'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Cronoposting Results */}
+                                    {cronopostingResult && (
+                                        <div className="mt-6 animate-fade-in-up">
+                                            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                                                <div className="bg-brand-secondary/10 p-4 border-b border-brand-secondary/20">
+                                                    <h4 className="text-sm font-bold text-brand-secondary uppercase tracking-widest">Plan Maestro de Contenidos</h4>
+                                                    <p className="text-xs text-gray-600 mt-1">{cronopostingResult.overview}</p>
+                                                </div>
+                                                <div className="overflow-x-auto">
+                                                    <table className="min-w-full text-sm">
+                                                        <thead className="bg-gray-50 text-xs text-gray-500 uppercase font-bold">
+                                                            <tr>
+                                                                <th className="px-4 py-3 text-left">Fecha</th>
+                                                                <th className="px-4 py-3 text-left">Plataforma</th>
+                                                                <th className="px-4 py-3 text-left">Formato</th>
+                                                                <th className="px-4 py-3 text-left">Tema/Hook</th>
+                                                                <th className="px-4 py-3 text-left">Micro-Objetivo</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-gray-100">
+                                                            {cronopostingResult.schedule.map((entry, idx) => (
+                                                                <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                                                                    <td className="px-4 py-3 font-mono text-xs text-gray-600 font-bold whitespace-nowrap">{entry.date}</td>
+                                                                    <td className="px-4 py-3">
+                                                                        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                                                                            entry.platform.toLowerCase().includes('instagram') ? 'bg-pink-100 text-pink-600' :
+                                                                            entry.platform.toLowerCase().includes('tiktok') ? 'bg-gray-200 text-gray-800' :
+                                                                            entry.platform.toLowerCase().includes('twitter') || entry.platform.toLowerCase().includes('x') ? 'bg-blue-100 text-blue-600' :
+                                                                            'bg-green-100 text-green-600'
+                                                                        }`}>
+                                                                            {entry.platform}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-xs text-gray-600">{entry.format}</td>
+                                                                    <td className="px-4 py-3 text-gray-800 font-medium">{entry.contentTheme}</td>
+                                                                    <td className="px-4 py-3 text-xs text-gray-500 italic">{entry.objective}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

@@ -241,11 +241,27 @@ export interface TacticalContent {
 
 export interface TacticalCampaignResult {
     technicalJustification: string; // Why this candidate angle works for this voter
+    geographicFocus: string[]; // NEW: Specific zones/barrios inferred from history
+    demographicAdaptation: string; // NEW: Specific speech/tone adaptation instructions
     slogans: string[];
     socialMediaPosts: TacticalContent[];
     whatsappMessage: string;
     speechFragment: string; // A hook for a speech
     groundEvents: string[]; // Specific street actions
+}
+
+// NEW: Cronoposting Types
+export interface CronopostingEntry {
+    date: string; // ISO Date or "Semana 1 - Lunes"
+    platform: string;
+    format: string; // Reel, Story, Static, Carousel
+    contentTheme: string;
+    objective: string; // The micro-goal of this post
+}
+
+export interface CronopostingResult {
+    overview: string;
+    schedule: CronopostingEntry[];
 }
 
 export interface CandidateProfileResult {
@@ -316,4 +332,11 @@ export interface CandidateComparisonResult {
     partyMetrics: PartyMetrics; // NEW: Breakdown of Logo vs Candidate votes
     candidates: CandidateAnalysis[]; 
     scenarios: ComparisonScenario[];
+}
+
+// AUTH TYPES
+export interface User {
+    username: string;
+    password?: string; // Only used during auth, not stored in state
+    role: 'admin' | 'user';
 }

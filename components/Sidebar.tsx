@@ -125,7 +125,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteDa
           Proyecciones de Riesgo
         </NavItem>
         <NavItem tabId="marketing" activeTab={activeTab} setActiveTab={setActiveTab} icon={<MegaphoneIcon />}>
-          Marketing de Guerra
+          Marketing Dinámico
         </NavItem>
         <NavItem tabId="candidate_intelligence" activeTab={activeTab} setActiveTab={setActiveTab} icon={<FingerPrintIcon />}>
           Perfil 360° Candidato

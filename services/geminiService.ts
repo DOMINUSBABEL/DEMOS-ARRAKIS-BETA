@@ -1,9 +1,11 @@
+
 import { GoogleGenAI, Type, GenerateContentResponse, Schema } from "@google/genai";
-import { CandidateRanking, ProbabilityResult, SimulationResults, HistoricalDataset, PartyAnalysisData, PartyData, ListAnalysisAIResponse, ProcessedElectionData, MarketingStrategyResult, CandidateProfileResult, CandidateComparisonResult, TacticalCampaignResult } from '../types';
+import { CandidateRanking, ProbabilityResult, SimulationResults, HistoricalDataset, PartyAnalysisData, PartyData, ListAnalysisAIResponse, ProcessedElectionData, MarketingStrategyResult, CandidateProfileResult, CandidateComparisonResult, TacticalCampaignResult, CronopostingResult } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const model = 'gemini-3-pro-preview';
 
+// ... (Existing exports: classifyPartiesIdeology, getAIAnalysis, etc. - keep them unchanged) ...
 export const classifyPartiesIdeology = async (partyNames: string[]): Promise<Record<string, string>> => {
     const prompt = `
     Clasifica los siguientes partidos políticos de Colombia en una de estas categorías ideológicas:
@@ -317,7 +319,7 @@ export const generateMarketingStrategy = async (
     context: string
 ): Promise<MarketingStrategyResult> => {
     const prompt = `
-    Genera una estrategia de "Marketing de Guerra Electoral" para: ${targetName} (${targetType}).
+    Genera una estrategia de "Marketing Dinámico" para: ${targetName} (${targetType}).
     Contexto: ${context}
 
     TU MISIÓN ES DEFINIR LA ESTRATEGIA EN 3 FASES Y CREAR UN MATCH PERFECTO ENTRE 10 AVATARES DE VOTANTES Y 10 ÁNGULOS DEL CANDIDATO.
@@ -415,9 +417,9 @@ export const generateTacticalCampaign = async (
     context: string
 ): Promise<TacticalCampaignResult> => {
     const prompt = `
-    ROL: Jefe de Campaña Estratégica Digital y de Campo.
+    ROL: Jefe de Campaña Estratégica Digital y de Campo con Especialización en Geografía Electoral.
     
-    TAREA: Diseñar una campaña táctica de micro-segmentación específica para conectar al CANDIDATO con el VOTANTE.
+    TAREA: Diseñar una campaña táctica de marketing dinámico para conectar al CANDIDATO con el VOTANTE.
     
     ENTRADA:
     - Candidato: ${candidateName}
@@ -425,13 +427,15 @@ export const generateTacticalCampaign = async (
     - Votante Objetivo: ${voterProfile}
     - Contexto General: ${context}
 
-    REQUISITOS:
-    1.  **Justificación Técnica (Technical Justification):** Explica en 2 párrafos técnicos y psicológicos por qué este votante Y conecta con este ángulo Z del candidato.
-    2.  **Slogans de Combate:** 3 lemas cortos y potentes específicos para este nicho.
-    3.  **Contenido Redes (Social Media Posts):** 2 posts detallados (Plataforma, Copy persuasivo, Prompt visual para imagen).
-    4.  **Mensajería Directa (WhatsApp):** Un mensaje corto, viralizable y cercano para cadenas de WhatsApp.
-    5.  **Fragmento de Discurso (Speech Hook):** Un párrafo de apertura para un discurso en el barrio/sector de este votante.
-    6.  **Acciones de Tierra (Ground Events):** 2 ideas concretas de eventos pequeños para este segmento.
+    REQUISITOS DE RIGOR TÉCNICO:
+    1.  **Justificación Técnica:** Explica en 2 párrafos técnicos por qué este votante conecta con este ángulo. Usa terminología de psicología política y neuromarketing.
+    2.  **Proyección Geográfica (Geographic Focus):** Basado en los perfiles demográficos típicos del contexto (ej: Medellín, Antioquia), infiere y lista 3 Zonas, Comunas o Barrios específicos donde históricamente reside este tipo de votante. Sé preciso (ej: "Comuna 13 - San Javier", "Barrio El Poblado").
+    3.  **Adaptación Demográfica (Demographic Adaptation):** Instrucción específica de cómo calibrar el discurso para este segmento. Define el tono, el vocabulario (slang, formal, técnico) y el ritmo.
+    4.  **Slogans de Combate:** 3 lemas cortos y potentes.
+    5.  **Contenido Redes:** 2 posts detallados.
+    6.  **Mensajería Directa:** Un mensaje para WhatsApp.
+    7.  **Hook de Discurso:** Apertura impactante.
+    8.  **Acciones de Tierra:** 2 eventos tácticos.
 
     FORMATO JSON ESTRICTO.
     `;
@@ -440,6 +444,8 @@ export const generateTacticalCampaign = async (
         type: Type.OBJECT,
         properties: {
             technicalJustification: { type: Type.STRING },
+            geographicFocus: { type: Type.ARRAY, items: { type: Type.STRING } },
+            demographicAdaptation: { type: Type.STRING },
             slogans: { type: Type.ARRAY, items: { type: Type.STRING } },
             socialMediaPosts: {
                 type: Type.ARRAY,
@@ -457,7 +463,7 @@ export const generateTacticalCampaign = async (
             speechFragment: { type: Type.STRING },
             groundEvents: { type: Type.ARRAY, items: { type: Type.STRING } }
         },
-        required: ['technicalJustification', 'slogans', 'socialMediaPosts', 'whatsappMessage', 'speechFragment', 'groundEvents']
+        required: ['technicalJustification', 'geographicFocus', 'demographicAdaptation', 'slogans', 'socialMediaPosts', 'whatsappMessage', 'speechFragment', 'groundEvents']
     };
 
     try {
@@ -476,11 +482,77 @@ export const generateTacticalCampaign = async (
     }
 };
 
+export const generateCronoposting = async (
+    duration: string,
+    startDate: string,
+    goal: string,
+    context: string
+): Promise<CronopostingResult> => {
+    const prompt = `
+    ROL: Estratega Senior de Contenidos Digitales y Community Manager Político.
+    
+    TAREA: Generar un cronograma de contenidos (Cronoposting) detallado y estratégico.
+    
+    PARÁMETROS:
+    - Duración: ${duration}
+    - Fecha de Inicio: ${startDate}
+    - Objetivo Estratégico (Fin Y): ${goal}
+    - Contexto del Perfil/Campaña: ${context}
+
+    INSTRUCCIONES:
+    1.  Calcula las fechas reales a partir de la fecha de inicio.
+    2.  Distribuye el contenido de manera estratégica para lograr el objetivo Y al final del periodo.
+    3.  Define plataformas variadas (Instagram, TikTok, Twitter/X, WhatsApp, Facebook).
+    4.  Incluye formatos específicos (Reel, Story, Carrusel, Tweet, Broadcast).
+    5.  Cada entrada debe tener un "Content Hook" (gancho) y un "Micro-Objetivo" diario.
+
+    FORMATO JSON ESTRICTO.
+    `;
+
+    const schema: Schema = {
+        type: Type.OBJECT,
+        properties: {
+            overview: { type: Type.STRING, description: "Resumen estratégico del plan de contenidos." },
+            schedule: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        date: { type: Type.STRING },
+                        platform: { type: Type.STRING },
+                        format: { type: Type.STRING },
+                        contentTheme: { type: Type.STRING },
+                        objective: { type: Type.STRING }
+                    },
+                    required: ['date', 'platform', 'format', 'contentTheme', 'objective']
+                }
+            }
+        },
+        required: ['overview', 'schedule']
+    };
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: schema
+            }
+        });
+        return JSON.parse(response.text || '{}');
+    } catch (error) {
+        console.error("Error generating cronoposting:", error);
+        throw new Error("No se pudo generar el cronoposting.");
+    }
+};
+
 export const generateCandidateProfile = async (
     candidateName: string,
     context: string,
     historicalData: { election: string; votes: number; party: string }[]
 ): Promise<CandidateProfileResult> => {
+    // ... (Existing generateCandidateProfile - no changes)
     const prompt = `
     ROL: Analista de Inteligencia Política y Electoral.
     OBJETIVO: Generar un perfil integral de un candidato político.
@@ -546,6 +618,7 @@ export const generateCandidateComparison = async (
     candidates: string[],
     context: string
 ): Promise<CandidateComparisonResult> => {
+    // ... (Existing generateCandidateComparison - no changes)
     const prompt = `
     ROL: Consultor Senior de Estrategia Electoral (War Games).
     OBJETIVO: Realizar una "Due Diligence" rigurosa de los siguientes candidatos: ${candidates.join(', ')}.

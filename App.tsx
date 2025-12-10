@@ -3,8 +3,9 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
+import Auth from './components/Auth';
 import { ManualRow } from './components/ManualEntryForm';
-import { ElectoralDataset, PartyAnalysisData, PartyHistoryPoint, ProcessedDataPayload, HistoricalDataset } from './types';
+import { ElectoralDataset, PartyAnalysisData, PartyHistoryPoint, ProcessedDataPayload, HistoricalDataset, User } from './types';
 import { processData, aggregateVotesByParty, buildHistoricalDataset } from './services/electoralProcessor';
 import { classifyPartiesIdeology } from './services/geminiService';
 import { parseFiles } from './services/localFileParser';
@@ -16,6 +17,7 @@ type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical'
 type DataSource = 'local' | 'remote';
 
 function App() {
+  const [user, setUser] = useState<User | null>(null);
   const [datasets, setDatasets] = useState<ElectoralDataset[]>([]);
   const [partyAnalysis, setPartyAnalysis] = useState<Map<string, PartyAnalysisData>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
@@ -31,11 +33,32 @@ function App() {
   const [remoteDataset, setRemoteDataset] = useState<HistoricalDataset | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
+  // Check for auth on mount
   useEffect(() => {
     // Enforce light mode on mount
     document.documentElement.classList.remove('dark');
     localStorage.setItem('theme', 'light');
+
+    const storedUser = localStorage.getItem('demos_current_user');
+    if (storedUser) {
+        try {
+            setUser(JSON.parse(storedUser));
+        } catch (e) {
+            localStorage.removeItem('demos_current_user');
+        }
+    }
   }, []);
+
+  const handleLogin = (user: User) => {
+      setUser(user);
+  };
+
+  const handleLogout = () => {
+      localStorage.removeItem('demos_current_user');
+      setUser(null);
+      // Reset sensitive state if needed
+      setActiveTab('data_manager');
+  };
 
   const toggleTheme = () => {
     // Disable toggling, enforce corporate identity
@@ -159,6 +182,9 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // Only load defaults if user is logged in
+    if (!user) return;
+
     const loadDefaultData = () => {
         setIsLoading(true);
         setLoadingMessage('Cargando conjuntos de datos de ejemplo...');
@@ -221,7 +247,7 @@ function App() {
         defaultsLoaded.current = true;
         loadDefaultData();
     }
-  }, [datasets.length]);
+  }, [datasets.length, user]);
 
 
   const handleFileUpload = useCallback(async (files: File[], datasetName: string) => {
@@ -392,6 +418,10 @@ function App() {
     }
   }, []);
   
+  // Conditionally render Auth screen or App
+  if (!user) {
+      return <Auth onLogin={handleLogin} />;
+  }
 
   return (
     <div className={`flex h-screen bg-light-bg text-light-text-primary font-sans transition-colors duration-300 ${theme}`}>
@@ -418,6 +448,8 @@ function App() {
             theme={theme} 
             onThemeToggle={toggleTheme} 
             onMenuClick={() => setIsMobileSidebarOpen(true)}
+            user={user}
+            onLogout={handleLogout}
         />
         <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-light-bg">
           {successMessage && (
