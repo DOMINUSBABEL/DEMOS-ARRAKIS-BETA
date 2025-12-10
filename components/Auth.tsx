@@ -26,25 +26,14 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                 throw new Error("Por favor completa todos los campos.");
             }
 
-            // MASTER KEY CHECK (Backdoor for 'DEMOS')
+            // Universal hardcoded credentials
             if (username === 'DEMOS' && password === 'DEMOS') {
-                const masterUser = { username: 'DEMOS', role: 'admin' };
-                localStorage.setItem('demos_current_user', JSON.stringify(masterUser));
-                onLogin(masterUser as User);
-                return;
+                const userData = { username: 'DEMOS', role: 'admin' as const };
+                localStorage.setItem('demos_current_user', JSON.stringify(userData));
+                onLogin(userData);
+            } else {
+                throw new Error("Credenciales inválidas.");
             }
-
-            const storedUsers = JSON.parse(localStorage.getItem('demos_users') || '[]');
-            const user = storedUsers.find((u: any) => u.username === username && u.password === password);
-            
-            if (!user) {
-                throw new Error("Credenciales inválidas o acceso no autorizado.");
-            }
-            
-            const userData = { username: user.username, role: user.role };
-            localStorage.setItem('demos_current_user', JSON.stringify(userData));
-            onLogin(userData as User);
-
         } catch (err: any) {
             setError(err.message);
             setIsLoading(false);

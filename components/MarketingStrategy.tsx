@@ -4,10 +4,9 @@ import AnalysisCard from './AnalysisCard';
 import { MegaphoneIcon, LoadingSpinner, UserGroupIcon, ChartBarIcon, MapIcon, SparklesIcon, WarningIcon, CpuChipIcon, ArrowsUpDownIcon, DatabaseIcon, PencilIcon, PhotoIcon, ChatBubbleBottomCenterTextIcon, RocketLaunchIcon, CalendarIcon, ClockIcon } from './Icons';
 import { generateMarketingStrategy, generateTacticalCampaign, generateCronoposting } from '../services/geminiService';
 import { MarketingStrategyResult, TacticalCampaignResult, CronopostingResult } from '../types';
-import AntioquiaHeatmap from './AntioquiaHeatmap'; // IMPORT HEATMAP
 
 const MarketingStrategy: React.FC = () => {
-    // ... (State initialization remains exactly the same) ...
+    // Initial State Pre-filled with Simulation Data for John Jairo Berrío
     const [targetName, setTargetName] = useState('John Jairo Berrío');
     const [targetType, setTargetType] = useState<'candidate' | 'party'>('candidate');
     const [context, setContext] = useState('Diputado de Antioquia (Centro Democrático). Base: Medellín, Bello, Norte del Valle de Aburrá. Enfoque: Seguridad y Obras.');
@@ -84,10 +83,7 @@ const MarketingStrategy: React.FC = () => {
     const [cronoDuration, setCronoDuration] = useState('1 mes');
     const [cronoStartDate, setCronoStartDate] = useState(new Date().toISOString().split('T')[0]);
     const [cronoGoal, setCronoGoal] = useState('Incrementar reconocimiento de marca en un 20%');
-    const [cronoIntensity, setCronoIntensity] = useState('Alta');
-    const [cronoTone, setCronoTone] = useState('Inspirador y Propositivo');
 
-    // ... (Handlers remain the same: handleSubmit, handleGenerateTactics, handleGenerateCronoposting) ...
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!targetName.trim() || !context.trim()) {
@@ -115,14 +111,14 @@ const MarketingStrategy: React.FC = () => {
     const handleGenerateTactics = async () => {
         if (!strategy || selectedAvatarId === null) return;
 
-        const voter = strategy.voterAvatars?.find(v => v.id === selectedAvatarId);
-        const candidate = strategy.candidateAvatars?.find(c => c.id === selectedAvatarId) || strategy.candidateAvatars?.[0];
+        const voter = strategy.voterAvatars.find(v => v.id === selectedAvatarId);
+        const candidate = strategy.candidateAvatars.find(c => c.id === selectedAvatarId) || strategy.candidateAvatars[0];
 
         if (!voter || !candidate) return;
 
         setIsGeneratingTactics(true);
         setTacticalPlan(null);
-        setCronopostingResult(null); 
+        setCronopostingResult(null); // Clear previous crono when changing tactics
         setError(null);
 
         try {
@@ -147,6 +143,7 @@ const MarketingStrategy: React.FC = () => {
         setCronopostingResult(null);
         setError(null);
 
+        // Enhance context with the specific tactical plan details
         const enhancedContext = `
             ${context}
             Perfil Táctico Seleccionado:
@@ -156,7 +153,7 @@ const MarketingStrategy: React.FC = () => {
         `;
 
         try {
-            const result = await generateCronoposting(cronoDuration, cronoStartDate, cronoGoal, enhancedContext, cronoIntensity, cronoTone);
+            const result = await generateCronoposting(cronoDuration, cronoStartDate, cronoGoal, enhancedContext);
             setCronopostingResult(result);
         } catch (err: any) {
             setError(err.message || "Error al generar el cronograma.");
@@ -167,7 +164,6 @@ const MarketingStrategy: React.FC = () => {
 
     return (
         <div className="space-y-8 animate-fade-in">
-            {/* ... (First part of the component: AnalysisCard, form, Strategy Summary) ... */}
             <AnalysisCard
                 title="Estrategia de Marketing Dinámico (Guerra Electoral)"
                 explanation="Generación de pipeline estratégico, avatares de votantes y matrices de contenido táctico con cronogramas inteligentes."
@@ -175,7 +171,6 @@ const MarketingStrategy: React.FC = () => {
                 fullscreenable={false}
             >
                 <form onSubmit={handleSubmit} className="p-6 grid grid-cols-1 gap-6 bg-white rounded-b-lg">
-                    {/* ... (Form Inputs) ... */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Nombre del Objetivo</label>
@@ -242,7 +237,7 @@ const MarketingStrategy: React.FC = () => {
 
             {strategy && (
                 <div className="space-y-8 animate-fade-in-up">
-                    {/* ... (Header Strategy Summary & Pipeline cards) ... */}
+                    {/* Header Strategy Summary - Corporate Style */}
                     <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-report-lg relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-2 h-full bg-brand-primary"></div>
                         <div className="flex flex-col md:flex-row justify-between items-start gap-6 relative z-10">
@@ -266,90 +261,78 @@ const MarketingStrategy: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* PIPELINE DISPLAY (With Safety Check) */}
-                    {strategy.pipeline ? (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {/* Phase 1 */}
-                            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative">
-                                <div className="absolute top-0 left-0 w-full h-1 bg-gray-400"></div>
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="p-2 bg-gray-100 rounded-lg text-gray-600">
-                                        <DatabaseIcon className="w-6 h-6" />
-                                    </div>
-                                    <h4 className="text-sm font-bold text-gray-700 uppercase tracking-widest">
-                                        Fase 1: Diagnóstico
-                                    </h4>
+                    {/* 3-Phase Pipeline - Corporate Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Phase 1 */}
+                        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gray-400"></div>
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-gray-100 rounded-lg text-gray-600">
+                                    <DatabaseIcon className="w-6 h-6" />
                                 </div>
-                                <ul className="space-y-4">
-                                    {strategy.pipeline.phase1_extraction?.map((item, i) => (
-                                        <li key={i} className="text-sm text-gray-600 flex items-start gap-3">
-                                            <span className="text-gray-400 font-bold text-xs mt-0.5">0{i+1}</span>
-                                            <span className="leading-snug">{item}</span>
-                                        </li>
-                                    ))}
-                                </ul>
+                                <h4 className="text-sm font-bold text-gray-700 uppercase tracking-widest">
+                                    Fase 1: Diagnóstico
+                                </h4>
                             </div>
-
-                            {/* Phase 2 */}
-                            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative">
-                                <div className="absolute top-0 left-0 w-full h-1 bg-brand-primary"></div>
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="p-2 bg-blue-50 rounded-lg text-brand-primary">
-                                        <MapIcon className="w-6 h-6" />
-                                    </div>
-                                    <h4 className="text-sm font-bold text-brand-primary uppercase tracking-widest">
-                                        Fase 2: Ejecución
-                                    </h4>
-                                </div>
-                                <ul className="space-y-4">
-                                    {strategy.pipeline.phase2_execution?.map((item, i) => (
-                                        <li key={i} className="text-sm text-gray-600 flex items-start gap-3">
-                                            <span className="text-blue-200 font-bold text-xs mt-0.5">0{i+1}</span>
-                                            <span className="leading-snug">{item}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-
-                            {/* Phase 3 */}
-                            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative">
-                                <div className="absolute top-0 left-0 w-full h-1 bg-brand-secondary"></div>
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="p-2 bg-red-50 rounded-lg text-brand-secondary">
-                                        <UserGroupIcon className="w-6 h-6" />
-                                    </div>
-                                    <h4 className="text-sm font-bold text-brand-secondary uppercase tracking-widest">
-                                        Fase 3: Conversión
-                                    </h4>
-                                </div>
-                                <ul className="space-y-4">
-                                    {strategy.pipeline.phase3_conversion?.map((item, i) => (
-                                        <li key={i} className="text-sm text-gray-600 flex items-start gap-3">
-                                            <span className="text-red-200 font-bold text-xs mt-0.5">0{i+1}</span>
-                                            <span className="leading-snug">{item}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                            <ul className="space-y-4">
+                                {strategy.pipeline.phase1_extraction.map((item, i) => (
+                                    <li key={i} className="text-sm text-gray-600 flex items-start gap-3">
+                                        <span className="text-gray-400 font-bold text-xs mt-0.5">0{i+1}</span>
+                                        <span className="leading-snug">{item}</span>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
-                    ) : (
-                        <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm">
-                            No se pudo generar el pipeline estratégico completo. Intente regenerar la estrategia.
+
+                        {/* Phase 2 */}
+                        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-brand-primary"></div>
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-blue-50 rounded-lg text-brand-primary">
+                                    <MapIcon className="w-6 h-6" />
+                                </div>
+                                <h4 className="text-sm font-bold text-brand-primary uppercase tracking-widest">
+                                    Fase 2: Ejecución
+                                </h4>
+                            </div>
+                            <ul className="space-y-4">
+                                {strategy.pipeline.phase2_execution.map((item, i) => (
+                                    <li key={i} className="text-sm text-gray-600 flex items-start gap-3">
+                                        <span className="text-blue-200 font-bold text-xs mt-0.5">0{i+1}</span>
+                                        <span className="leading-snug">{item}</span>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
-                    )}
+
+                        {/* Phase 3 */}
+                        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-brand-secondary"></div>
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-red-50 rounded-lg text-brand-secondary">
+                                    <UserGroupIcon className="w-6 h-6" />
+                                </div>
+                                <h4 className="text-sm font-bold text-brand-secondary uppercase tracking-widest">
+                                    Fase 3: Conversión
+                                </h4>
+                            </div>
+                            <ul className="space-y-4">
+                                {strategy.pipeline.phase3_conversion.map((item, i) => (
+                                    <li key={i} className="text-sm text-gray-600 flex items-start gap-3">
+                                        <span className="text-red-200 font-bold text-xs mt-0.5">0{i+1}</span>
+                                        <span className="leading-snug">{item}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
 
                     {/* Matrix 10x10 - Clean Layout with Interactions */}
                     <AnalysisCard title="Matriz de Conexión: Votante vs. Candidato" explanation="Selecciona una tarjeta para generar el despliegue táctico específico para ese micro-segmento." collapsible={false} icon={<ArrowsUpDownIcon />}>
                         <div className="p-6 bg-gray-50">
                             <div className="flex overflow-x-auto gap-6 pb-4 custom-scrollbar snap-x items-stretch">
-                                {strategy.voterAvatars?.map((voter, idx) => {
-                                    const candidateAvatar = strategy.candidateAvatars?.[idx] || strategy.candidateAvatars?.[0] || {
-                                        id: 0,
-                                        archetype: "N/A",
-                                        messaging_angle: "No disponible",
-                                        visual_style: "No disponible",
-                                        target_voter_ids: []
-                                    };
+                                {strategy.voterAvatars.map((voter, idx) => {
+                                    const candidateAvatar = strategy.candidateAvatars[idx] || strategy.candidateAvatars[0];
                                     const isSelected = selectedAvatarId === voter.id;
                                     
                                     return (
@@ -364,7 +347,6 @@ const MarketingStrategy: React.FC = () => {
                                                 ${isSelected ? 'border-brand-primary ring-2 ring-brand-primary ring-offset-2' : 'border-gray-200 hover:border-gray-300'}
                                             `}
                                         >
-                                            {/* ... (Card content) ... */}
                                             {isSelected && (
                                                 <div className="absolute top-2 right-2 bg-brand-primary text-white text-[9px] font-bold px-2 py-1 rounded-full uppercase tracking-wider z-10 shadow-sm animate-fade-in">
                                                     Seleccionado
@@ -441,61 +423,121 @@ const MarketingStrategy: React.FC = () => {
                             <div className="p-8 space-y-8">
                                 {/* Technical Justification & Geographic Projection */}
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div className="bg-gray-50 border-l-4 border-brand-primary p-5 rounded-r-lg">
+                                        <h4 className="text-xs font-bold text-brand-primary uppercase tracking-widest mb-2 flex items-center gap-2">
+                                            <CpuChipIcon className="w-4 h-4"/> Justificación Técnica
+                                        </h4>
+                                        <p className="text-sm text-gray-700 leading-relaxed text-justify">
+                                            {tacticalPlan.technicalJustification}
+                                        </p>
+                                    </div>
+                                    <div className="bg-blue-50 border-l-4 border-blue-500 p-5 rounded-r-lg">
+                                        <h4 className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                            <MapIcon className="w-4 h-4"/> Proyección Geográfica (Zonas Objetivo)
+                                        </h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {tacticalPlan.geographicFocus?.map((zone, idx) => (
+                                                <span key={idx} className="px-3 py-1 bg-white border border-blue-200 rounded-full text-xs font-bold text-blue-700 shadow-sm">
+                                                    {zone}
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <h4 className="text-xs font-bold text-blue-600 uppercase tracking-widest mt-4 mb-2 flex items-center gap-2">
+                                            <UserGroupIcon className="w-4 h-4"/> Adaptación Demográfica
+                                        </h4>
+                                        <p className="text-xs text-gray-600 italic leading-relaxed">
+                                            "{tacticalPlan.demographicAdaptation}"
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    {/* Column 1: Copywriting & Speech */}
                                     <div className="space-y-6">
-                                        <div className="bg-gray-50 border-l-4 border-brand-primary p-5 rounded-r-lg">
-                                            <h4 className="text-xs font-bold text-brand-primary uppercase tracking-widest mb-2 flex items-center gap-2">
-                                                <CpuChipIcon className="w-4 h-4"/> Justificación Técnica
+                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                <MegaphoneIcon className="w-4 h-4 text-red-500"/> Slogans de Combate
                                             </h4>
-                                            <p className="text-sm text-gray-700 leading-relaxed text-justify">
-                                                {tacticalPlan.technicalJustification}
+                                            <ul className="space-y-3">
+                                                {tacticalPlan.slogans.map((slogan, i) => (
+                                                    <li key={i} className="text-sm font-bold text-gray-800 bg-gray-50 p-3 rounded-lg border border-gray-100 italic">
+                                                        "{slogan}"
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+
+                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                <ChatBubbleBottomCenterTextIcon className="w-4 h-4 text-green-500"/> Hook de Discurso
+                                            </h4>
+                                            <p className="text-sm text-gray-600 leading-relaxed italic bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+                                                "{tacticalPlan.speechFragment}"
                                             </p>
                                         </div>
-                                        <div className="bg-blue-50 border-l-4 border-blue-500 p-5 rounded-r-lg">
-                                            <h4 className="text-xs font-bold text-blue-600 uppercase tracking-widest mt-0 mb-2 flex items-center gap-2">
-                                                <UserGroupIcon className="w-4 h-4"/> Adaptación Demográfica
+                                        
+                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                <MapIcon className="w-4 h-4 text-brand-primary"/> Acciones de Tierra
                                             </h4>
-                                            <p className="text-xs text-gray-600 italic leading-relaxed">
-                                                "{tacticalPlan.demographicAdaptation}"
-                                            </p>
+                                            <ul className="space-y-2 list-disc pl-5 text-sm text-gray-600">
+                                                {tacticalPlan.groundEvents.map((event, i) => (
+                                                    <li key={i}>{event}</li>
+                                                ))}
+                                            </ul>
                                         </div>
                                     </div>
 
-                                    {/* HEATMAP INTEGRATION */}
-                                    <div className="h-full min-h-[300px] border border-gray-200 rounded-xl overflow-hidden bg-gray-50">
-                                        <div className="bg-white p-2 border-b border-gray-200 flex justify-between items-center">
-                                            <h4 className="text-xs font-bold text-gray-600 uppercase tracking-widest flex items-center gap-2">
-                                                <MapIcon className="w-4 h-4"/> Geografía de Impacto
+                                    {/* Column 2: Digital Assets */}
+                                    <div className="space-y-6">
+                                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                            <PencilIcon className="w-4 h-4 text-blue-500"/> Activos Digitales
+                                        </h4>
+                                        
+                                        {/* Social Media Posts */}
+                                        {tacticalPlan.socialMediaPosts.map((post, i) => (
+                                            <div key={i} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                                                <div className="bg-gray-100 px-4 py-2 border-b border-gray-200 flex justify-between items-center">
+                                                    <span className="text-xs font-bold text-gray-600 uppercase">{post.platform}</span>
+                                                    <span className="text-[10px] text-gray-400 bg-white px-2 py-0.5 rounded border border-gray-200">Post #{i+1}</span>
+                                                </div>
+                                                <div className="p-4 space-y-3">
+                                                    <div>
+                                                        <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Copy</p>
+                                                        <p className="text-sm text-gray-800 whitespace-pre-line">{post.copy}</p>
+                                                    </div>
+                                                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                                        <p className="text-[10px] text-blue-400 uppercase font-bold mb-1 flex items-center gap-1">
+                                                            <PhotoIcon className="w-3 h-3"/> Prompt Visual (Imagen)
+                                                        </p>
+                                                        <p className="text-xs text-blue-800 italic">{post.visualPrompt}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        {/* WhatsApp Message */}
+                                        <div className="bg-green-50 border border-green-200 rounded-xl p-5 shadow-sm">
+                                            <h4 className="text-xs font-bold text-green-700 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                                Cadena de WhatsApp
                                             </h4>
-                                            <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">Objetivos Tácticos</span>
-                                        </div>
-                                        <div className="h-[300px] relative">
-                                            <AntioquiaHeatmap 
-                                                mode="tactical" 
-                                                tacticalFocus={tacticalPlan.geographicFocus} 
-                                            />
-                                        </div>
-                                        <div className="p-2 bg-white border-t border-gray-200">
-                                            <p className="text-[10px] text-gray-500 mb-1 font-bold">Zonas Clave:</p>
-                                            <div className="flex flex-wrap gap-2">
-                                                {tacticalPlan.geographicFocus?.map((zone, idx) => (
-                                                    <span key={idx} className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded text-[9px]">
-                                                        {zone}
-                                                    </span>
-                                                ))}
+                                            <div className="bg-white p-3 rounded-lg border border-green-100 shadow-sm">
+                                                <p className="text-sm text-gray-800 whitespace-pre-line">{tacticalPlan.whatsappMessage}</p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* ... (CRONOPOSTING GENERATOR SECTION remains exactly the same) ... */}
+                                {/* CRONOPOSTING GENERATOR SECTION */}
                                 <div className="mt-8 border-t-2 border-gray-100 pt-8">
                                     <div className="flex items-center gap-3 mb-6">
                                         <CalendarIcon className="w-6 h-6 text-brand-primary" />
-                                        <h3 className="text-lg font-bold font-serif text-gray-800">CENTRO DE CONTENIDOS & SOCIAL LISTENING</h3>
+                                        <h3 className="text-lg font-bold font-serif text-gray-800">GENERADOR DE CRONOPOSTING (Contenidos Temporales)</h3>
                                     </div>
                                     
                                     <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                                        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 items-end">
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                                             <div>
                                                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Duración</label>
                                                 <select 
@@ -510,7 +552,7 @@ const MarketingStrategy: React.FC = () => {
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Inicio (X)</label>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fecha de Inicio (X)</label>
                                                 <input 
                                                     type="date" 
                                                     value={cronoStartDate}
@@ -518,29 +560,7 @@ const MarketingStrategy: React.FC = () => {
                                                     className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-primary"
                                                 />
                                             </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Intensidad</label>
-                                                <select 
-                                                    value={cronoIntensity}
-                                                    onChange={(e) => setCronoIntensity(e.target.value)}
-                                                    className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-primary"
-                                                >
-                                                    <option value="Baja">Baja (Mantenimiento)</option>
-                                                    <option value="Media">Media (Crecimiento)</option>
-                                                    <option value="Alta">Alta (Ataque/Viral)</option>
-                                                </select>
-                                            </div>
-                                            <div className="lg:col-span-2">
-                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tono Narrativo</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={cronoTone}
-                                                    onChange={(e) => setCronoTone(e.target.value)}
-                                                    placeholder="Ej: Inspirador, Confrontativo, Institucional"
-                                                    className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm focus:ring-brand-primary"
-                                                />
-                                            </div>
-                                            <div className="md:col-span-4 lg:col-span-5">
+                                            <div className="md:col-span-2">
                                                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Objetivo Estratégico (Y)</label>
                                                 <input 
                                                     type="text" 
@@ -555,114 +575,54 @@ const MarketingStrategy: React.FC = () => {
                                             <button 
                                                 onClick={handleGenerateCronoposting}
                                                 disabled={isGeneratingCronoposting}
-                                                className="bg-brand-secondary hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 text-sm shadow-md"
+                                                className="bg-brand-secondary hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 text-sm shadow-md"
                                             >
                                                 {isGeneratingCronoposting ? <LoadingSpinner className="w-4 h-4"/> : <ClockIcon className="w-4 h-4"/>}
-                                                {isGeneratingCronoposting ? 'Simulando Tendencias y Calendario...' : 'Generar Plan Maestro'}
+                                                {isGeneratingCronoposting ? 'Generando Calendario...' : 'Proyectar Cronoposting'}
                                             </button>
                                         </div>
                                     </div>
 
                                     {/* Cronoposting Results */}
                                     {cronopostingResult && (
-                                        <div className="mt-8 animate-fade-in-up space-y-8">
-                                            
-                                            {/* TRENDS DASHBOARD */}
-                                            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 text-white">
-                                                <h4 className="text-sm font-bold text-brand-secondary uppercase tracking-widest mb-4 flex items-center gap-2">
-                                                    <SparklesIcon className="w-4 h-4" />
-                                                    Radar de Tendencias (Social Listening Simulado)
-                                                </h4>
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                    {cronopostingResult.detectedTrends.map((trend, idx) => (
-                                                        <div key={idx} className="bg-gray-800 p-4 rounded-lg border border-gray-700 relative overflow-hidden">
-                                                            <div className={`absolute top-0 right-0 p-1 px-2 text-[9px] font-bold uppercase rounded-bl-lg ${
-                                                                trend.volume === 'Alto' ? 'bg-red-500 text-white' : 'bg-gray-600 text-gray-300'
-                                                            }`}>
-                                                                Vol: {trend.volume}
-                                                            </div>
-                                                            <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Tendencia #{idx + 1}</p>
-                                                            <h5 className="text-lg font-bold text-white mb-2">"{trend.keyword}"</h5>
-                                                            <p className="text-xs text-gray-300 mb-2">{trend.context}</p>
-                                                            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
-                                                                trend.sentiment === 'Negativo' ? 'border-red-500 text-red-400 bg-red-500/10' : 
-                                                                trend.sentiment === 'Positivo' ? 'border-green-500 text-green-400 bg-green-500/10' : 
-                                                                'border-yellow-500 text-yellow-400 bg-yellow-500/10'
-                                                            }`}>
-                                                                Sentimiento: {trend.sentiment}
-                                                            </span>
-                                                        </div>
-                                                    ))}
+                                        <div className="mt-6 animate-fade-in-up">
+                                            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                                                <div className="bg-brand-secondary/10 p-4 border-b border-brand-secondary/20">
+                                                    <h4 className="text-sm font-bold text-brand-secondary uppercase tracking-widest">Plan Maestro de Contenidos</h4>
+                                                    <p className="text-xs text-gray-600 mt-1">{cronopostingResult.overview}</p>
                                                 </div>
-                                            </div>
-
-                                            {/* POST CARDS */}
-                                            <div className="space-y-4">
-                                                <div className="flex items-center justify-between">
-                                                    <h4 className="text-sm font-bold text-gray-700 uppercase tracking-widest">Calendario Táctico</h4>
-                                                    <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">Total: {cronopostingResult.schedule.length} piezas</span>
-                                                </div>
-                                                
-                                                <div className="grid grid-cols-1 gap-6">
-                                                    {cronopostingResult.schedule.map((entry, idx) => (
-                                                        <div key={idx} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col md:flex-row">
-                                                            {/* Sidebar Info */}
-                                                            <div className="bg-gray-50 p-4 md:w-48 border-b md:border-b-0 md:border-r border-gray-100 flex flex-col justify-between shrink-0">
-                                                                <div>
-                                                                    <div className="text-xs font-bold text-gray-400 uppercase mb-1">{entry.date}</div>
-                                                                    <div className="text-lg font-bold text-gray-800 mb-2">{entry.time}</div>
-                                                                    <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase mb-2 ${
-                                                                        entry.platform.toLowerCase().includes('instagram') ? 'bg-pink-100 text-pink-600' :
-                                                                        entry.platform.toLowerCase().includes('tiktok') ? 'bg-gray-800 text-white' :
-                                                                        entry.platform.toLowerCase().includes('twitter') || entry.platform.toLowerCase().includes('x') ? 'bg-blue-100 text-blue-600' :
-                                                                        'bg-green-100 text-green-600'
-                                                                    }`}>
-                                                                        {entry.platform}
-                                                                    </span>
-                                                                    <div className="text-[10px] text-gray-500 font-mono bg-white border border-gray-200 px-2 py-1 rounded text-center">
-                                                                        {entry.format}
-                                                                    </div>
-                                                                </div>
-                                                                <div className="mt-4 pt-4 border-t border-gray-200">
-                                                                    <p className="text-[9px] text-gray-400 uppercase font-bold mb-1">Objetivo</p>
-                                                                    <p className="text-xs text-gray-600 leading-tight">{entry.objective}</p>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Main Content */}
-                                                            <div className="p-5 flex-grow">
-                                                                <div className="mb-4">
-                                                                    <h5 className="text-md font-bold text-brand-primary mb-2 font-serif">{entry.headline}</h5>
-                                                                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-3">
-                                                                        <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Copy Sugerido</p>
-                                                                        <p className="text-sm text-gray-800 whitespace-pre-line font-sans">{entry.copy}</p>
-                                                                        <div className="mt-2 text-xs text-blue-600 font-medium">
-                                                                            {entry.hashtags.map(tag => `${tag} `)}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                    <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100">
-                                                                        <p className="text-[10px] text-blue-400 uppercase font-bold mb-1 flex items-center gap-1">
-                                                                            <PhotoIcon className="w-3 h-3"/> Instrucción Visual
-                                                                        </p>
-                                                                        <p className="text-xs text-blue-800 italic">{entry.visualCue}</p>
-                                                                    </div>
-                                                                    <div className="bg-purple-50/50 p-3 rounded-lg border border-purple-100">
-                                                                        <p className="text-[10px] text-purple-400 uppercase font-bold mb-1 flex items-center gap-1">
-                                                                            <SparklesIcon className="w-3 h-3"/> Listening Trigger
-                                                                        </p>
-                                                                        <p className="text-xs text-purple-800">
-                                                                            Monitorear: <strong>"{entry.listeningFocus}"</strong>
-                                                                            <br/>
-                                                                            Meta Emocional: {entry.sentimentTarget}
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
+                                                <div className="overflow-x-auto">
+                                                    <table className="min-w-full text-sm">
+                                                        <thead className="bg-gray-50 text-xs text-gray-500 uppercase font-bold">
+                                                            <tr>
+                                                                <th className="px-4 py-3 text-left">Fecha</th>
+                                                                <th className="px-4 py-3 text-left">Plataforma</th>
+                                                                <th className="px-4 py-3 text-left">Formato</th>
+                                                                <th className="px-4 py-3 text-left">Tema/Hook</th>
+                                                                <th className="px-4 py-3 text-left">Micro-Objetivo</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-gray-100">
+                                                            {cronopostingResult.schedule.map((entry, idx) => (
+                                                                <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                                                                    <td className="px-4 py-3 font-mono text-xs text-gray-600 font-bold whitespace-nowrap">{entry.date}</td>
+                                                                    <td className="px-4 py-3">
+                                                                        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                                                                            entry.platform.toLowerCase().includes('instagram') ? 'bg-pink-100 text-pink-600' :
+                                                                            entry.platform.toLowerCase().includes('tiktok') ? 'bg-gray-200 text-gray-800' :
+                                                                            entry.platform.toLowerCase().includes('twitter') || entry.platform.toLowerCase().includes('x') ? 'bg-blue-100 text-blue-600' :
+                                                                            'bg-green-100 text-green-600'
+                                                                        }`}>
+                                                                            {entry.platform}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-xs text-gray-600">{entry.format}</td>
+                                                                    <td className="px-4 py-3 text-gray-800 font-medium">{entry.contentTheme}</td>
+                                                                    <td className="px-4 py-3 text-xs text-gray-500 italic">{entry.objective}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
                                                 </div>
                                             </div>
                                         </div>
@@ -674,7 +634,7 @@ const MarketingStrategy: React.FC = () => {
 
                     {/* KPIs Footer */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {strategy.kpis?.map((kpi, i) => (
+                        {strategy.kpis.map((kpi, i) => (
                             <div key={i} className="bg-white border border-gray-200 p-5 rounded-lg text-center shadow-sm">
                                 <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-2 font-bold">{kpi.metric}</p>
                                 <p className="text-xl font-bold text-brand-primary font-mono">{kpi.target}</p>

@@ -23,6 +23,7 @@ import HeatmapAnalysis from './HeatmapAnalysis';
 import MarketingStrategy from './MarketingStrategy';
 import CandidateIntelligence from './CandidateIntelligence';
 import ComparativeAnalysis from './ComparativeAnalysis';
+import WarRoom from './WarRoom'; // UPDATED IMPORT
 import { 
   simulateVoteFragmentation,
   applyGovernmentOppositionFactor,
@@ -36,7 +37,7 @@ import { ElectoralDataset, PartyAnalysisData, HistoricalDataset } from '../types
 import { GenerateContentResponse } from '@google/genai';
 
 
-type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap' | 'marketing' | 'candidate_intelligence' | 'comparative_analysis';
+type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap' | 'marketing' | 'candidate_intelligence' | 'comparative_analysis' | 'agent_center'; // ADD NEW TAB
 type DataSource = 'local' | 'remote';
 
 interface DashboardProps {
@@ -56,6 +57,8 @@ interface DashboardProps {
   setDataSource: (source: DataSource) => void;
   remoteDataset: HistoricalDataset | null;
 }
+
+// ... (Rest of the component code remains the same until switch(activeTab)) ...
 
 const ExportMenu: React.FC<{ onPdf: () => void; onXlsx: () => void }> = ({ onPdf, onXlsx }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -145,7 +148,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, [datasets, selectedDatasetId, dataSource, remoteDataset]);
 
 
-  // ... (rest of the component logic remains the same) ...
   const baseRanking = activeDataset?.baseRanking ?? [];
   const initialPartyData = activeDataset?.partyData ?? [];
   const invalidVoteCounts = activeDataset?.invalidVoteCounts ?? { blankVotes: 0, nullVotes: 0 };
@@ -271,7 +273,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, []);
 
   const renderContent = () => {
-    if (noDataLoaded && activeTab !== 'data_manager' && activeTab !== 'methodology' && activeTab !== 'marketing' && activeTab !== 'candidate_intelligence' && activeTab !== 'comparative_analysis') {
+    if (noDataLoaded && activeTab !== 'data_manager' && activeTab !== 'methodology' && activeTab !== 'marketing' && activeTab !== 'candidate_intelligence' && activeTab !== 'comparative_analysis' && activeTab !== 'agent_center') {
         return (
             <div className="text-center py-10 bg-light-card dark:bg-dark-card rounded-lg mt-8 animate-fade-in-up">
                 <h2 className="text-xl font-semibold">Dashboard Vacío</h2>
@@ -327,7 +329,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <div>
                     <h2 className="text-2xl font-bold mb-4">Análisis de: <span className="text-brand-primary">{activeDataset.name}</span></h2>
                     
-                    {/* NEW: Total Voting Stats */}
+                    {/* NEW: Total Voting Stats - FIXED COLORS FOR LIGHT MODE */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         <div className="glass-panel p-4 rounded-lg border border-brand-primary/20 flex items-center justify-between group">
                             <div>
@@ -336,19 +338,19 @@ const Dashboard: React.FC<DashboardProps> = ({
                             </div>
                             <UserGroupIcon className="w-8 h-8 text-brand-primary/50 group-hover:text-brand-primary transition-colors" />
                         </div>
-                        <div className="glass-panel p-4 rounded-lg border border-white/5 flex items-center justify-between group">
+                        <div className="glass-panel p-4 rounded-lg border border-gray-200 flex items-center justify-between group">
                              <div>
                                 <p className="text-[10px] text-dark-text-secondary uppercase tracking-[0.2em] font-mono mb-1 group-hover:text-brand-glow transition-colors">Votos Válidos</p>
                                 <p className="text-2xl font-bold text-brand-glow font-mono">{totalValidVotes.toLocaleString('es-CO')}</p>
                             </div>
                             <ChartBarIcon className="w-8 h-8 text-brand-glow/50 group-hover:text-brand-glow transition-colors" />
                         </div>
-                        <div className="glass-panel p-4 rounded-lg border border-white/5 flex items-center justify-between group">
+                        <div className="glass-panel p-4 rounded-lg border border-gray-200 flex items-center justify-between group">
                              <div>
-                                <p className="text-[10px] text-dark-text-secondary uppercase tracking-[0.2em] font-mono mb-1 group-hover:text-gray-300 transition-colors">Votos No Válidos</p>
-                                <p className="text-2xl font-bold text-gray-400 font-mono">{(invalidVoteCounts.blankVotes + invalidVoteCounts.nullVotes).toLocaleString('es-CO')}</p>
+                                <p className="text-[10px] text-dark-text-secondary uppercase tracking-[0.2em] font-mono mb-1 group-hover:text-gray-500 transition-colors">Votos No Válidos</p>
+                                <p className="text-2xl font-bold text-gray-500 font-mono">{(invalidVoteCounts.blankVotes + invalidVoteCounts.nullVotes).toLocaleString('es-CO')}</p>
                             </div>
-                             <ScaleIcon className="w-8 h-8 text-gray-600 group-hover:text-gray-400 transition-colors" />
+                             <ScaleIcon className="w-8 h-8 text-gray-400 group-hover:text-gray-500 transition-colors" />
                         </div>
                     </div>
 
@@ -620,6 +622,9 @@ const Dashboard: React.FC<DashboardProps> = ({
         
       case 'comparative_analysis':
         return <ComparativeAnalysis />;
+
+      case 'agent_center':
+        return <WarRoom />;
 
       default:
         return null;

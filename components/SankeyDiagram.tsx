@@ -1,10 +1,30 @@
 
 import React, { useState, useMemo } from 'react';
 import { ResponsiveContainer, Sankey, Tooltip, Layer, Rectangle } from 'recharts';
-import { HistoricalDataset, PartyAnalysisData, SankeyData } from '../types';
+import { HistoricalDataset, PartyAnalysisData } from '../types';
 import { getVoteTransferAnalysis } from '../services/geminiService';
 import AnalysisCard from './AnalysisCard';
 import { LoadingSpinner, SparklesIcon, WarningIcon } from './Icons';
+
+interface SankeyNodePayload {
+    name: string;
+    x?: number;
+    y?: number;
+    dx?: number;
+    dy?: number;
+    value?: number;
+}
+
+interface SankeyLinkPayload {
+    source: number;
+    target: number;
+    value: number;
+}
+
+interface SankeyData {
+    nodes: SankeyNodePayload[];
+    links: SankeyLinkPayload[];
+}
 
 const SankeyDiagram: React.FC<{ datasets: HistoricalDataset[]; partyAnalysis: Map<string, PartyAnalysisData> }> = ({ datasets, partyAnalysis }) => {
     const [sourceDatasetId, setSourceDatasetId] = useState<string>('');

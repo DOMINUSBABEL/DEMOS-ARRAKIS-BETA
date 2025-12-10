@@ -170,23 +170,23 @@ const AttributeRow: React.FC<{
 
 // --- Avatar Component ---
 const AvatarPair: React.FC<{ voter: VoterAvatar, candidate: CandidateAvatar }> = ({ voter, candidate }) => (
-    <div className="min-w-[280px] bg-white/5 border border-white/10 rounded-lg p-3 hover:bg-white/10 transition-colors flex flex-col gap-3">
+    <div className="min-w-[280px] bg-white border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors flex flex-col gap-3">
         {/* Voter Side */}
-        <div className="pb-2 border-b border-white/10">
+        <div className="pb-2 border-b border-gray-100">
             <div className="flex items-center gap-2 mb-1">
-                <div className="p-1 rounded bg-blue-500/20 text-blue-400">
+                <div className="p-1 rounded bg-blue-500/10 text-blue-600">
                     <UserGroupIcon className="w-3 h-3" />
                 </div>
-                <span className="text-[10px] font-bold uppercase text-blue-400 tracking-wider">Votante #{voter.id}</span>
+                <span className="text-[10px] font-bold uppercase text-blue-600 tracking-wider">Votante #{voter.id}</span>
             </div>
-            <h5 className="text-xs font-bold text-white mb-1 truncate" title={voter.archetype}>{voter.archetype}</h5>
-            <p className="text-[10px] text-gray-400 leading-tight line-clamp-2" title={voter.demographics}>{voter.demographics}</p>
-            <p className="text-[10px] text-gray-500 mt-1 italic line-clamp-1">Dolor: {voter.painPoint}</p>
+            <h5 className="text-xs font-bold text-gray-800 mb-1 truncate" title={voter.archetype}>{voter.archetype}</h5>
+            <p className="text-[10px] text-gray-500 leading-tight line-clamp-2" title={voter.demographics}>{voter.demographics}</p>
+            <p className="text-[10px] text-gray-400 mt-1 italic line-clamp-1">Dolor: {voter.painPoint}</p>
         </div>
         
         {/* Connection Icon */}
         <div className="flex justify-center -my-4 relative z-10">
-            <div className="bg-brand-primary rounded-full p-1 border-2 border-[#15100d]">
+            <div className="bg-brand-primary rounded-full p-1 border-2 border-white shadow-sm">
                 <ArrowsUpDownIcon className="w-3 h-3 text-white" />
             </div>
         </div>
@@ -194,14 +194,14 @@ const AvatarPair: React.FC<{ voter: VoterAvatar, candidate: CandidateAvatar }> =
         {/* Candidate Side */}
         <div className="pt-2">
             <div className="flex items-center gap-2 mb-1">
-                <div className="p-1 rounded bg-brand-primary/20 text-brand-primary">
+                <div className="p-1 rounded bg-brand-primary/10 text-brand-primary">
                     <MegaphoneIcon className="w-3 h-3" />
                 </div>
                 <span className="text-[10px] font-bold uppercase text-brand-primary tracking-wider">Ángulo #{candidate.id}</span>
             </div>
-            <h5 className="text-xs font-bold text-white mb-1 truncate" title={candidate.archetype}>{candidate.archetype}</h5>
-            <p className="text-[10px] text-gray-300 leading-tight line-clamp-2" title={candidate.messaging_angle}>{candidate.messaging_angle}</p>
-            <p className="text-[10px] text-gray-500 mt-1 line-clamp-1">Estilo: {candidate.visual_style}</p>
+            <h5 className="text-xs font-bold text-gray-800 mb-1 truncate" title={candidate.archetype}>{candidate.archetype}</h5>
+            <p className="text-[10px] text-gray-500 leading-tight line-clamp-2" title={candidate.messaging_angle}>{candidate.messaging_angle}</p>
+            <p className="text-[10px] text-gray-400 mt-1 line-clamp-1">Estilo: {candidate.visual_style}</p>
         </div>
     </div>
 );
@@ -215,11 +215,11 @@ const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: num
             <header className="flex flex-col md:flex-row justify-between items-stretch border-b border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-gradient-to-r dark:from-black/40 dark:to-transparent">
                 <div className="p-6 flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                        <span className="px-2 py-0.5 bg-brand-primary/20 text-brand-primary border border-brand-primary/30 rounded text-[10px] font-bold uppercase tracking-widest">
+                        <span className="px-2 py-0.5 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded text-[10px] font-bold uppercase tracking-widest">
                             Candidato #{index + 1}
                         </span>
                         {candidate.probabilityScore > 80 && (
-                            <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
+                            <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
                                 <ScaleIcon className="w-3 h-3" /> Alta Probabilidad
                             </span>
                         )}
@@ -228,7 +228,7 @@ const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: num
                     
                     {/* Calculated Base Display */}
                     <div className="mt-3 flex items-center gap-4">
-                        <div className="px-3 py-1.5 bg-brand-primary/10 border border-brand-primary/30 rounded-lg">
+                        <div className="px-3 py-1.5 bg-brand-primary/5 border border-brand-primary/20 rounded-lg">
                             <span className="text-[10px] text-brand-primary uppercase font-bold tracking-wider block">Base Electoral Calculada (X)</span>
                             <span className="text-lg font-mono font-bold text-brand-primary">
                                 {candidate.calculatedBase ? candidate.calculatedBase.toLocaleString('es-CO') : 'N/A'}
@@ -326,27 +326,27 @@ const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: num
 
             {/* Strategy Pipeline Section */}
             {candidate.pipeline && (
-                <div className="p-6 border-t border-white/10 bg-black/30">
-                    <h5 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                <div className="p-6 border-t border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30">
+                    <h5 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                         <ChartBarIcon className="w-4 h-4" />
                         Pipeline Estratégico (3 Fases)
                     </h5>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="p-3 bg-blue-900/10 border border-blue-500/20 rounded-lg">
-                            <h6 className="text-[10px] font-bold text-blue-400 uppercase mb-2">1. Extracción & Diagnóstico</h6>
-                            <ul className="text-xs text-gray-400 space-y-1 list-disc pl-4">
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h6 className="text-[10px] font-bold text-blue-600 uppercase mb-2">1. Extracción & Diagnóstico</h6>
+                            <ul className="text-xs text-gray-600 space-y-1 list-disc pl-4">
                                 {candidate.pipeline.phase1_extraction.slice(0,3).map((item, i) => <li key={i}>{item}</li>)}
                             </ul>
                         </div>
-                        <div className="p-3 bg-purple-900/10 border border-purple-500/20 rounded-lg">
-                            <h6 className="text-[10px] font-bold text-purple-400 uppercase mb-2">2. Ejecución de Precisión</h6>
-                            <ul className="text-xs text-gray-400 space-y-1 list-disc pl-4">
+                        <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                            <h6 className="text-[10px] font-bold text-purple-600 uppercase mb-2">2. Ejecución de Precisión</h6>
+                            <ul className="text-xs text-gray-600 space-y-1 list-disc pl-4">
                                 {candidate.pipeline.phase2_execution.slice(0,3).map((item, i) => <li key={i}>{item}</li>)}
                             </ul>
                         </div>
-                        <div className="p-3 bg-green-900/10 border border-green-500/20 rounded-lg">
-                            <h6 className="text-[10px] font-bold text-green-400 uppercase mb-2">3. Conexión & Conversión</h6>
-                            <ul className="text-xs text-gray-400 space-y-1 list-disc pl-4">
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <h6 className="text-[10px] font-bold text-green-600 uppercase mb-2">3. Conexión & Conversión</h6>
+                            <ul className="text-xs text-gray-600 space-y-1 list-disc pl-4">
                                 {candidate.pipeline.phase3_conversion.slice(0,3).map((item, i) => <li key={i}>{item}</li>)}
                             </ul>
                         </div>
@@ -356,7 +356,7 @@ const DetailedCandidateCard: React.FC<{ candidate: CandidateAnalysis; index: num
 
             {/* Voter Avatars Section - Horizontal Scroll */}
             {candidate.voterAvatars && candidate.voterAvatars.length > 0 && (
-                <div className="p-6 border-t border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/20">
+                <div className="p-6 border-t border-gray-200 dark:border-white/10 bg-white dark:bg-black/20">
                     <div className="flex justify-between items-center mb-4">
                         <h5 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
                             <UserGroupIcon className="w-4 h-4" />
@@ -409,16 +409,16 @@ const ScenarioChart: React.FC<{ scenarios: ComparisonScenario[], visibleCandidat
     });
 
     return (
-        <div className="h-[500px] w-full bg-black/20 p-4 rounded-xl border border-white/5">
+        <div className="h-[500px] w-full bg-white dark:bg-black/20 p-4 rounded-xl border border-gray-200 dark:border-white/5">
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                     data={data}
                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                 >
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                     <XAxis 
                         dataKey="name" 
-                        stroke="#9ca3af" 
+                        stroke="#6b7280" 
                         tick={{fontSize: 11, fontWeight: 'bold'}} 
                         axisLine={false} 
                         tickLine={false} 
@@ -431,8 +431,8 @@ const ScenarioChart: React.FC<{ scenarios: ComparisonScenario[], visibleCandidat
                         axisLine={false} 
                         tickLine={false}
                     />
-                    <Tooltip content={<CustomScenarioTooltip />} cursor={{fill: 'rgba(255,255,255,0.03)'}} />
-                    <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px', color: '#9ca3af' }} />
+                    <Tooltip content={<CustomScenarioTooltip />} cursor={{fill: 'rgba(0,0,0,0.03)'}} />
+                    <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px', color: '#6b7280' }} />
                     {activeCandidates.map((candidate, idx) => (
                         <Bar 
                             key={candidate} 
@@ -444,7 +444,7 @@ const ScenarioChart: React.FC<{ scenarios: ComparisonScenario[], visibleCandidat
                             maxBarSize={60}
                         />
                     ))}
-                    <Bar dataKey="indecisos" fill="#4b5563" name="Votos en Disputa" radius={[2, 2, 0, 0]} fillOpacity={0.3} maxBarSize={60} />
+                    <Bar dataKey="indecisos" fill="#9ca3af" name="Votos en Disputa" radius={[2, 2, 0, 0]} fillOpacity={0.3} maxBarSize={60} />
                 </BarChart>
             </ResponsiveContainer>
         </div>
@@ -485,15 +485,15 @@ const DetailedScenarioBreakdown: React.FC<{ scenarios: ComparisonScenario[], met
                 const height = Math.max(400, data.length * 35);
 
                 return (
-                    <div key={sIdx} className="bg-black/20 p-6 rounded-xl border border-white/5">
-                        <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
+                    <div key={sIdx} className="bg-white dark:bg-black/20 p-6 rounded-xl border border-gray-200 dark:border-white/5">
+                        <div className="flex justify-between items-center mb-6 border-b border-gray-100 dark:border-white/5 pb-4">
                             <div>
-                                <h4 className="text-lg font-bold text-white uppercase tracking-widest">{scenario.name}</h4>
-                                <p className="text-xs text-gray-400 mt-1">{scenario.description}</p>
+                                <h4 className="text-lg font-bold text-brand-primary uppercase tracking-widest">{scenario.name}</h4>
+                                <p className="text-xs text-gray-500 mt-1">{scenario.description}</p>
                             </div>
                             <div className="text-right">
                                 <span className="text-xs font-bold text-brand-primary uppercase">Total Proyectado</span>
-                                <p className="text-xl font-bold text-white font-mono">
+                                <p className="text-xl font-bold text-gray-900 dark:text-white font-mono">
                                     {(data.reduce((sum, item) => sum + item.votes, 0)).toLocaleString('es-CO')}
                                 </p>
                             </div>
@@ -506,24 +506,24 @@ const DetailedScenarioBreakdown: React.FC<{ scenarios: ComparisonScenario[], met
                                     data={data}
                                     margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
                                 >
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
                                     <XAxis type="number" stroke="#6b7280" tick={{ fontSize: 10 }} tickFormatter={(val) => `${(val/1000).toFixed(0)}k`} />
                                     <YAxis 
                                         type="category" 
                                         dataKey="name" 
-                                        stroke="#9ca3af" 
+                                        stroke="#4b5563" 
                                         tick={{ fontSize: 11, width: 200 }} 
                                         width={180}
                                     />
                                     <Tooltip 
-                                        cursor={{fill: 'rgba(255,255,255,0.03)'}}
+                                        cursor={{fill: 'rgba(0,0,0,0.03)'}}
                                         content={({ active, payload }) => {
                                             if (active && payload && payload.length) {
                                                 const d = payload[0].payload;
                                                 return (
-                                                    <div className="bg-[#0f0a06]/95 border border-white/10 p-3 rounded-lg shadow-xl backdrop-blur-md">
-                                                        <p className="text-xs text-gray-400 mb-1 font-mono uppercase">{d.name}</p>
-                                                        <p className="text-lg font-bold text-white font-mono">{d.votes.toLocaleString('es-CO')} votos</p>
+                                                    <div className="bg-white border border-gray-200 p-3 rounded-lg shadow-xl">
+                                                        <p className="text-xs text-gray-500 mb-1 font-mono uppercase">{d.name}</p>
+                                                        <p className="text-lg font-bold text-gray-900 font-mono">{d.votes.toLocaleString('es-CO')} votos</p>
                                                     </div>
                                                 );
                                             }
@@ -562,7 +562,7 @@ const ListCompositionChart: React.FC<{ metrics: PartyMetrics }> = ({ metrics }) 
     const CustomPieTooltip = ({ active, payload }: any) => {
         if (active && payload && payload.length) {
             return (
-                <div className="bg-[#0f0a06]/90 border border-white/10 p-2 rounded shadow-lg backdrop-blur-md text-xs text-white">
+                <div className="bg-white border border-gray-200 p-2 rounded shadow-lg text-xs text-gray-800">
                     <p className="font-bold mb-1">{payload[0].name}</p>
                     <p>{payload[0].value.toLocaleString('es-CO')} votos</p>
                 </div>
@@ -572,8 +572,8 @@ const ListCompositionChart: React.FC<{ metrics: PartyMetrics }> = ({ metrics }) 
     };
 
     return (
-        <div className="bg-black/20 p-6 rounded-xl border border-white/10 mb-8">
-            <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+        <div className="bg-white dark:bg-black/20 p-6 rounded-xl border border-gray-200 dark:border-white/10 mb-8">
+            <h4 className="text-sm font-bold text-gray-700 dark:text-white uppercase tracking-widest mb-4 flex items-center gap-2">
                 <BuildingOfficeIcon className="w-4 h-4 text-brand-secondary" />
                 Composición de Votación (Lista vs. Logo)
             </h4>
@@ -601,19 +601,19 @@ const ListCompositionChart: React.FC<{ metrics: PartyMetrics }> = ({ metrics }) 
                     </ResponsiveContainer>
                 </div>
                 <div className="space-y-4">
-                    <div className="bg-white/5 p-4 rounded-lg border-l-4 border-blue-500">
-                        <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Total Votos Candidatos</p>
-                        <p className="text-2xl font-bold text-white font-mono">{metrics.candidateVotesSubtotal.toLocaleString('es-CO')}</p>
-                        <p className="text-xs text-blue-400 font-bold mt-1">{(100 - metrics.logoPercentage).toFixed(1)}% del total</p>
+                    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+                        <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Votos Candidatos</p>
+                        <p className="text-2xl font-bold text-gray-900 font-mono">{metrics.candidateVotesSubtotal.toLocaleString('es-CO')}</p>
+                        <p className="text-xs text-blue-600 font-bold mt-1">{(100 - metrics.logoPercentage).toFixed(1)}% del total</p>
                     </div>
-                    <div className="bg-white/5 p-4 rounded-lg border-l-4 border-gray-500">
-                        <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Votos Solo por Lista/Logo</p>
-                        <p className="text-2xl font-bold text-white font-mono">{metrics.logoVotes.toLocaleString('es-CO')}</p>
-                        <p className="text-xs text-gray-400 font-bold mt-1">{metrics.logoPercentage.toFixed(1)}% del total</p>
+                    <div className="bg-gray-50 border-l-4 border-gray-500 p-4 rounded-lg">
+                        <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Votos Solo por Lista/Logo</p>
+                        <p className="text-2xl font-bold text-gray-900 font-mono">{metrics.logoVotes.toLocaleString('es-CO')}</p>
+                        <p className="text-xs text-gray-600 font-bold mt-1">{metrics.logoPercentage.toFixed(1)}% del total</p>
                     </div>
-                    <div className="pt-3 border-t border-white/10 flex justify-between items-center">
+                    <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
                         <p className="text-xs text-gray-500 uppercase tracking-widest">Proyección Total Lista</p>
-                        <span className="text-xl text-white font-bold font-mono">{metrics.totalListVotes.toLocaleString('es-CO')}</span>
+                        <span className="text-xl text-gray-900 font-bold font-mono">{metrics.totalListVotes.toLocaleString('es-CO')}</span>
                     </div>
                 </div>
             </div>
@@ -658,12 +658,12 @@ const AttributeRadarChart: React.FC<{ candidates: CandidateAnalysis[], visibleCa
     });
 
     return (
-        <div className="h-[500px] w-full bg-black/20 p-4 rounded-xl border border-white/5">
-            <h4 className="text-sm font-bold text-center text-gray-400 uppercase tracking-widest mb-2">Radar de Capacidades Políticas</h4>
+        <div className="h-[500px] w-full bg-white dark:bg-black/20 p-4 rounded-xl border border-gray-200 dark:border-white/5">
+            <h4 className="text-sm font-bold text-center text-gray-500 uppercase tracking-widest mb-2">Radar de Capacidades Políticas</h4>
             <ResponsiveContainer width="100%" height="100%">
                 <RadarChart cx="50%" cy="50%" outerRadius="75%" data={chartData}>
-                    <PolarGrid stroke="#374151" strokeWidth={1} />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#9ca3af', fontSize: 11, fontWeight: 'bold' }} />
+                    <PolarGrid stroke="#e5e7eb" strokeWidth={1} />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 11, fontWeight: 'bold' }} />
                     <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
                     {activeCandidates.map((candidate, idx) => ( 
                         <Radar
@@ -836,26 +836,26 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                 <div className="p-4">
                     <div className="flex justify-between items-center mb-6">
                         <div>
-                            <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wide">Candidatos en Disputa</h4>
+                            <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Candidatos en Disputa</h4>
                             <p className="text-xs text-gray-500 mt-1">Ingresa los nombres manualmente o carga la lista de muestra.</p>
                         </div>
                         <div className="flex gap-2">
                             <div className="relative">
                                 <button 
                                     onClick={() => setIsSampleMenuOpen(!isSampleMenuOpen)}
-                                    className="px-3 py-1.5 bg-blue-900/30 text-blue-300 border border-blue-500/30 rounded-md text-xs font-bold hover:bg-blue-800/50 transition-colors flex items-center gap-2"
+                                    className="px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-md text-xs font-bold hover:bg-blue-100 transition-colors flex items-center gap-2"
                                 >
                                     <UserGroupIcon className="w-4 h-4" />
                                     Cargar Muestra
                                     <ChevronDownIcon className="w-3 h-3" />
                                 </button>
                                 {isSampleMenuOpen && (
-                                    <div className="absolute right-0 top-full mt-2 w-48 bg-[#1a1410] border border-white/10 rounded-md shadow-xl z-50 overflow-hidden">
+                                    <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-xl z-50 overflow-hidden">
                                         {Object.entries(SAMPLE_DATASETS).map(([key, data]) => (
                                             <button
                                                 key={key}
                                                 onClick={() => handleLoadSampleData(key as keyof typeof SAMPLE_DATASETS)}
-                                                className="block w-full text-left px-4 py-3 text-xs text-gray-300 hover:bg-white/10 hover:text-white border-b border-white/5 last:border-0 transition-colors"
+                                                className="block w-full text-left px-4 py-3 text-xs text-gray-700 hover:bg-gray-50 border-b border-gray-100 last:border-0 transition-colors"
                                             >
                                                 {data.label}
                                             </button>
@@ -866,7 +866,7 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                             {comparison && (
                                 <button 
                                     onClick={handleExportPdf}
-                                    className="px-3 py-1.5 bg-green-900/30 text-green-300 border border-green-500/30 rounded-md text-xs font-bold hover:bg-green-800/50 transition-colors flex items-center gap-2"
+                                    className="px-3 py-1.5 bg-green-50 text-green-600 border border-green-200 rounded-md text-xs font-bold hover:bg-green-100 transition-colors flex items-center gap-2"
                                 >
                                     <FilePdfIcon className="w-4 h-4" />
                                     Exportar Informe
@@ -876,30 +876,30 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                     </div>
 
                     <div className="mb-6">
-                        <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider font-mono">Contexto de la Simulación</label>
+                        <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider font-mono">Contexto de la Simulación</label>
                         <input
                             type="text"
                             value={context}
                             onChange={(e) => setContext(e.target.value)}
-                            className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-3 focus:ring-brand-primary focus:border-brand-primary transition-all"
+                            className="w-full bg-gray-50 border border-gray-300 rounded-md p-3 focus:ring-brand-primary focus:border-brand-primary transition-all text-gray-900"
                         />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6 max-h-[400px] overflow-y-auto pr-2">
                         {contenders.map((contender, index) => (
-                            <div key={index} className="flex gap-2 items-center bg-white/5 p-2 rounded-lg border border-white/5 hover:border-brand-primary/30 transition-colors">
+                            <div key={index} className="flex gap-2 items-center bg-gray-50 p-2 rounded-lg border border-gray-200 hover:border-brand-primary/50 transition-colors">
                                 <span className="text-xs font-mono text-gray-500 w-6 text-center">{index + 1}</span>
                                 <input 
                                     type="text" 
                                     value={contender}
                                     onChange={(e) => handleUpdateContender(index, e.target.value)}
                                     placeholder={`Candidato ${index + 1}`}
-                                    className="flex-1 bg-transparent border-none focus:ring-0 text-sm text-white placeholder-gray-600"
+                                    className="flex-1 bg-transparent border-none focus:ring-0 text-sm text-gray-900 placeholder-gray-400"
                                 />
                                 {contenders.length > 2 && (
                                     <button 
                                         onClick={() => handleRemoveContender(index)} 
-                                        className="text-gray-500 hover:text-red-400 p-1"
+                                        className="text-gray-400 hover:text-red-500 p-1"
                                         title="Eliminar"
                                     >
                                         <TrashIcon className="w-4 h-4"/>
@@ -910,7 +910,7 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                         {contenders.length < 25 && (
                             <button 
                                 onClick={handleAddContender}
-                                className="h-full min-h-[42px] border-2 border-dashed border-gray-600 rounded-lg text-gray-400 hover:text-brand-primary hover:border-brand-primary flex items-center justify-center gap-2 transition-colors"
+                                className="h-full min-h-[42px] border-2 border-dashed border-gray-300 rounded-lg text-gray-400 hover:text-brand-primary hover:border-brand-primary flex items-center justify-center gap-2 transition-colors"
                             >
                                 <PlusIcon className="w-4 h-4" />
                                 <span className="text-xs font-bold uppercase">Añadir</span>
@@ -918,7 +918,7 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                         )}
                     </div>
                     
-                    <div className="flex justify-end pt-4 border-t border-white/10">
+                    <div className="flex justify-end pt-4 border-t border-gray-100">
                         <button 
                             onClick={handleCompare}
                             disabled={isLoading || contenders.filter(c => c.trim()).length < 2}
@@ -935,22 +935,22 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                 <div className="mt-8 relative animate-fade-in" data-pdf-target="true">
                     
                     {/* VISIBILITY & FILTERING CONTROL PANEL */}
-                    <div className="mb-6 p-4 bg-black/40 rounded-xl border border-white/10 space-y-4">
-                        <div className="flex flex-col md:flex-row justify-between items-center gap-4 border-b border-white/5 pb-4">
-                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <div className="mb-6 p-4 bg-white rounded-xl border border-gray-200 shadow-sm space-y-4">
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-4 border-b border-gray-100 pb-4">
+                            <h4 className="text-xs font-bold text-gray-600 uppercase tracking-widest flex items-center gap-2">
                                 <FingerPrintIcon className="w-4 h-4" />
                                 Panel de Visualización (Filtrar Gráficas)
                             </h4>
                             <div className="flex flex-wrap gap-2">
                                 <button 
                                     onClick={() => setVisibleCandidates(new Set(comparison.candidates.map(c => c.name)))}
-                                    className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-xs text-white border border-white/10 transition-colors"
+                                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-gray-700 border border-gray-200 transition-colors"
                                 >
                                     Ver Todos
                                 </button>
                                 <button 
                                     onClick={() => setVisibleCandidates(new Set())}
-                                    className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-xs text-white border border-white/10 transition-colors"
+                                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-gray-700 border border-gray-200 transition-colors"
                                 >
                                     Ocultar Todos
                                 </button>
@@ -964,8 +964,8 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                                     onClick={() => toggleCandidateVisibility(c.name)}
                                     className={`px-3 py-1 rounded-full text-xs border transition-all ${
                                         visibleCandidates.has(c.name) 
-                                        ? 'bg-brand-primary/20 border-brand-primary text-brand-primary font-bold shadow-[0_0_10px_rgba(217,119,6,0.2)]' 
-                                        : 'bg-transparent border-white/10 text-gray-500 hover:text-gray-300'
+                                        ? 'bg-brand-primary/10 border-brand-primary text-brand-primary font-bold' 
+                                        : 'bg-transparent border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                                     }`}
                                 >
                                     {c.name.split(' ').slice(0, 2).join(' ')}...
@@ -976,13 +976,12 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
 
                     <div ref={resultsRef} data-pdf-target="true">
                         {/* LIST VERDICT SECTION */}
-                        <div className="mb-8 p-8 bg-gradient-to-r from-brand-primary/10 to-blue-900/20 rounded-xl border border-white/10 text-center shadow-lg relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
-                            <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-4 flex items-center justify-center gap-2">
-                                <CpuChipIcon className="w-5 h-5 text-brand-secondary" />
+                        <div className="mb-8 p-8 bg-gradient-to-r from-blue-50 to-white rounded-xl border border-blue-100 text-center shadow-md relative overflow-hidden">
+                            <h4 className="text-sm font-bold text-brand-primary uppercase tracking-widest mb-4 flex items-center justify-center gap-2">
+                                <CpuChipIcon className="w-5 h-5" />
                                 Veredicto de Inteligencia Artificial (Lista Completa)
                             </h4>
-                            <p className="text-base text-gray-200 leading-relaxed max-w-5xl mx-auto italic border-l-4 border-brand-primary pl-6 py-2 bg-black/20 rounded text-justify">
+                            <p className="text-base text-gray-700 leading-relaxed max-w-5xl mx-auto italic border-l-4 border-brand-primary pl-6 py-2 bg-white rounded text-justify shadow-sm">
                                 "{comparison.listVerdict}"
                             </p>
                         </div>
@@ -994,7 +993,7 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
                             {/* Scenario Chart */}
                             <div>
-                                <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <h4 className="text-sm font-bold text-gray-700 uppercase tracking-widest mb-4 flex items-center gap-2">
                                     <ChartBarIcon className="w-4 h-4 text-brand-secondary"/>
                                     Proyecciones de Votos (3 Escenarios)
                                 </h4>
@@ -1002,7 +1001,7 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                             </div>
                             {/* Radar Chart */}
                             <div>
-                                <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <h4 className="text-sm font-bold text-gray-700 uppercase tracking-widest mb-4 flex items-center gap-2">
                                     <FingerPrintIcon className="w-4 h-4 text-brand-secondary"/>
                                     Radar de Capacidades Políticas
                                 </h4>
@@ -1010,10 +1009,10 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                             </div>
                         </div>
 
-                        {/* DETAILED SCENARIO BREAKDOWN - GUARDED TO PREVENT CRASH */}
+                        {/* DETAILED SCENARIO BREAKDOWN */}
                         {comparison.partyMetrics && (
                             <>
-                                <h4 className="text-lg font-bold text-white uppercase tracking-widest mb-6 border-b border-white/10 pb-2 flex items-center gap-3">
+                                <h4 className="text-lg font-bold text-gray-800 uppercase tracking-widest mb-6 border-b border-gray-200 pb-2 flex items-center gap-3">
                                     <ChartBarIcon className="w-5 h-5 text-brand-secondary" />
                                     Desglose Detallado de Escenarios
                                 </h4>
@@ -1022,7 +1021,7 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                         )}
 
                         {/* SORTING & FILTERING TOOLBAR FOR LIST */}
-                        <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-black/30 p-4 rounded-lg border border-white/5 mb-6 mt-8 sticky top-0 z-20 backdrop-blur-md">
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-6 mt-8 sticky top-0 z-20 backdrop-blur-md">
                             <div className="flex items-center gap-4 w-full md:w-auto">
                                 <FunnelIcon className="w-5 h-5 text-brand-primary" />
                                 <div className="flex flex-col w-full">
@@ -1035,9 +1034,9 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                                             step="5" 
                                             value={minProbFilter} 
                                             onChange={(e) => setMinProbFilter(parseInt(e.target.value))}
-                                            className="w-32 h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-brand-primary"
+                                            className="w-32 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-primary"
                                         />
-                                        <span className="text-xs font-bold text-brand-glow w-8">{minProbFilter}%</span>
+                                        <span className="text-xs font-bold text-brand-primary w-8">{minProbFilter}%</span>
                                     </div>
                                 </div>
                             </div>
@@ -1048,7 +1047,7 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                                     <select 
                                         value={sortBy} 
                                         onChange={(e) => setSortBy(e.target.value as SortOption)}
-                                        className="bg-black/40 border border-white/10 text-white text-xs rounded-md p-2 focus:ring-brand-primary focus:border-brand-primary"
+                                        className="bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-md p-2 focus:ring-brand-primary focus:border-brand-primary"
                                     >
                                         <option value="probability">Probabilidad General</option>
                                         <option value="structure">Estructura y Maquinaria</option>
@@ -1062,21 +1061,21 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                                 </div>
                                 <button 
                                     onClick={() => setSortDesc(!sortDesc)}
-                                    className="p-2 mt-4 bg-white/5 hover:bg-white/10 rounded-md border border-white/10 transition-colors"
+                                    className="p-2 mt-4 bg-gray-100 hover:bg-gray-200 rounded-md border border-gray-200 transition-colors"
                                     title={sortDesc ? "Orden Descendente" : "Orden Ascendente"}
                                 >
-                                    <ArrowsUpDownIcon className={`w-4 h-4 text-gray-300 transition-transform ${sortDesc ? 'rotate-0' : 'rotate-180'}`} />
+                                    <ArrowsUpDownIcon className={`w-4 h-4 text-gray-600 transition-transform ${sortDesc ? 'rotate-0' : 'rotate-180'}`} />
                                 </button>
                             </div>
                         </div>
 
                         {/* DETAILED EXECUTIVE REPORT CARDS */}
-                        <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-6">
-                            <h4 className="text-lg font-bold text-white uppercase tracking-widest flex items-center gap-3">
+                        <div className="flex items-center justify-between border-b border-gray-200 pb-2 mb-6">
+                            <h4 className="text-lg font-bold text-gray-800 uppercase tracking-widest flex items-center gap-3">
                                 <ShareIcon className="w-5 h-5 text-brand-secondary" />
                                 Auditoría Técnica Individual
                             </h4>
-                            <div className="px-3 py-1 bg-white/5 rounded text-[10px] text-gray-400 font-mono border border-white/10 flex items-center gap-2">
+                            <div className="px-3 py-1 bg-gray-100 rounded text-[10px] text-gray-500 font-mono border border-gray-200 flex items-center gap-2">
                                 <ScaleIcon className="w-3 h-3" />
                                 Metodología de Ponderación Activa
                             </div>
@@ -1087,7 +1086,7 @@ const ComparativeAnalysis: React.FC<ComparativeAnalysisProps> = () => {
                                     <DetailedCandidateCard key={cand.name} candidate={cand} index={idx} />
                                 ))
                             ) : (
-                                <div className="text-center py-12 border-2 border-dashed border-gray-700 rounded-xl">
+                                <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-xl">
                                     <p className="text-gray-500">No hay candidatos que cumplan con los filtros actuales.</p>
                                 </div>
                             )}

@@ -250,34 +250,17 @@ export interface TacticalCampaignResult {
     groundEvents: string[]; // Specific street actions
 }
 
-// NEW: Advanced Cronoposting Types
-export interface SocialListeningTrend {
-    keyword: string;
-    sentiment: 'Negativo' | 'Positivo' | 'Neutro';
-    volume: 'Alto' | 'Medio' | 'Bajo';
-    context: string; // Why is this trending?
-}
-
+// NEW: Cronoposting Types
 export interface CronopostingEntry {
     date: string; // ISO Date or "Semana 1 - Lunes"
-    time: string; // Recommended posting time
     platform: string;
-    format: string; // Reel, Story, Static, Carousel, Tweet
+    format: string; // Reel, Story, Static, Carousel
     contentTheme: string;
     objective: string; // The micro-goal of this post
-    
-    // Enhanced Fields
-    headline: string; // Catchy title
-    copy: string; // The actual text body
-    hashtags: string[];
-    visualCue: string; // Instructions for the image/video
-    sentimentTarget: string; // Emotion to provoke (e.g. "Indignation", "Hope")
-    listeningFocus: string; // What keyword to monitor in comments
 }
 
 export interface CronopostingResult {
     overview: string;
-    detectedTrends: SocialListeningTrend[]; // Contextual trends driving the schedule
     schedule: CronopostingEntry[];
 }
 
@@ -351,30 +334,175 @@ export interface CandidateComparisonResult {
     scenarios: ComparisonScenario[];
 }
 
-// Sankey Diagram Types
-export interface SankeyNodePayload {
-    name: string;
-    x?: number;
-    y?: number;
-    dx?: number;
-    dy?: number;
-    value?: number;
-}
-
-export interface SankeyLinkPayload {
-    source: number;
-    target: number;
-    value: number;
-}
-
-export interface SankeyData {
-    nodes: SankeyNodePayload[];
-    links: SankeyLinkPayload[];
-}
-
 // AUTH TYPES
 export interface User {
     username: string;
     password?: string; // Only used during auth, not stored in state
     role: 'admin' | 'user';
+}
+
+// --- GENERAL STAFF AGENT TYPES (MILITARY GRADE) ---
+
+// G2: Intel
+export interface IntelReport {
+    chainOfThought: string[];
+    psychometric_profile: {
+        openness: string;
+        conscientiousness: string;
+        extraversion: string;
+        agreeableness: string;
+        neuroticism: string;
+        analysis: string;
+    };
+    sentiment_spectrum: {
+        rage: number;
+        vigilance: number;
+        ecstasy: number;
+        admiration: number;
+        terror: number;
+        amazement: number;
+        grief: number;
+        loathing: number;
+    };
+    narrative_triangulation: {
+        origin_point: string;
+        patient_zero: string;
+        vectors: string[];
+    }[];
+    ecosystem_scan: string;
+}
+
+// G3: Strategy
+export interface StrategyReport {
+    chainOfThought: string[];
+    war_game_scenario: {
+        red_team_move: string;
+        blue_team_counter: string;
+        projected_impact: string;
+    };
+    dynamic_vote_model: {
+        swing_voters_count: number;
+        hard_vote_count: number;
+        vulnerability_index: number; // 0-100
+    };
+    resource_allocation: {
+        channel: string;
+        budget_percent: number;
+        roi_projection: string;
+    }[];
+}
+
+// G4: Comms
+export interface CommsReport {
+    chainOfThought: string[];
+    viral_payloads: {
+        format: string; // Meme, Thread, Clip
+        hook: string;
+        psychological_trigger: string;
+        asset_prompt: string;
+    }[];
+    cronoposting_matrix: {
+        day: number;
+        time: string;
+        platform: string;
+        content_type: string;
+        objective: string;
+    }[];
+    micro_targeting_scripts: {
+        persona: string;
+        script: string;
+        tone: string;
+    }[];
+}
+
+// G5: Counter-Intel
+export interface CounterReport {
+    chainOfThought: string[];
+    threat_radar: {
+        threat: string;
+        severity: 'Critical' | 'High' | 'Medium' | 'Low';
+        origin: string; // Organic vs Inorganic
+        status: 'Active' | 'Dormant' | 'Neutralized';
+    }[];
+    inoculation_strategy: {
+        narrative_to_prebunk: string;
+        counter_message: string;
+        deployment_channel: string;
+    }[];
+    bot_network_analysis: string;
+}
+
+// G1: Ops (Field)
+export interface OpsReport {
+    chainOfThought: string[];
+    territorial_heatmap: {
+        zone_name: string;
+        heat_level: number; // 0-100
+        priority_action: string;
+    }[];
+    gotv_logistics: {
+        transport_units: number;
+        volunteers_needed: number;
+        routing_strategy: string;
+    };
+}
+
+// --- LEGACY AGENT TYPES ---
+
+export interface SocialListeningResponse {
+    chainOfThought: string[];
+    sentiment_breakdown: {
+        emotion: string;
+        percentage: number;
+        context: string;
+    }[];
+    narrative_virus: {
+        name: string;
+        velocity: 'High' | 'Medium' | 'Low';
+        description: string;
+    }[];
+    influencer_graph: {
+        name: string;
+        affinity: string;
+        influence_level: number;
+    }[];
+    strategic_intel: string;
+}
+
+export interface CampaignPlanResponse {
+    chainOfThought: string[];
+    cobalto_plan: {
+        zone: string;
+        priority: 'Critical' | 'High' | 'Normal';
+        action: string;
+    }[];
+    resource_allocation: {
+        channel: string;
+        percentage: number;
+        justification: string;
+    }[];
+    ab_simulation: {
+        scenarioA: string;
+        scenarioB: string;
+        winner: string;
+        reason: string;
+    };
+    gotv_logistics: string[];
+}
+
+export interface ContentCalendarResponse {
+    chainOfThought: string[];
+    monthly_calendar: {
+        week: number;
+        focus: string;
+        posts: {
+            platform: string;
+            content: string;
+            asset_prompt: string;
+        }[];
+    }[];
+    cross_platform_adaptations: {
+        platform: string;
+        strategy: string;
+    }[];
 }

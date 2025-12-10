@@ -2,7 +2,7 @@
 import React from 'react';
 import { ChartBarIcon, DatabaseIcon, ScaleIcon, BeakerIcon, CpuChipIcon, ShareIcon, BookOpenIcon, ListBulletIcon, MapIcon, ClockIcon, UserGroupIcon, CloseIcon, MegaphoneIcon, FingerPrintIcon } from './Icons';
 
-type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap' | 'marketing' | 'candidate_intelligence' | 'comparative_analysis';
+type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap' | 'marketing' | 'candidate_intelligence' | 'comparative_analysis' | 'agent_center';
 
 interface SidebarProps {
   activeTab: Tab;
@@ -133,8 +133,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteDa
         <NavItem tabId="comparative_analysis" activeTab={activeTab} setActiveTab={setActiveTab} icon={<UserGroupIcon />}>
           War Games (Comparador)
         </NavItem>
-        <NavItem tabId="strategist" activeTab={activeTab} setActiveTab={setActiveTab} icon={<CpuChipIcon />}>
-          Consultor IA
+        <NavItem tabId="agent_center" activeTab={activeTab} setActiveTab={setActiveTab} icon={<CpuChipIcon />}>
+          Centro de Mando IA
         </NavItem>
         
         <div className="my-6 mx-6 border-t border-gray-100"></div>
