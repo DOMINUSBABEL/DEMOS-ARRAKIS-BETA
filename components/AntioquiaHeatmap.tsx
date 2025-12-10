@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { SUBREGIONS, Subregion, aggregateVotesBySubregion } from '../services/geoUtils';
 import { ProcessedElectionData } from '../types';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree, extend } from '@react-three/fiber';
 import { 
     OrbitControls, 
     Center, 
@@ -10,24 +10,16 @@ import {
     Environment, 
     ContactShadows, 
     Stars, 
-    Sparkles, 
-    Grid,
-    PerspectiveCamera
+    Sparkles
 } from '@react-three/drei';
 import * as THREE from 'three';
 import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
 
-// Note: THREE.ColorManagement.enabled is true by default in modern Three.js versions.
-// We strictly use THREE.SRGBColorSpace in the Canvas configuration.
+// Register the loader with R3F to ensure context awareness
+extend({ SVGLoader });
 
-interface AntioquiaHeatmapProps {
-    data?: ProcessedElectionData[];
-    partyFilter?: string;
-    mode: 'historical' | 'tactical';
-    tacticalFocus?: string[];
-}
+// --- CONSTANTS & HELPERS ---
 
-// SVG Paths representing the topography of Antioquia's subregions
 const REGION_PATHS: Record<Subregion, string> = {
     'Urabá': "M10,100 L120,80 L140,200 L80,250 L10,180 Z",
     'Bajo Cauca': "M180,20 L300,10 L350,80 L280,120 L180,20 Z",
@@ -43,11 +35,9 @@ const REGION_PATHS: Record<Subregion, string> = {
 const createShapes = (pathStr: string) => {
     try {
         const loader = new SVGLoader();
-        // Wrap the raw path data in a valid SVG structure so the loader can parse it
         const svgString = `<svg xmlns="http://www.w3.org/2000/svg"><path d="${pathStr}" /></svg>`;
         const data = loader.parse(svgString);
         
-        // Flatten all shapes from all paths found
         const shapes: THREE.Shape[] = [];
         data.paths.forEach((path) => {
             const pathShapes = path.toShapes(true);
@@ -55,12 +45,23 @@ const createShapes = (pathStr: string) => {
         });
         return shapes;
     } catch (e) {
-        console.error("Error creating 3D shapes from SVG path:", e);
+        console.error("Error creating 3D shapes:", e);
         return [];
     }
 };
 
-// --- 3D COMPONENTS ---
+// --- 3D SUB-COMPONENTS ---
+
+interface MapRegionProps {
+    name: Subregion;
+    path: string;
+    votes: number;
+    maxVotes: number;
+    isTargeted: boolean;
+    mode: 'historical' | 'tactical';
+    totalVotes: number;
+    isMock: boolean;
+}
 
 const MapRegion = ({ 
     name, 
@@ -69,37 +70,29 @@ const MapRegion = ({
     maxVotes, 
     isTargeted, 
     mode,
-    totalVotes
-}: { 
-    name: Subregion; 
-    path: string; 
-    votes: number; 
-    maxVotes: number; 
-    isTargeted: boolean; 
-    mode: 'historical' | 'tactical';
-    totalVotes: number;
-}) => {
+    totalVotes,
+    isMock
+}: MapRegionProps) => {
     const meshRef = useRef<THREE.Mesh>(null);
     const [hovered, setHovered] = useState(false);
     const shapes = useMemo(() => createShapes(path), [path]);
     
-    // Intensity: 0 to 1 based on vote share relative to the winner region
+    // Safety check for division by zero
     const intensity = maxVotes > 0 ? (votes / maxVotes) : 0;
     const percentage = totalVotes > 0 ? (votes / totalVotes) * 100 : 0;
     
-    // Height Calculation: Minimum height of 5, max adds 40 units
+    // Base height + dynamic height based on votes
     const depth = 5 + (intensity * 40);
 
-    // Dynamic Color Calculation
     const color = useMemo(() => {
-        if (hovered) return '#fbbf24'; // Gold hover
-        if (mode === 'tactical') return isTargeted ? '#ef4444' : '#1f2937'; // Red target / Dark gray
+        if (hovered) return new THREE.Color('#fbbf24'); // Gold on hover
+        if (mode === 'tactical') return new THREE.Color(isTargeted ? '#ef4444' : '#1f2937');
         
-        // Heatmap Gradient: From Earth/Land (Green) to Urban/Heat (Blue/Purple) to Hot (Red)
-        const lowColor = new THREE.Color('#064e3b'); // Deep Forest Green
+        const lowColor = new THREE.Color('#064e3b'); // Green
         const midColor = new THREE.Color('#3b82f6'); // Blue
         const highColor = new THREE.Color('#ef4444'); // Red
         
+        // Linear interpolation for heatmap gradient
         if (intensity < 0.5) {
             return lowColor.lerp(midColor, intensity * 2);
         } else {
@@ -107,10 +100,9 @@ const MapRegion = ({
         }
     }, [hovered, mode, isTargeted, intensity]);
 
-    // Animation loop
-    useFrame((state) => {
+    useFrame(() => {
         if (!meshRef.current) return;
-        // Hover float effect
+        // Subtle hover animation
         const targetZ = hovered ? 5 : 0;
         meshRef.current.position.z = THREE.MathUtils.lerp(meshRef.current.position.z, targetZ, 0.1);
     });
@@ -121,7 +113,7 @@ const MapRegion = ({
         <group>
             <mesh
                 ref={meshRef}
-                rotation={[Math.PI, 0, 0]} // Flip coordinate system
+                rotation={[Math.PI, 0, 0]}
                 onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }}
                 onPointerOut={() => setHovered(false)}
                 castShadow
@@ -137,28 +129,25 @@ const MapRegion = ({
                 />
             </mesh>
 
-            {/* Data Beacon / Pin */}
             {(votes > 0 || isTargeted) && (
-                <group position={[0, 0, -depth - 10]}> {/* Position slightly above surface */}
-                     {/* Only show text on hover or if high intensity to reduce clutter */}
+                <group position={[0, 0, -depth - 10]}>
                     {(hovered || intensity > 0.5 || isTargeted) && (
-                        <Html center distanceFactor={300} zIndexRange={[100, 0]} style={{ pointerEvents: 'none' }}>
+                        <Html center distanceFactor={300} style={{ pointerEvents: 'none' }} zIndexRange={[100, 0]}>
                             <div className={`
                                 flex flex-col items-center
                                 ${hovered ? 'scale-110 z-50' : 'scale-100'} 
                                 transition-transform duration-200
                             `}>
-                                <div className="bg-black/80 backdrop-blur-md border border-white/20 p-2 rounded-lg shadow-2xl text-center min-w-[120px]">
+                                <div className="bg-black/90 backdrop-blur-md border border-white/20 p-2 rounded-lg shadow-2xl text-center min-w-[120px]">
                                     <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">{name}</p>
                                     <p className="text-sm font-mono font-bold text-white tabular-nums">
-                                        {votes.toLocaleString()}
+                                        {isMock ? '~' : ''}{votes.toLocaleString()}
                                     </p>
                                     <div className="w-full bg-gray-800 h-1 mt-1 rounded-full overflow-hidden">
                                         <div className="h-full bg-brand-secondary" style={{ width: `${percentage}%` }}></div>
                                     </div>
-                                    <p className="text-[9px] text-gray-500 mt-0.5">{percentage.toFixed(1)}% Dept.</p>
+                                    <p className="text-[9px] text-gray-500 mt-0.5">{percentage.toFixed(1)}%</p>
                                 </div>
-                                {/* Pin Line */}
                                 <div className="w-0.5 h-8 bg-gradient-to-b from-white/50 to-transparent"></div>
                                 <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_10px_white]"></div>
                             </div>
@@ -170,42 +159,59 @@ const MapRegion = ({
     );
 };
 
-const AtmosphericBackground = () => {
-    return (
-        <>
-            <Stars radius={300} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-            <Sparkles count={200} scale={400} size={2} speed={0.4} opacity={0.5} color="#ffffff" />
-            <Environment preset="city" />
-        </>
-    );
-}
-
 const CameraController = ({ mode }: { mode: 'historical' | 'tactical' }) => {
     const { camera } = useThree();
-    
+    // Simple effect to switch view angle based on mode
     useEffect(() => {
-        // Reset camera position smoothly when mode changes
-        // In a real app, use a library like 'maath' or 'gsap' for smooth camera transitions
         if (mode === 'tactical') {
-            camera.position.set(0, -200, 600); // Higher, top-down view
+            camera.position.set(0, -200, 600); // Top-down-ish
         } else {
-            camera.position.set(0, -400, 400); // Angled view
+            camera.position.set(0, -400, 400); // Isometric-ish
         }
         camera.lookAt(0, 0, 0);
     }, [mode, camera]);
-
     return null;
+}
+
+// --- MAIN COMPONENT ---
+
+interface AntioquiaHeatmapProps {
+    data?: ProcessedElectionData[];
+    partyFilter?: string;
+    mode: 'historical' | 'tactical';
+    tacticalFocus?: string[];
 }
 
 const AntioquiaHeatmap: React.FC<AntioquiaHeatmapProps> = ({ data = [], partyFilter, mode, tacticalFocus = [] }) => {
     
-    const aggregatedData = useMemo(() => {
-        if (mode === 'tactical') return {} as Record<Subregion, number>;
-        return aggregateVotesBySubregion(data, partyFilter);
+    // Generate data or use Mock data if empty
+    const { aggregatedData, isMock } = useMemo(() => {
+        if (mode === 'tactical') {
+            return { aggregatedData: {} as Record<Subregion, number>, isMock: false };
+        }
+
+        const realAggregation = aggregateVotesBySubregion(data, partyFilter);
+        const totalRealVotes = Object.values(realAggregation).reduce((a, b) => a + b, 0);
+
+        if (totalRealVotes === 0) {
+            // MOCK DATA GENERATION
+            const mock: Record<string, number> = {};
+            SUBREGIONS.forEach(region => {
+                // Generate semi-coherent random data
+                let base = 5000;
+                if (region === 'Valle de Aburrá') base = 50000;
+                if (region === 'Oriente') base = 20000;
+                mock[region] = Math.floor(Math.random() * base) + 2000;
+            });
+            return { aggregatedData: mock, isMock: true };
+        }
+
+        return { aggregatedData: realAggregation, isMock: false };
     }, [data, partyFilter, mode]);
 
     const maxVotes = useMemo(() => {
         const values = Object.values(aggregatedData) as number[];
+        if (values.length === 0) return 1;
         return Math.max(...values, 1);
     }, [aggregatedData]);
 
@@ -227,24 +233,26 @@ const AntioquiaHeatmap: React.FC<AntioquiaHeatmapProps> = ({ data = [], partyFil
             <div className="absolute top-4 left-4 z-10 pointer-events-none">
                 <div className="bg-black/60 backdrop-blur-md px-4 py-3 rounded-lg border border-brand-primary/30 shadow-[0_0_15px_rgba(0,0,0,0.5)]">
                     <div className="flex items-center gap-2 mb-1">
-                        <div className={`w-2 h-2 rounded-full ${mode === 'historical' ? 'bg-green-500 animate-pulse' : 'bg-red-500 animate-pulse'}`}></div>
+                        <div className={`w-2 h-2 rounded-full ${isMock ? 'bg-yellow-500 animate-pulse' : 'bg-green-500 animate-pulse'}`}></div>
                         <p className="text-[10px] text-brand-primary uppercase font-bold tracking-widest font-mono">
-                            {mode === 'historical' ? 'SATÉLITE: INTELIGENCIA ELECTORAL' : 'SATÉLITE: OBJETIVOS TÁCTICOS'}
+                            {isMock ? 'MODO SIMULACIÓN (DATA SINTÉTICA)' : 'SATÉLITE: EN LÍNEA'}
                         </p>
                     </div>
-                    <h2 className="text-white font-bold text-sm">Departamento de Antioquia</h2>
+                    <h2 className="text-white font-bold text-sm">Antioquia: Mapa de Calor</h2>
                     <p className="text-[9px] text-gray-400 mt-1 max-w-[200px]">
-                        Visualización volumétrica de datos. La altura representa densidad de votos.
+                        {isMock 
+                            ? "Visualizando proyección estimada. Cargue datos reales para mayor precisión." 
+                            : "Visualización volumétrica basada en datos electorales cargados."}
                     </p>
                 </div>
             </div>
 
             <div className="absolute bottom-4 right-4 z-10 pointer-events-none">
                 <div className="bg-black/60 backdrop-blur px-3 py-2 rounded text-right border border-white/10">
-                    <p className="text-[9px] text-gray-500 uppercase tracking-wider">Controles de Vuelo</p>
+                    <p className="text-[9px] text-gray-500 uppercase tracking-wider">Controles</p>
                     <p className="text-[10px] text-white font-mono">
-                        Orbita: Click Izquierdo<br/>
-                        Pan: Click Derecho<br/>
+                        Rotar: Click Izquierdo<br/>
+                        Mover: Click Derecho<br/>
                         Zoom: Rueda
                     </p>
                 </div>
@@ -252,28 +260,23 @@ const AntioquiaHeatmap: React.FC<AntioquiaHeatmapProps> = ({ data = [], partyFil
 
             <Canvas 
                 shadows 
-                dpr={[1, 2]} 
-                gl={{ outputColorSpace: THREE.SRGBColorSpace }}
-                flat // Helps with tone mapping in r160+
+                dpr={[1, 2]}
+                gl={{ 
+                    antialias: true,
+                    outputColorSpace: THREE.SRGBColorSpace 
+                }}
             >
-                <PerspectiveCamera makeDefault position={[0, -400, 400]} fov={45} />
                 <CameraController mode={mode} />
+                
+                {/* Environment & Lighting */}
                 <color attach="background" args={['#050505']} />
-                <fog attach="fog" args={['#050505', 400, 1500]} />
+                <Stars radius={300} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+                <Sparkles count={200} scale={400} size={2} speed={0.4} opacity={0.5} color="#ffffff" />
+                <Environment preset="city" />
                 
-                <AtmosphericBackground />
-                
-                {/* Lights */}
                 <ambientLight intensity={0.4} />
-                <directionalLight 
-                    position={[100, -100, 200]} 
-                    intensity={2} 
-                    castShadow 
-                    shadow-mapSize={[1024, 1024]}
-                    color="#ffffff"
-                />
-                <pointLight position={[-200, 200, 100]} intensity={1} color="#3b82f6" /> {/* Blue rim light */}
-
+                <spotLight position={[100, -400, 400]} angle={0.3} penumbra={1} intensity={1} castShadow />
+                
                 <Center>
                     <group rotation={[0, 0, 0]}>
                         {SUBREGIONS.map((region) => (
@@ -286,43 +289,25 @@ const AntioquiaHeatmap: React.FC<AntioquiaHeatmapProps> = ({ data = [], partyFil
                                     totalVotes={totalVotes}
                                     isTargeted={isRegionTargeted(region)}
                                     mode={mode}
+                                    isMock={isMock}
                                 />
                             </group>
                         ))}
                     </group>
                 </Center>
-
-                {/* Tactical Grid Floor */}
-                <Grid 
-                    position={[0, 0, -20]} 
-                    args={[2000, 2000]} 
-                    cellSize={50} 
-                    cellThickness={1} 
-                    cellColor="#1f2937" 
-                    sectionSize={200} 
-                    sectionThickness={1.5} 
-                    sectionColor="#374151" 
-                    fadeDistance={800} 
-                    infiniteGrid 
-                />
-
-                <ContactShadows 
-                    position={[0, 0, -15]} 
-                    opacity={0.6} 
-                    scale={1000} 
-                    blur={2.5} 
-                    far={100} 
-                    color="#000000" 
-                />
                 
+                {/* Floor Plane to catch shadows */}
+                <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -50]} receiveShadow>
+                    <planeGeometry args={[2000, 2000]} /> 
+                    <meshStandardMaterial color="#111827" roughness={0.8} metalness={0.2} />
+                </mesh>
+
                 <OrbitControls 
                     enablePan={true} 
                     enableZoom={true} 
                     minDistance={100} 
                     maxDistance={1200}
-                    maxPolarAngle={Math.PI / 2 - 0.1} // Prevent going below ground
-                    autoRotate={mode === 'historical'}
-                    autoRotateSpeed={0.3}
+                    enableDamping
                     dampingFactor={0.05}
                 />
             </Canvas>

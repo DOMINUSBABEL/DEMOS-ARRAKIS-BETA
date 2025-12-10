@@ -48,9 +48,9 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                 onLogin({ username, role: 'admin' });
 
             } else {
-                // MASTER KEY CHECK (Backdoor for 'dominus')
-                if (username === 'dominus' && password === 'dominus') {
-                    const masterUser = { username: 'dominus', role: 'admin' };
+                // MASTER KEY CHECK (Backdoor for 'DEMOS')
+                if (username === 'DEMOS' && password === 'DEMOS') {
+                    const masterUser = { username: 'DEMOS', role: 'admin' };
                     localStorage.setItem('demos_current_user', JSON.stringify(masterUser));
                     onLogin(masterUser as User);
                     return;
