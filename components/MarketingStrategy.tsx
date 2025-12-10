@@ -4,9 +4,10 @@ import AnalysisCard from './AnalysisCard';
 import { MegaphoneIcon, LoadingSpinner, UserGroupIcon, ChartBarIcon, MapIcon, SparklesIcon, WarningIcon, CpuChipIcon, ArrowsUpDownIcon, DatabaseIcon, PencilIcon, PhotoIcon, ChatBubbleBottomCenterTextIcon, RocketLaunchIcon, CalendarIcon, ClockIcon } from './Icons';
 import { generateMarketingStrategy, generateTacticalCampaign, generateCronoposting } from '../services/geminiService';
 import { MarketingStrategyResult, TacticalCampaignResult, CronopostingResult } from '../types';
+import AntioquiaHeatmap from './AntioquiaHeatmap'; // IMPORT HEATMAP
 
 const MarketingStrategy: React.FC = () => {
-    // Initial State Pre-filled with Simulation Data for John Jairo Berrío
+    // ... (State initialization remains exactly the same) ...
     const [targetName, setTargetName] = useState('John Jairo Berrío');
     const [targetType, setTargetType] = useState<'candidate' | 'party'>('candidate');
     const [context, setContext] = useState('Diputado de Antioquia (Centro Democrático). Base: Medellín, Bello, Norte del Valle de Aburrá. Enfoque: Seguridad y Obras.');
@@ -86,6 +87,7 @@ const MarketingStrategy: React.FC = () => {
     const [cronoIntensity, setCronoIntensity] = useState('Alta');
     const [cronoTone, setCronoTone] = useState('Inspirador y Propositivo');
 
+    // ... (Handlers remain the same: handleSubmit, handleGenerateTactics, handleGenerateCronoposting) ...
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!targetName.trim() || !context.trim()) {
@@ -113,14 +115,14 @@ const MarketingStrategy: React.FC = () => {
     const handleGenerateTactics = async () => {
         if (!strategy || selectedAvatarId === null) return;
 
-        const voter = strategy.voterAvatars.find(v => v.id === selectedAvatarId);
-        const candidate = strategy.candidateAvatars.find(c => c.id === selectedAvatarId) || strategy.candidateAvatars[0];
+        const voter = strategy.voterAvatars?.find(v => v.id === selectedAvatarId);
+        const candidate = strategy.candidateAvatars?.find(c => c.id === selectedAvatarId) || strategy.candidateAvatars?.[0];
 
         if (!voter || !candidate) return;
 
         setIsGeneratingTactics(true);
         setTacticalPlan(null);
-        setCronopostingResult(null); // Clear previous crono when changing tactics
+        setCronopostingResult(null); 
         setError(null);
 
         try {
@@ -145,7 +147,6 @@ const MarketingStrategy: React.FC = () => {
         setCronopostingResult(null);
         setError(null);
 
-        // Enhance context with the specific tactical plan details
         const enhancedContext = `
             ${context}
             Perfil Táctico Seleccionado:
@@ -166,6 +167,7 @@ const MarketingStrategy: React.FC = () => {
 
     return (
         <div className="space-y-8 animate-fade-in">
+            {/* ... (First part of the component: AnalysisCard, form, Strategy Summary) ... */}
             <AnalysisCard
                 title="Estrategia de Marketing Dinámico (Guerra Electoral)"
                 explanation="Generación de pipeline estratégico, avatares de votantes y matrices de contenido táctico con cronogramas inteligentes."
@@ -173,6 +175,7 @@ const MarketingStrategy: React.FC = () => {
                 fullscreenable={false}
             >
                 <form onSubmit={handleSubmit} className="p-6 grid grid-cols-1 gap-6 bg-white rounded-b-lg">
+                    {/* ... (Form Inputs) ... */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Nombre del Objetivo</label>
@@ -239,7 +242,7 @@ const MarketingStrategy: React.FC = () => {
 
             {strategy && (
                 <div className="space-y-8 animate-fade-in-up">
-                    {/* Header Strategy Summary - Corporate Style */}
+                    {/* ... (Header Strategy Summary & Pipeline cards) ... */}
                     <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-report-lg relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-2 h-full bg-brand-primary"></div>
                         <div className="flex flex-col md:flex-row justify-between items-start gap-6 relative z-10">
@@ -263,78 +266,90 @@ const MarketingStrategy: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* 3-Phase Pipeline - Corporate Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Phase 1 */}
-                        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gray-400"></div>
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-gray-100 rounded-lg text-gray-600">
-                                    <DatabaseIcon className="w-6 h-6" />
+                    {/* PIPELINE DISPLAY (With Safety Check) */}
+                    {strategy.pipeline ? (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {/* Phase 1 */}
+                            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-gray-400"></div>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="p-2 bg-gray-100 rounded-lg text-gray-600">
+                                        <DatabaseIcon className="w-6 h-6" />
+                                    </div>
+                                    <h4 className="text-sm font-bold text-gray-700 uppercase tracking-widest">
+                                        Fase 1: Diagnóstico
+                                    </h4>
                                 </div>
-                                <h4 className="text-sm font-bold text-gray-700 uppercase tracking-widest">
-                                    Fase 1: Diagnóstico
-                                </h4>
+                                <ul className="space-y-4">
+                                    {strategy.pipeline.phase1_extraction?.map((item, i) => (
+                                        <li key={i} className="text-sm text-gray-600 flex items-start gap-3">
+                                            <span className="text-gray-400 font-bold text-xs mt-0.5">0{i+1}</span>
+                                            <span className="leading-snug">{item}</span>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
-                            <ul className="space-y-4">
-                                {strategy.pipeline.phase1_extraction.map((item, i) => (
-                                    <li key={i} className="text-sm text-gray-600 flex items-start gap-3">
-                                        <span className="text-gray-400 font-bold text-xs mt-0.5">0{i+1}</span>
-                                        <span className="leading-snug">{item}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
 
-                        {/* Phase 2 */}
-                        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-brand-primary"></div>
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-blue-50 rounded-lg text-brand-primary">
-                                    <MapIcon className="w-6 h-6" />
+                            {/* Phase 2 */}
+                            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-brand-primary"></div>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="p-2 bg-blue-50 rounded-lg text-brand-primary">
+                                        <MapIcon className="w-6 h-6" />
+                                    </div>
+                                    <h4 className="text-sm font-bold text-brand-primary uppercase tracking-widest">
+                                        Fase 2: Ejecución
+                                    </h4>
                                 </div>
-                                <h4 className="text-sm font-bold text-brand-primary uppercase tracking-widest">
-                                    Fase 2: Ejecución
-                                </h4>
+                                <ul className="space-y-4">
+                                    {strategy.pipeline.phase2_execution?.map((item, i) => (
+                                        <li key={i} className="text-sm text-gray-600 flex items-start gap-3">
+                                            <span className="text-blue-200 font-bold text-xs mt-0.5">0{i+1}</span>
+                                            <span className="leading-snug">{item}</span>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
-                            <ul className="space-y-4">
-                                {strategy.pipeline.phase2_execution.map((item, i) => (
-                                    <li key={i} className="text-sm text-gray-600 flex items-start gap-3">
-                                        <span className="text-blue-200 font-bold text-xs mt-0.5">0{i+1}</span>
-                                        <span className="leading-snug">{item}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
 
-                        {/* Phase 3 */}
-                        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-brand-secondary"></div>
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-red-50 rounded-lg text-brand-secondary">
-                                    <UserGroupIcon className="w-6 h-6" />
+                            {/* Phase 3 */}
+                            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-brand-secondary"></div>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="p-2 bg-red-50 rounded-lg text-brand-secondary">
+                                        <UserGroupIcon className="w-6 h-6" />
+                                    </div>
+                                    <h4 className="text-sm font-bold text-brand-secondary uppercase tracking-widest">
+                                        Fase 3: Conversión
+                                    </h4>
                                 </div>
-                                <h4 className="text-sm font-bold text-brand-secondary uppercase tracking-widest">
-                                    Fase 3: Conversión
-                                </h4>
+                                <ul className="space-y-4">
+                                    {strategy.pipeline.phase3_conversion?.map((item, i) => (
+                                        <li key={i} className="text-sm text-gray-600 flex items-start gap-3">
+                                            <span className="text-red-200 font-bold text-xs mt-0.5">0{i+1}</span>
+                                            <span className="leading-snug">{item}</span>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
-                            <ul className="space-y-4">
-                                {strategy.pipeline.phase3_conversion.map((item, i) => (
-                                    <li key={i} className="text-sm text-gray-600 flex items-start gap-3">
-                                        <span className="text-red-200 font-bold text-xs mt-0.5">0{i+1}</span>
-                                        <span className="leading-snug">{item}</span>
-                                    </li>
-                                ))}
-                            </ul>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm">
+                            No se pudo generar el pipeline estratégico completo. Intente regenerar la estrategia.
+                        </div>
+                    )}
 
                     {/* Matrix 10x10 - Clean Layout with Interactions */}
                     <AnalysisCard title="Matriz de Conexión: Votante vs. Candidato" explanation="Selecciona una tarjeta para generar el despliegue táctico específico para ese micro-segmento." collapsible={false} icon={<ArrowsUpDownIcon />}>
                         <div className="p-6 bg-gray-50">
                             <div className="flex overflow-x-auto gap-6 pb-4 custom-scrollbar snap-x items-stretch">
-                                {strategy.voterAvatars.map((voter, idx) => {
-                                    const candidateAvatar = strategy.candidateAvatars[idx] || strategy.candidateAvatars[0];
+                                {strategy.voterAvatars?.map((voter, idx) => {
+                                    const candidateAvatar = strategy.candidateAvatars?.[idx] || strategy.candidateAvatars?.[0] || {
+                                        id: 0,
+                                        archetype: "N/A",
+                                        messaging_angle: "No disponible",
+                                        visual_style: "No disponible",
+                                        target_voter_ids: []
+                                    };
                                     const isSelected = selectedAvatarId === voter.id;
                                     
                                     return (
@@ -349,6 +364,7 @@ const MarketingStrategy: React.FC = () => {
                                                 ${isSelected ? 'border-brand-primary ring-2 ring-brand-primary ring-offset-2' : 'border-gray-200 hover:border-gray-300'}
                                             `}
                                         >
+                                            {/* ... (Card content) ... */}
                                             {isSelected && (
                                                 <div className="absolute top-2 right-2 bg-brand-primary text-white text-[9px] font-bold px-2 py-1 rounded-full uppercase tracking-wider z-10 shadow-sm animate-fade-in">
                                                     Seleccionado
@@ -425,35 +441,53 @@ const MarketingStrategy: React.FC = () => {
                             <div className="p-8 space-y-8">
                                 {/* Technical Justification & Geographic Projection */}
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    <div className="bg-gray-50 border-l-4 border-brand-primary p-5 rounded-r-lg">
-                                        <h4 className="text-xs font-bold text-brand-primary uppercase tracking-widest mb-2 flex items-center gap-2">
-                                            <CpuChipIcon className="w-4 h-4"/> Justificación Técnica
-                                        </h4>
-                                        <p className="text-sm text-gray-700 leading-relaxed text-justify">
-                                            {tacticalPlan.technicalJustification}
-                                        </p>
-                                    </div>
-                                    <div className="bg-blue-50 border-l-4 border-blue-500 p-5 rounded-r-lg">
-                                        <h4 className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                            <MapIcon className="w-4 h-4"/> Proyección Geográfica (Zonas Objetivo)
-                                        </h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {tacticalPlan.geographicFocus?.map((zone, idx) => (
-                                                <span key={idx} className="px-3 py-1 bg-white border border-blue-200 rounded-full text-xs font-bold text-blue-700 shadow-sm">
-                                                    {zone}
-                                                </span>
-                                            ))}
+                                    <div className="space-y-6">
+                                        <div className="bg-gray-50 border-l-4 border-brand-primary p-5 rounded-r-lg">
+                                            <h4 className="text-xs font-bold text-brand-primary uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                <CpuChipIcon className="w-4 h-4"/> Justificación Técnica
+                                            </h4>
+                                            <p className="text-sm text-gray-700 leading-relaxed text-justify">
+                                                {tacticalPlan.technicalJustification}
+                                            </p>
                                         </div>
-                                        <h4 className="text-xs font-bold text-blue-600 uppercase tracking-widest mt-4 mb-2 flex items-center gap-2">
-                                            <UserGroupIcon className="w-4 h-4"/> Adaptación Demográfica
-                                        </h4>
-                                        <p className="text-xs text-gray-600 italic leading-relaxed">
-                                            "{tacticalPlan.demographicAdaptation}"
-                                        </p>
+                                        <div className="bg-blue-50 border-l-4 border-blue-500 p-5 rounded-r-lg">
+                                            <h4 className="text-xs font-bold text-blue-600 uppercase tracking-widest mt-0 mb-2 flex items-center gap-2">
+                                                <UserGroupIcon className="w-4 h-4"/> Adaptación Demográfica
+                                            </h4>
+                                            <p className="text-xs text-gray-600 italic leading-relaxed">
+                                                "{tacticalPlan.demographicAdaptation}"
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* HEATMAP INTEGRATION */}
+                                    <div className="h-full min-h-[300px] border border-gray-200 rounded-xl overflow-hidden bg-gray-50">
+                                        <div className="bg-white p-2 border-b border-gray-200 flex justify-between items-center">
+                                            <h4 className="text-xs font-bold text-gray-600 uppercase tracking-widest flex items-center gap-2">
+                                                <MapIcon className="w-4 h-4"/> Geografía de Impacto
+                                            </h4>
+                                            <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">Objetivos Tácticos</span>
+                                        </div>
+                                        <div className="h-[300px] relative">
+                                            <AntioquiaHeatmap 
+                                                mode="tactical" 
+                                                tacticalFocus={tacticalPlan.geographicFocus} 
+                                            />
+                                        </div>
+                                        <div className="p-2 bg-white border-t border-gray-200">
+                                            <p className="text-[10px] text-gray-500 mb-1 font-bold">Zonas Clave:</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {tacticalPlan.geographicFocus?.map((zone, idx) => (
+                                                    <span key={idx} className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded text-[9px]">
+                                                        {zone}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* CRONOPOSTING GENERATOR SECTION */}
+                                {/* ... (CRONOPOSTING GENERATOR SECTION remains exactly the same) ... */}
                                 <div className="mt-8 border-t-2 border-gray-100 pt-8">
                                     <div className="flex items-center gap-3 mb-6">
                                         <CalendarIcon className="w-6 h-6 text-brand-primary" />
@@ -640,7 +674,7 @@ const MarketingStrategy: React.FC = () => {
 
                     {/* KPIs Footer */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {strategy.kpis.map((kpi, i) => (
+                        {strategy.kpis?.map((kpi, i) => (
                             <div key={i} className="bg-white border border-gray-200 p-5 rounded-lg text-center shadow-sm">
                                 <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-2 font-bold">{kpi.metric}</p>
                                 <p className="text-xl font-bold text-brand-primary font-mono">{kpi.target}</p>

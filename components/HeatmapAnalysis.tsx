@@ -1,11 +1,17 @@
 
-import React, { useState, useEffect } from 'react';
-import { InformationCircleIcon, WarningIcon, LoadingSpinner, MapIcon, SparklesIcon } from './Icons';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
+import { InformationCircleIcon, WarningIcon, LoadingSpinner, MapIcon, SparklesIcon, ChartBarIcon } from './Icons';
 import AnalysisCard from './AnalysisCard';
 import { getGeospatialAnalysis } from '../services/geminiService';
 import { GenerateContentResponse } from '@google/genai';
+import { processData } from '../services/electoralProcessor'; // Assuming we have access to context or props
+import { ElectoralDataset, PartyAnalysisData, HistoricalDataset } from '../types';
+import { buildHistoricalDataset } from '../services/electoralProcessor';
 
-// Simple markdown-like renderer for the response
+// Lazy load the 3D map to prevent initial bundle crash if Three.js has issues
+const AntioquiaHeatmap = lazy(() => import('./AntioquiaHeatmap'));
+
+// ... (ResponseRenderer remains the same)
 const ResponseRenderer: React.FC<{ text: string }> = ({ text }) => {
     const lines = text.split('\n');
     const elements: React.ReactNode[] = [];
@@ -39,7 +45,7 @@ const ResponseRenderer: React.FC<{ text: string }> = ({ text }) => {
         }
     });
 
-    flushList(); // Flush any remaining list items at the end
+    flushList(); 
 
     return (
         <div className="prose prose-invert max-w-none text-sm leading-relaxed text-dark-text-primary dark:text-dark-text-primary">
@@ -48,13 +54,29 @@ const ResponseRenderer: React.FC<{ text: string }> = ({ text }) => {
     );
 };
 
-const HeatmapAnalysis: React.FC = () => {
+// Props needed to access data
+interface HeatmapAnalysisProps {
+    datasets?: ElectoralDataset[];
+    activeDataset?: HistoricalDataset | null;
+}
+
+const HeatmapAnalysis: React.FC<HeatmapAnalysisProps> = ({ datasets = [], activeDataset }) => {
     const [location, setLocation] = useState<GeolocationCoordinates | null>(null);
     const [geoError, setGeoError] = useState<string | null>(null);
-    const [query, setQuery] = useState<string>('¿Cuáles son las zonas con mayor potencial de crecimiento para el Partido Alianza Verde cerca de mi ubicación actual?');
+    const [query, setQuery] = useState<string>('¿Cuáles son las subregiones de Antioquia con mayor crecimiento del voto en blanco?');
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [analysisError, setAnalysisError] = useState<string | null>(null);
     const [apiResponse, setApiResponse] = useState<GenerateContentResponse | null>(null);
+    
+    // Map State
+    const [selectedParty, setSelectedParty] = useState<string>('');
+    const [heatmapMode, setHeatmapMode] = useState<'historical' | 'tactical'>('historical');
+
+    // Extract parties for filter
+    const politicalUnits = useMemo(() => {
+        if (!activeDataset) return [];
+        return [...new Set(activeDataset.processedData.map(d => d.UnidadPolitica))];
+    }, [activeDataset]);
 
     useEffect(() => {
         navigator.geolocation.getCurrentPosition(
@@ -82,7 +104,12 @@ const HeatmapAnalysis: React.FC = () => {
 
         try {
             const locationCoords = location ? { latitude: location.latitude, longitude: location.longitude } : null;
-            const response = await getGeospatialAnalysis(query, locationCoords);
+            // Enrich prompt with dataset context if available
+            const contextPrompt = activeDataset 
+                ? `Basado en los datos de ${activeDataset.name} y conocimiento general. ${query}` 
+                : query;
+                
+            const response = await getGeospatialAnalysis(contextPrompt, locationCoords);
             setApiResponse(response);
         } catch (e: any) {
             setAnalysisError(e.message || "Ocurrió un error desconocido al contactar la IA.");
@@ -95,95 +122,114 @@ const HeatmapAnalysis: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <AnalysisCard 
-                title="Análisis Geoespacial Electoral con IA" 
-                explanation="Realiza preguntas en lenguaje natural sobre datos electorales en un contexto geográfico. La IA utilizará Google Maps y Google Search para obtener información actualizada y relevante. Proporciona tu ubicación para análisis más precisos."
-                icon={<MapIcon />}
-                fullscreenable={false}
-            >
-                <form onSubmit={handleGenerateAnalysis} className="p-4 space-y-4">
-                    <div>
-                        <label htmlFor="geospatial-query" className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                            Ingresa tu pregunta
-                        </label>
-                        <textarea
-                            id="geospatial-query"
-                            rows={3}
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Ej: ¿Dónde se encuentran los bastiones del Partido Conservador en el Valle de Aburrá?"
-                            className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 focus:ring-brand-primary focus:border-brand-primary"
-                        />
-                    </div>
-                    <button type="submit" disabled={isLoading} className="w-full bg-brand-primary text-white font-bold py-3 px-4 rounded-lg hover:bg-brand-secondary transition-colors disabled:opacity-50 flex items-center justify-center">
-                        {isLoading ? <LoadingSpinner className="w-5 h-5 mr-2" /> : <SparklesIcon className="w-5 h-5 mr-2" />}
-                        {isLoading ? 'Analizando...' : 'Generar Análisis Geoespacial'}
-                    </button>
-                </form>
-            </AnalysisCard>
-            
-            {analysisError && (
-                 <div className="flex items-center p-4 bg-red-900/50 border border-red-500 text-red-300 rounded-lg shadow-lg">
-                    <WarningIcon className="w-6 h-6 mr-3 flex-shrink-0"/>
-                    <p>{analysisError}</p>
-                </div>
-            )}
-
-            {apiResponse && (
-                <AnalysisCard title="Resultados del Análisis" explanation="Respuesta generada por la IA, enriquecida con datos de Google Maps y Google Search.">
-                    <div className="p-4 space-y-4">
-                        <ResponseRenderer text={apiResponse.text || ''} />
-                        
-                        {groundingChunks && groundingChunks.length > 0 && (
-                            <div className="mt-6 pt-4 border-t border-light-border dark:border-dark-border">
-                                <h4 className="text-md font-semibold text-light-text-secondary dark:text-dark-text-secondary mb-3">Fuentes de Datos</h4>
-                                <ul className="space-y-2 list-disc list-inside">
-                                    {groundingChunks.map((chunk, index) => {
-                                        if (chunk.maps) {
-                                            return (
-                                                <li key={`map-${index}`} className="text-sm">
-                                                    <a href={chunk.maps.uri} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">
-                                                        {chunk.maps.title || 'Ver en Google Maps'}
-                                                    </a>
-                                                </li>
-                                            );
-                                        }
-                                        if (chunk.web) {
-                                            return (
-                                                <li key={`web-${index}`} className="text-sm">
-                                                    <a href={chunk.web.uri} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">
-                                                        {chunk.web.title || 'Ver en Web'}
-                                                    </a>
-                                                </li>
-                                            );
-                                        }
-                                        return null;
-                                    })}
-                                </ul>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[800px] lg:h-[600px]">
+                {/* 3D Map Column - Takes Full Height */}
+                <div className="h-full flex flex-col">
+                    <AnalysisCard 
+                        title="Centro de Comando Geoespacial (3D)" 
+                        explanation="Visualización táctica del territorio basada en datos electorales. Utilice los controles para navegar el terreno virtual."
+                        icon={<MapIcon />}
+                        fullscreenable={true}
+                    >
+                        <div className="p-0 h-[500px] w-full relative flex flex-col">
+                            {/* Controls Overlay */}
+                            <div className="absolute top-0 right-0 z-20 p-2 w-full flex justify-end pointer-events-none">
+                                <div className="pointer-events-auto bg-black/50 backdrop-blur p-2 rounded-bl-xl border-l border-b border-white/10">
+                                    <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Capa de Datos</label>
+                                    <select 
+                                        value={selectedParty} 
+                                        onChange={(e) => setSelectedParty(e.target.value)}
+                                        className="w-48 bg-gray-900 border border-gray-700 text-white rounded text-xs p-1 focus:ring-brand-primary"
+                                    >
+                                        <option value="">Votación Total (Global)</option>
+                                        {politicalUnits.map(p => <option key={p} value={p}>{p}</option>)}
+                                    </select>
+                                </div>
                             </div>
-                        )}
-                    </div>
-                </AnalysisCard>
-            )}
 
-            <AnalysisCard title="Estado de la Geolocalización" explanation="Para análisis geográficos más precisos, la aplicación puede utilizar tu ubicación actual." fullscreenable={false}>
-                <div className="p-4">
-                    {geoError && (
-                         <div className="flex items-center p-3 bg-yellow-900/50 border border-yellow-500 text-yellow-300 rounded-lg text-sm">
-                            <WarningIcon className="w-5 h-5 mr-2 flex-shrink-0"/>
-                            <span>{geoError}</span>
+                            <div className="flex-grow w-full bg-gray-900 overflow-hidden relative">
+                                {activeDataset ? (
+                                    <Suspense fallback={
+                                        <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-white">
+                                            <div className="text-center">
+                                                <LoadingSpinner className="w-8 h-8 mx-auto mb-2 text-brand-primary" />
+                                                <p className="text-xs tracking-widest uppercase">Inicializando Motor 3D...</p>
+                                            </div>
+                                        </div>
+                                    }>
+                                        <AntioquiaHeatmap 
+                                            data={activeDataset.processedData} 
+                                            partyFilter={selectedParty}
+                                            mode="historical"
+                                        />
+                                    </Suspense>
+                                ) : (
+                                    <div className="h-full flex flex-col items-center justify-center text-gray-500 bg-black/40">
+                                        <MapIcon className="w-16 h-16 opacity-20 mb-4" />
+                                        <p className="font-mono text-sm">SIN DATOS DE TELEMETRÍA</p>
+                                        <p className="text-xs mt-2 opacity-60">Cargue un conjunto de datos para activar el satélite.</p>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div className="bg-gray-900 border-t border-gray-800 p-2 flex justify-between items-center text-[10px] text-gray-500 font-mono">
+                                <span>REG: {activeDataset ? activeDataset.processedData.length.toLocaleString() : 0}</span>
+                                <span>LAT: 6.2442 | LON: -75.5812</span>
+                            </div>
                         </div>
-                    )}
-                    {location && (
-                        <div className="text-sm">
-                            <p className="text-green-400">Ubicación obtenida con éxito.</p>
-                            <p><span className="font-semibold text-light-text-secondary dark:text-dark-text-secondary">Latitud:</span> {location.latitude.toFixed(4)}</p>
-                            <p><span className="font-semibold text-light-text-secondary dark:text-dark-text-secondary">Longitud:</span> {location.longitude.toFixed(4)}</p>
-                        </div>
-                    )}
-                     {!location && !geoError && <p className="text-light-text-secondary dark:text-dark-text-secondary text-sm">Obteniendo ubicación...</p>}
+                    </AnalysisCard>
                 </div>
-            </AnalysisCard>
+
+                {/* AI Analysis Column */}
+                <div className="h-full flex flex-col">
+                    <AnalysisCard 
+                        title="Consultor Geoespacial IA" 
+                        explanation="Realiza preguntas sobre dinámicas territoriales. La IA cruzará tus datos con información de Google Maps y contexto político."
+                        icon={<SparklesIcon />}
+                        fullscreenable={false}
+                    >
+                        <div className="p-4 flex flex-col h-full">
+                            <form onSubmit={handleGenerateAnalysis} className="space-y-4 mb-4">
+                                <div>
+                                    <label htmlFor="geospatial-query" className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
+                                        Consulta al Estratega Territorial
+                                    </label>
+                                    <textarea
+                                        id="geospatial-query"
+                                        rows={4}
+                                        value={query}
+                                        onChange={(e) => setQuery(e.target.value)}
+                                        placeholder="Ej: ¿Dónde se encuentran los bastiones del Partido Conservador en el Valle de Aburrá y qué factores geográficos influyen?"
+                                        className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-3 focus:ring-brand-primary focus:border-brand-primary text-sm shadow-inner"
+                                    />
+                                </div>
+                                <button type="submit" disabled={isLoading} className="w-full bg-brand-primary text-white font-bold py-3 px-4 rounded-lg hover:bg-brand-secondary transition-colors disabled:opacity-50 flex items-center justify-center shadow-lg group">
+                                    {isLoading ? <LoadingSpinner className="w-5 h-5 mr-2" /> : <SparklesIcon className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />}
+                                    {isLoading ? 'Analizando Territorio...' : 'Ejecutar Análisis Táctico'}
+                                </button>
+                            </form>
+                            
+                            {apiResponse && (
+                                <div className="flex-grow bg-white/5 rounded-lg p-4 border border-white/10 overflow-y-auto max-h-[350px] custom-scrollbar shadow-inner">
+                                    <ResponseRenderer text={apiResponse.text || ''} />
+                                    {groundingChunks && groundingChunks.length > 0 && (
+                                        <div className="mt-4 pt-4 border-t border-gray-700">
+                                            <p className="text-xs text-gray-500 uppercase mb-2 font-bold">Fuentes de Inteligencia:</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {groundingChunks.map((chunk, i) => chunk.web ? (
+                                                    <a key={i} href={chunk.web.uri} target="_blank" className="text-[10px] bg-blue-900/30 text-blue-400 px-2 py-1 rounded border border-blue-500/30 hover:bg-blue-800/50 truncate max-w-[150px] transition-colors">
+                                                        {chunk.web.title}
+                                                    </a>
+                                                ) : null)}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </AnalysisCard>
+                </div>
+            </div>
         </div>
     );
 }
