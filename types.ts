@@ -250,17 +250,34 @@ export interface TacticalCampaignResult {
     groundEvents: string[]; // Specific street actions
 }
 
-// NEW: Cronoposting Types
+// NEW: Advanced Cronoposting Types
+export interface SocialListeningTrend {
+    keyword: string;
+    sentiment: 'Negativo' | 'Positivo' | 'Neutro';
+    volume: 'Alto' | 'Medio' | 'Bajo';
+    context: string; // Why is this trending?
+}
+
 export interface CronopostingEntry {
     date: string; // ISO Date or "Semana 1 - Lunes"
+    time: string; // Recommended posting time
     platform: string;
-    format: string; // Reel, Story, Static, Carousel
+    format: string; // Reel, Story, Static, Carousel, Tweet
     contentTheme: string;
     objective: string; // The micro-goal of this post
+    
+    // Enhanced Fields
+    headline: string; // Catchy title
+    copy: string; // The actual text body
+    hashtags: string[];
+    visualCue: string; // Instructions for the image/video
+    sentimentTarget: string; // Emotion to provoke (e.g. "Indignation", "Hope")
+    listeningFocus: string; // What keyword to monitor in comments
 }
 
 export interface CronopostingResult {
     overview: string;
+    detectedTrends: SocialListeningTrend[]; // Contextual trends driving the schedule
     schedule: CronopostingEntry[];
 }
 

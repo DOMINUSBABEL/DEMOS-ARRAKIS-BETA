@@ -486,25 +486,33 @@ export const generateCronoposting = async (
     duration: string,
     startDate: string,
     goal: string,
-    context: string
+    context: string,
+    intensity: string, // 'Baja', 'Media', 'Alta'
+    tone: string // 'Inspirador', 'Confrontativo', etc.
 ): Promise<CronopostingResult> => {
     const prompt = `
-    ROL: Estratega Senior de Contenidos Digitales y Community Manager Político.
+    ROL: Estratega Senior de Contenidos Digitales y Especialista en Social Listening.
     
-    TAREA: Generar un cronograma de contenidos (Cronoposting) detallado y estratégico.
+    TAREA: Generar un plan maestro de contenidos (Cronoposting) de ALTO NIVEL Y COMPLEJIDAD.
     
     PARÁMETROS:
     - Duración: ${duration}
     - Fecha de Inicio: ${startDate}
     - Objetivo Estratégico (Fin Y): ${goal}
+    - Intensidad de Campaña: ${intensity}
+    - Tono Narrativo: ${tone}
     - Contexto del Perfil/Campaña: ${context}
 
-    INSTRUCCIONES:
-    1.  Calcula las fechas reales a partir de la fecha de inicio.
-    2.  Distribuye el contenido de manera estratégica para lograr el objetivo Y al final del periodo.
-    3.  Define plataformas variadas (Instagram, TikTok, Twitter/X, WhatsApp, Facebook).
-    4.  Incluye formatos específicos (Reel, Story, Carrusel, Tweet, Broadcast).
-    5.  Cada entrada debe tener un "Content Hook" (gancho) y un "Micro-Objetivo" diario.
+    FASE 1: SOCIAL LISTENING (SIMULACIÓN)
+    Detecta 3 tendencias probables (simuladas) en la conversación digital actual relacionadas con el contexto político/social que justifiquen el contenido.
+
+    FASE 2: CRONOGRAMA DE PRECISIÓN
+    1.  Calcula las fechas reales.
+    2.  Distribuye el contenido estratégicamente.
+    3.  Define plataformas (Instagram, TikTok, X/Twitter, WhatsApp).
+    4.  **COPYWRITING:** Escribe el copy COMPLETO, persuasivo y adaptado a la plataforma (incluye emojis).
+    5.  **VISUAL CUE:** Instrucciones precisas para el equipo de diseño/video.
+    6.  **LISTENING TRIGGER:** Define qué palabra clave o sentimiento monitorear en los comentarios de ese post para medir el éxito.
 
     FORMATO JSON ESTRICTO.
     `;
@@ -513,22 +521,42 @@ export const generateCronoposting = async (
         type: Type.OBJECT,
         properties: {
             overview: { type: Type.STRING, description: "Resumen estratégico del plan de contenidos." },
+            detectedTrends: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        keyword: { type: Type.STRING },
+                        sentiment: { type: Type.STRING, enum: ['Positivo', 'Negativo', 'Neutro'] },
+                        volume: { type: Type.STRING, enum: ['Alto', 'Medio', 'Bajo'] },
+                        context: { type: Type.STRING }
+                    },
+                    required: ['keyword', 'sentiment', 'volume', 'context']
+                }
+            },
             schedule: {
                 type: Type.ARRAY,
                 items: {
                     type: Type.OBJECT,
                     properties: {
                         date: { type: Type.STRING },
+                        time: { type: Type.STRING },
                         platform: { type: Type.STRING },
                         format: { type: Type.STRING },
+                        headline: { type: Type.STRING },
                         contentTheme: { type: Type.STRING },
-                        objective: { type: Type.STRING }
+                        copy: { type: Type.STRING },
+                        visualCue: { type: Type.STRING },
+                        objective: { type: Type.STRING },
+                        hashtags: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        sentimentTarget: { type: Type.STRING },
+                        listeningFocus: { type: Type.STRING }
                     },
-                    required: ['date', 'platform', 'format', 'contentTheme', 'objective']
+                    required: ['date', 'time', 'platform', 'format', 'headline', 'contentTheme', 'copy', 'visualCue', 'objective', 'hashtags', 'sentimentTarget', 'listeningFocus']
                 }
             }
         },
-        required: ['overview', 'schedule']
+        required: ['overview', 'detectedTrends', 'schedule']
     };
 
     try {
@@ -543,7 +571,7 @@ export const generateCronoposting = async (
         return JSON.parse(response.text || '{}');
     } catch (error) {
         console.error("Error generating cronoposting:", error);
-        throw new Error("No se pudo generar el cronoposting.");
+        throw new Error("No se pudo generar el cronoposting complejo.");
     }
 };
 
