@@ -232,37 +232,63 @@ export interface MarketingStrategyResult {
     }[];
 }
 
-// NEW: Tactical Campaign Result for Specific Targeting
+// --- EXPANDED TACTICAL & CRONOPOSTING TYPES (300% CAPACITY) ---
+
+export interface PsychometricProfile {
+    openness: string; // e.g. "Baja - Prefiere lo conocido"
+    conscientiousness: string; // "Alta - Valora el orden"
+    extraversion: string;
+    agreeableness: string;
+    neuroticism: string; // "Alta - Responde al miedo/seguridad"
+}
+
+export interface ViralPayload {
+    format: string; // "Meme", "Video Vertical", "Tweet Hilo"
+    hook: string; // The attention grabber
+    visual_prompt: string; // DALL-E / Midjourney prompt
+    psychological_trigger: string; // e.g. "Fear of Loss", "Social Proof"
+}
+
 export interface TacticalContent {
     platform: string;
     copy: string;
     visualPrompt: string;
+    objective: string; // Micro-objective for this specific post
 }
 
 export interface TacticalCampaignResult {
-    technicalJustification: string; // Why this candidate angle works for this voter
-    geographicFocus: string[]; // NEW: Specific zones/barrios inferred from history
-    demographicAdaptation: string; // NEW: Specific speech/tone adaptation instructions
+    technicalJustification: string;
+    psychometricProfile: PsychometricProfile; // NEW: OCEAN Model
+    narrativeWarfare: { // NEW: Attack/Defense vectors
+        attack_vector: string;
+        defense_vector: string;
+    };
+    geographicFocus: string[];
+    demographicAdaptation: string;
     slogans: string[];
+    viralPayloads: ViralPayload[]; // NEW: Specific viral content concepts
     socialMediaPosts: TacticalContent[];
     whatsappMessage: string;
-    speechFragment: string; // A hook for a speech
-    groundEvents: string[]; // Specific street actions
+    speechFragment: string;
+    groundEvents: string[];
 }
 
-// NEW: Cronoposting Types
 export interface CronopostingEntry {
-    date: string; // ISO Date or "Semana 1 - Lunes"
+    date: string;
     platform: string;
-    format: string; // Reel, Story, Static, Carousel
+    format: string;
     contentTheme: string;
-    objective: string; // The micro-goal of this post
+    objective: string;
+    asset_prompt: string; // NEW: Detailed visual prompt for every day
+    copy_angle: string; // NEW: Specific angle for the copy
 }
 
 export interface CronopostingResult {
     overview: string;
     schedule: CronopostingEntry[];
 }
+
+// --- END NEW TYPES ---
 
 export interface CandidateProfileResult {
     overview: string;

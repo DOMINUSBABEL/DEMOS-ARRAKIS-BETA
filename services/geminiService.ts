@@ -475,10 +475,11 @@ export const generateTacticalCampaign = async (
     angleProfile: string,
     context: string
 ): Promise<TacticalCampaignResult> => {
+    // UPDATED PROMPT FOR G4/G2 AGENT DEPTH
     const prompt = `
-    ROL: Jefe de Campaña Estratégica Digital y de Campo con Especialización en Geografía Electoral.
+    ROL: Comandante Estratégico Conjunto (Integrando G2 Inteligencia y G4 Comunicaciones).
     
-    TAREA: Diseñar una campaña táctica de marketing dinámico para conectar al CANDIDATO con el VOTANTE.
+    TAREA: Diseñar una campaña táctica de "Guerra de Guerrillas" digital y territorial para conectar al CANDIDATO con el VOTANTE OBJETIVO.
     
     ENTRADA:
     - Candidato: ${candidateName}
@@ -486,15 +487,22 @@ export const generateTacticalCampaign = async (
     - Votante Objetivo: ${voterProfile}
     - Contexto General: ${context}
 
-    REQUISITOS DE RIGOR TÉCNICO:
-    1.  **Justificación Técnica:** Explica en 2 párrafos técnicos por qué este votante conecta con este ángulo. Usa terminología de psicología política y neuromarketing.
-    2.  **Proyección Geográfica (Geographic Focus):** Basado en los perfiles demográficos típicos del contexto (ej: Medellín, Antioquia), infiere y lista 3 Zonas, Comunas o Barrios específicos donde históricamente reside este tipo de votante. Sé preciso (ej: "Comuna 13 - San Javier", "Barrio El Poblado").
-    3.  **Adaptación Demográfica (Demographic Adaptation):** Instrucción específica de cómo calibrar el discurso para este segmento. Define el tono, el vocabulario (slang, formal, técnico) y el ritmo.
-    4.  **Slogans de Combate:** 3 lemas cortos y potentes.
-    5.  **Contenido Redes:** 2 posts detallados.
-    6.  **Mensajería Directa:** Un mensaje para WhatsApp.
-    7.  **Hook de Discurso:** Apertura impactante.
-    8.  **Acciones de Tierra:** 2 eventos tácticos.
+    REQUISITOS DE RIGOR MILITAR (300% CAPACIDAD AUMENTADA):
+    1.  **Justificación Técnica:** Análisis de neuro-política de por qué funciona este match.
+    2.  **Perfil Psicométrico (OCEAN):** Define el perfil Big 5 del votante (Apertura, Responsabilidad, Extroversión, Amabilidad, Neuroticismo) y cómo explotarlo.
+    3.  **Vectores de Guerra Narrativa:** Define un vector de ATAQUE (para contrastar con oponentes) y uno de DEFENSA (para blindar al candidato).
+    4.  **Proyección Geográfica:** Zonas específicas (Barrios/Comunas) inferidas del perfil.
+    5.  **Adaptación Demográfica:** Tono exacto, jerga y ritmo de habla.
+    6.  **Slogans de Combate:** 3 lemas cortos.
+    7.  **Cargas Virales (Viral Payloads):** Genera 3 conceptos de contenido viral específicos con:
+        - Formato (Meme, Reel, Hilo).
+        - Hook (Gancho de atención).
+        - Prompt Visual (Descripción exacta para DALL-E/Midjourney).
+        - Disparador Psicológico.
+    8.  **Redes Sociales:** 2 posts tácticos (Copy + Prompt Visual).
+    9.  **Mensajería Directa:** WhatsApp cadena.
+    10. **Hook de Discurso:** Apertura.
+    11. **Acciones de Tierra:** Eventos de alto impacto.
 
     FORMATO JSON ESTRICTO.
     `;
@@ -503,9 +511,41 @@ export const generateTacticalCampaign = async (
         type: Type.OBJECT,
         properties: {
             technicalJustification: { type: Type.STRING },
+            psychometricProfile: {
+                type: Type.OBJECT,
+                properties: {
+                    openness: { type: Type.STRING },
+                    conscientiousness: { type: Type.STRING },
+                    extraversion: { type: Type.STRING },
+                    agreeableness: { type: Type.STRING },
+                    neuroticism: { type: Type.STRING }
+                },
+                required: ['openness', 'conscientiousness', 'extraversion', 'agreeableness', 'neuroticism']
+            },
+            narrativeWarfare: {
+                type: Type.OBJECT,
+                properties: {
+                    attack_vector: { type: Type.STRING },
+                    defense_vector: { type: Type.STRING }
+                },
+                required: ['attack_vector', 'defense_vector']
+            },
             geographicFocus: { type: Type.ARRAY, items: { type: Type.STRING } },
             demographicAdaptation: { type: Type.STRING },
             slogans: { type: Type.ARRAY, items: { type: Type.STRING } },
+            viralPayloads: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        format: { type: Type.STRING },
+                        hook: { type: Type.STRING },
+                        visual_prompt: { type: Type.STRING },
+                        psychological_trigger: { type: Type.STRING }
+                    },
+                    required: ['format', 'hook', 'visual_prompt', 'psychological_trigger']
+                }
+            },
             socialMediaPosts: {
                 type: Type.ARRAY,
                 items: {
@@ -513,21 +553,22 @@ export const generateTacticalCampaign = async (
                     properties: {
                         platform: { type: Type.STRING },
                         copy: { type: Type.STRING },
-                        visualPrompt: { type: Type.STRING }
+                        visualPrompt: { type: Type.STRING },
+                        objective: { type: Type.STRING }
                     },
-                    required: ['platform', 'copy', 'visualPrompt']
+                    required: ['platform', 'copy', 'visualPrompt', 'objective']
                 }
             },
             whatsappMessage: { type: Type.STRING },
             speechFragment: { type: Type.STRING },
             groundEvents: { type: Type.ARRAY, items: { type: Type.STRING } }
         },
-        required: ['technicalJustification', 'geographicFocus', 'demographicAdaptation', 'slogans', 'socialMediaPosts', 'whatsappMessage', 'speechFragment', 'groundEvents']
+        required: ['technicalJustification', 'psychometricProfile', 'narrativeWarfare', 'geographicFocus', 'demographicAdaptation', 'slogans', 'viralPayloads', 'socialMediaPosts', 'whatsappMessage', 'speechFragment', 'groundEvents']
     };
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-pro-preview', // Upgrade to Pro for complexity
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -547,23 +588,27 @@ export const generateCronoposting = async (
     goal: string,
     context: string
 ): Promise<CronopostingResult> => {
+    // UPDATED PROMPT FOR G4 AGENT DEPTH
     const prompt = `
-    ROL: Estratega Senior de Contenidos Digitales y Community Manager Político.
+    ROL: Director Creativo G4 (Comms Director) especializado en Cronoposting de Alta Frecuencia.
     
-    TAREA: Generar un cronograma de contenidos (Cronoposting) detallado y estratégico.
+    TAREA: Generar una "Cronoposting Matrix" detallada para dominar la narrativa digital.
     
     PARÁMETROS:
     - Duración: ${duration}
-    - Fecha de Inicio: ${startDate}
-    - Objetivo Estratégico (Fin Y): ${goal}
-    - Contexto del Perfil/Campaña: ${context}
+    - Fecha Inicio: ${startDate}
+    - Objetivo: ${goal}
+    - Contexto: ${context}
 
-    INSTRUCCIONES:
-    1.  Calcula las fechas reales a partir de la fecha de inicio.
-    2.  Distribuye el contenido de manera estratégica para lograr el objetivo Y al final del periodo.
-    3.  Define plataformas variadas (Instagram, TikTok, Twitter/X, WhatsApp, Facebook).
-    4.  Incluye formatos específicos (Reel, Story, Carrusel, Tweet, Broadcast).
-    5.  Cada entrada debe tener un "Content Hook" (gancho) y un "Micro-Objetivo" diario.
+    INSTRUCCIONES DE ALTA CAPACIDAD:
+    1.  Calcula fechas exactas.
+    2.  Diseña una secuencia narrativa (no posts aleatorios).
+    3.  Para CADA post, define:
+        - Plataforma y Formato.
+        - Tema de Contenido.
+        - Objetivo Táctico (Micro-Objetivo).
+        - **Asset Prompt (CRÍTICO):** Un prompt detallado para generar la imagen/miniatura en IA (Midjourney/DALL-E).
+        - **Copy Angle:** El ángulo psicológico del texto.
 
     FORMATO JSON ESTRICTO.
     `;
@@ -571,7 +616,7 @@ export const generateCronoposting = async (
     const schema: Schema = {
         type: Type.OBJECT,
         properties: {
-            overview: { type: Type.STRING, description: "Resumen estratégico del plan de contenidos." },
+            overview: { type: Type.STRING, description: "Resumen estratégico del plan." },
             schedule: {
                 type: Type.ARRAY,
                 items: {
@@ -581,9 +626,11 @@ export const generateCronoposting = async (
                         platform: { type: Type.STRING },
                         format: { type: Type.STRING },
                         contentTheme: { type: Type.STRING },
-                        objective: { type: Type.STRING }
+                        objective: { type: Type.STRING },
+                        asset_prompt: { type: Type.STRING },
+                        copy_angle: { type: Type.STRING }
                     },
-                    required: ['date', 'platform', 'format', 'contentTheme', 'objective']
+                    required: ['date', 'platform', 'format', 'contentTheme', 'objective', 'asset_prompt', 'copy_angle']
                 }
             }
         },
@@ -592,7 +639,7 @@ export const generateCronoposting = async (
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-pro-preview', // Upgrade to Pro
             contents: prompt,
             config: {
                 responseMimeType: "application/json",

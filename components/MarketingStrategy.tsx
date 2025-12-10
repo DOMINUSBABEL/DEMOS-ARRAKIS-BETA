@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AnalysisCard from './AnalysisCard';
-import { MegaphoneIcon, LoadingSpinner, UserGroupIcon, ChartBarIcon, MapIcon, SparklesIcon, WarningIcon, CpuChipIcon, ArrowsUpDownIcon, DatabaseIcon, PencilIcon, PhotoIcon, ChatBubbleBottomCenterTextIcon, RocketLaunchIcon, CalendarIcon, ClockIcon } from './Icons';
+import { MegaphoneIcon, LoadingSpinner, UserGroupIcon, ChartBarIcon, MapIcon, SparklesIcon, WarningIcon, CpuChipIcon, ArrowsUpDownIcon, DatabaseIcon, PencilIcon, PhotoIcon, ChatBubbleBottomCenterTextIcon, RocketLaunchIcon, CalendarIcon, ClockIcon, EyeIcon } from './Icons';
 import { generateMarketingStrategy, generateTacticalCampaign, generateCronoposting } from '../services/geminiService';
 import { MarketingStrategyResult, TacticalCampaignResult, CronopostingResult } from '../types';
 
@@ -421,37 +421,96 @@ const MarketingStrategy: React.FC = () => {
                             </div>
 
                             <div className="p-8 space-y-8">
-                                {/* Technical Justification & Geographic Projection */}
+                                {/* Technical Justification & Psychographics */}
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     <div className="bg-gray-50 border-l-4 border-brand-primary p-5 rounded-r-lg">
-                                        <h4 className="text-xs font-bold text-brand-primary uppercase tracking-widest mb-2 flex items-center gap-2">
-                                            <CpuChipIcon className="w-4 h-4"/> Justificación Técnica
+                                        <h4 className="text-xs font-bold text-brand-primary uppercase tracking-widest mb-4 flex items-center gap-2">
+                                            <CpuChipIcon className="w-4 h-4"/> Justificación Técnica & Psicometría
                                         </h4>
-                                        <p className="text-sm text-gray-700 leading-relaxed text-justify">
+                                        <p className="text-sm text-gray-700 leading-relaxed text-justify mb-4">
                                             {tacticalPlan.technicalJustification}
                                         </p>
+                                        
+                                        {/* Psychometric Radar Mini-Vis */}
+                                        {tacticalPlan.psychometricProfile && (
+                                            <div className="bg-white p-3 rounded border border-gray-200">
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Perfil OCEAN (Big 5)</p>
+                                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                                    <div className="flex justify-between border-b border-gray-100 pb-1"><span>Apertura:</span> <span className="font-bold text-blue-600">{tacticalPlan.psychometricProfile.openness}</span></div>
+                                                    <div className="flex justify-between border-b border-gray-100 pb-1"><span>Responsabilidad:</span> <span className="font-bold text-blue-600">{tacticalPlan.psychometricProfile.conscientiousness}</span></div>
+                                                    <div className="flex justify-between border-b border-gray-100 pb-1"><span>Extroversión:</span> <span className="font-bold text-blue-600">{tacticalPlan.psychometricProfile.extraversion}</span></div>
+                                                    <div className="flex justify-between border-b border-gray-100 pb-1"><span>Amabilidad:</span> <span className="font-bold text-blue-600">{tacticalPlan.psychometricProfile.agreeableness}</span></div>
+                                                    <div className="flex justify-between border-b border-gray-100 pb-1"><span>Neuroticismo:</span> <span className="font-bold text-red-600">{tacticalPlan.psychometricProfile.neuroticism}</span></div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="bg-blue-50 border-l-4 border-blue-500 p-5 rounded-r-lg">
-                                        <h4 className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                            <MapIcon className="w-4 h-4"/> Proyección Geográfica (Zonas Objetivo)
-                                        </h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {tacticalPlan.geographicFocus?.map((zone, idx) => (
-                                                <span key={idx} className="px-3 py-1 bg-white border border-blue-200 rounded-full text-xs font-bold text-blue-700 shadow-sm">
-                                                    {zone}
-                                                </span>
-                                            ))}
+                                    
+                                    <div className="space-y-4">
+                                        <div className="bg-blue-50 border-l-4 border-blue-500 p-5 rounded-r-lg">
+                                            <h4 className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                <MapIcon className="w-4 h-4"/> Proyección Geográfica (Zonas Objetivo)
+                                            </h4>
+                                            <div className="flex flex-wrap gap-2 mb-4">
+                                                {tacticalPlan.geographicFocus?.map((zone, idx) => (
+                                                    <span key={idx} className="px-3 py-1 bg-white border border-blue-200 rounded-full text-xs font-bold text-blue-700 shadow-sm">
+                                                        {zone}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            <h4 className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                <UserGroupIcon className="w-4 h-4"/> Adaptación Demográfica
+                                            </h4>
+                                            <p className="text-xs text-gray-600 italic leading-relaxed">
+                                                "{tacticalPlan.demographicAdaptation}"
+                                            </p>
                                         </div>
-                                        <h4 className="text-xs font-bold text-blue-600 uppercase tracking-widest mt-4 mb-2 flex items-center gap-2">
-                                            <UserGroupIcon className="w-4 h-4"/> Adaptación Demográfica
-                                        </h4>
-                                        <p className="text-xs text-gray-600 italic leading-relaxed">
-                                            "{tacticalPlan.demographicAdaptation}"
-                                        </p>
+
+                                        {/* Narrative Warfare */}
+                                        {tacticalPlan.narrativeWarfare && (
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="bg-red-50 p-3 rounded border border-red-100">
+                                                    <p className="text-[10px] font-bold text-red-500 uppercase">Vector de Ataque</p>
+                                                    <p className="text-xs text-gray-700 mt-1">{tacticalPlan.narrativeWarfare.attack_vector}</p>
+                                                </div>
+                                                <div className="bg-green-50 p-3 rounded border border-green-100">
+                                                    <p className="text-[10px] font-bold text-green-600 uppercase">Vector de Defensa</p>
+                                                    <p className="text-xs text-gray-700 mt-1">{tacticalPlan.narrativeWarfare.defense_vector}</p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {/* VIRAL PAYLOADS SECTION */}
+                                {tacticalPlan.viralPayloads && tacticalPlan.viralPayloads.length > 0 && (
+                                    <div className="mt-8">
+                                        <h4 className="text-sm font-bold text-purple-600 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-purple-100 pb-2">
+                                            <SparklesIcon className="w-5 h-5"/> Fábrica de Cargas Virales
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            {tacticalPlan.viralPayloads.map((payload, i) => (
+                                                <div key={i} className="bg-white border border-purple-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all group">
+                                                    <div className="flex justify-between mb-2">
+                                                        <span className="px-2 py-1 bg-purple-100 text-purple-700 text-[10px] font-bold uppercase rounded">{payload.format}</span>
+                                                        <span className="text-[10px] text-gray-400">Concepto #{i+1}</span>
+                                                    </div>
+                                                    <p className="text-sm font-bold text-gray-800 mb-2 leading-tight">"{payload.hook}"</p>
+                                                    <p className="text-xs text-gray-500 mb-3 italic">Trigger: {payload.psychological_trigger}</p>
+                                                    
+                                                    <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                                                        <p className="text-[9px] font-bold text-gray-400 uppercase mb-1 flex items-center gap-1">
+                                                            <PhotoIcon className="w-3 h-3"/> Prompt Visual
+                                                        </p>
+                                                        <p className="text-[10px] text-gray-600 font-mono break-words leading-tight">{payload.visual_prompt}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
                                     {/* Column 1: Copywriting & Speech */}
                                     <div className="space-y-6">
                                         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
@@ -491,7 +550,7 @@ const MarketingStrategy: React.FC = () => {
                                     {/* Column 2: Digital Assets */}
                                     <div className="space-y-6">
                                         <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                            <PencilIcon className="w-4 h-4 text-blue-500"/> Activos Digitales
+                                            <PencilIcon className="w-4 h-4 text-blue-500"/> Activos Digitales Tácticos
                                         </h4>
                                         
                                         {/* Social Media Posts */}
@@ -499,7 +558,7 @@ const MarketingStrategy: React.FC = () => {
                                             <div key={i} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                                                 <div className="bg-gray-100 px-4 py-2 border-b border-gray-200 flex justify-between items-center">
                                                     <span className="text-xs font-bold text-gray-600 uppercase">{post.platform}</span>
-                                                    <span className="text-[10px] text-gray-400 bg-white px-2 py-0.5 rounded border border-gray-200">Post #{i+1}</span>
+                                                    <span className="text-[10px] text-gray-400 bg-white px-2 py-0.5 rounded border border-gray-200">Obj: {post.objective}</span>
                                                 </div>
                                                 <div className="p-4 space-y-3">
                                                     <div>
@@ -598,8 +657,9 @@ const MarketingStrategy: React.FC = () => {
                                                                 <th className="px-4 py-3 text-left">Fecha</th>
                                                                 <th className="px-4 py-3 text-left">Plataforma</th>
                                                                 <th className="px-4 py-3 text-left">Formato</th>
-                                                                <th className="px-4 py-3 text-left">Tema/Hook</th>
-                                                                <th className="px-4 py-3 text-left">Micro-Objetivo</th>
+                                                                <th className="px-4 py-3 text-left w-1/4">Tema/Hook</th>
+                                                                <th className="px-4 py-3 text-left">Copy Angle</th>
+                                                                <th className="px-4 py-3 text-left w-1/4">Visual Prompt (Asset)</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody className="divide-y divide-gray-100">
@@ -617,8 +677,13 @@ const MarketingStrategy: React.FC = () => {
                                                                         </span>
                                                                     </td>
                                                                     <td className="px-4 py-3 text-xs text-gray-600">{entry.format}</td>
-                                                                    <td className="px-4 py-3 text-gray-800 font-medium">{entry.contentTheme}</td>
-                                                                    <td className="px-4 py-3 text-xs text-gray-500 italic">{entry.objective}</td>
+                                                                    <td className="px-4 py-3 text-gray-800 font-medium text-xs leading-snug">{entry.contentTheme}</td>
+                                                                    <td className="px-4 py-3 text-xs text-gray-500 italic">{entry.copy_angle}</td>
+                                                                    <td className="px-4 py-3 text-xs">
+                                                                        <div className="bg-gray-100 p-2 rounded border border-gray-200 font-mono text-[9px] text-gray-600">
+                                                                            {entry.asset_prompt}
+                                                                        </div>
+                                                                    </td>
                                                                 </tr>
                                                             ))}
                                                         </tbody>
