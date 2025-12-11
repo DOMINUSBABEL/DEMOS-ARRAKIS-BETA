@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { ChartBarIcon, DatabaseIcon, ScaleIcon, BeakerIcon, CpuChipIcon, ShareIcon, BookOpenIcon, ListBulletIcon, MapIcon, ClockIcon, UserGroupIcon, CloseIcon, MegaphoneIcon, FingerPrintIcon } from './Icons';
+import { Language } from '../types';
+import { getTranslation } from '../services/i18n';
 
 type Tab = 'data_manager' | 'general' | 'd_hondt' | 'projections' | 'historical' | 'coalitions' | 'list_analysis' | 'strategist' | 'methodology' | 'heatmap' | 'marketing' | 'candidate_intelligence' | 'comparative_analysis' | 'agent_center';
 
@@ -10,6 +12,7 @@ interface SidebarProps {
   loadRemoteData: (type: 'prediction' | 'historical', year: number, scenario?: 'A' | 'B') => Promise<void>;
   isOpen: boolean;
   onClose: () => void;
+  language?: Language;
 }
 
 interface NavItemProps {
@@ -60,7 +63,9 @@ const RemoteButton: React.FC<RemoteButtonProps> = ({ onClick, icon, children }) 
 );
 
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteData, isOpen, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteData, isOpen, onClose, language = 'es' }) => {
+  const t = (key: string) => getTranslation(language, key);
+
   return (
     <aside className={`
         fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 flex flex-col h-full shadow-xl transition-transform duration-300 ease-in-out
@@ -71,7 +76,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteDa
       <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded bg-brand-primary text-white shadow-sm">
-             <ChartBarIcon className="w-6 h-6" />
+             <FingerPrintIcon className="w-6 h-6" />
           </div>
           <div className="flex flex-col">
             <h1 className="text-xl font-black text-brand-primary tracking-tight leading-none font-serif">
@@ -95,22 +100,22 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteDa
             </h3>
         </div>
         <NavItem tabId="data_manager" activeTab={activeTab} setActiveTab={setActiveTab} icon={<DatabaseIcon />}>
-          Gestor de Datos
+          {t('menu.data_manager')}
         </NavItem>
         <NavItem tabId="general" activeTab={activeTab} setActiveTab={setActiveTab} icon={<ChartBarIcon />}>
-          Análisis General
+          {t('menu.general')}
         </NavItem>
         <NavItem tabId="d_hondt" activeTab={activeTab} setActiveTab={setActiveTab} icon={<ScaleIcon />}>
-          Simulador D'Hondt
+          {t('menu.d_hondt')}
         </NavItem>
          <NavItem tabId="historical" activeTab={activeTab} setActiveTab={setActiveTab} icon={<ClockIcon />}>
-          Simulación Histórica
+          {t('menu.historical')}
         </NavItem>
         <NavItem tabId="coalitions" activeTab={activeTab} setActiveTab={setActiveTab} icon={<UserGroupIcon />}>
-          Coaliciones
+          {t('menu.coalitions')}
         </NavItem>
         <NavItem tabId="list_analysis" activeTab={activeTab} setActiveTab={setActiveTab} icon={<ListBulletIcon />}>
-          Listas y Estrategia
+          {t('menu.list_analysis')}
         </NavItem>
         
         <div className="px-6 mt-8 mb-2">
@@ -119,22 +124,22 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteDa
             </h3>
         </div>
          <NavItem tabId="heatmap" activeTab={activeTab} setActiveTab={setActiveTab} icon={<MapIcon />}>
-          Mapa de Calor
+          {t('menu.heatmap')}
         </NavItem>
         <NavItem tabId="projections" activeTab={activeTab} setActiveTab={setActiveTab} icon={<BeakerIcon />}>
-          Proyecciones de Riesgo
+          {t('menu.projections')}
         </NavItem>
         <NavItem tabId="marketing" activeTab={activeTab} setActiveTab={setActiveTab} icon={<MegaphoneIcon />}>
-          Marketing Dinámico
+          {t('menu.marketing')}
         </NavItem>
         <NavItem tabId="candidate_intelligence" activeTab={activeTab} setActiveTab={setActiveTab} icon={<FingerPrintIcon />}>
-          Perfil 360° Candidato
+          {t('menu.candidate_intelligence')}
         </NavItem>
         <NavItem tabId="comparative_analysis" activeTab={activeTab} setActiveTab={setActiveTab} icon={<UserGroupIcon />}>
-          War Games (Comparador)
+          {t('menu.comparative_analysis')}
         </NavItem>
         <NavItem tabId="agent_center" activeTab={activeTab} setActiveTab={setActiveTab} icon={<CpuChipIcon />}>
-          Centro de Mando IA
+          {t('menu.agent_center')}
         </NavItem>
         
         <div className="my-6 mx-6 border-t border-gray-100"></div>
@@ -155,7 +160,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, loadRemoteDa
         <div className="my-6 mx-6 border-t border-gray-100"></div>
 
         <NavItem tabId="methodology" activeTab={activeTab} setActiveTab={setActiveTab} icon={<BookOpenIcon />}>
-            Documentación
+            {t('menu.methodology')}
         </NavItem>
       </nav>
       

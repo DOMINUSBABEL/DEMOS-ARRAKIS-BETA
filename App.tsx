@@ -5,7 +5,7 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import Auth from './components/Auth';
 import { ManualRow } from './components/ManualEntryForm';
-import { ElectoralDataset, PartyAnalysisData, PartyHistoryPoint, ProcessedDataPayload, HistoricalDataset, User } from './types';
+import { ElectoralDataset, PartyAnalysisData, PartyHistoryPoint, ProcessedDataPayload, HistoricalDataset, User, Language } from './types';
 import { processData, aggregateVotesByParty, buildHistoricalDataset } from './services/electoralProcessor';
 import { classifyPartiesIdeology } from './services/geminiService';
 import { parseFiles } from './services/localFileParser';
@@ -32,6 +32,9 @@ function App() {
   const [dataSource, setDataSource] = useState<DataSource>('local');
   const [remoteDataset, setRemoteDataset] = useState<HistoricalDataset | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  
+  // Language State
+  const [language, setLanguage] = useState<Language>('es');
 
   // Check for auth on mount
   useEffect(() => {
@@ -420,7 +423,7 @@ function App() {
   
   // Conditionally render Auth screen or App
   if (!user) {
-      return <Auth onLogin={handleLogin} />;
+      return <Auth onLogin={handleLogin} onLanguageChange={setLanguage} language={language} />;
   }
 
   return (
@@ -441,6 +444,7 @@ function App() {
         loadRemoteData={loadRemoteData} 
         isOpen={isMobileSidebarOpen}
         onClose={() => setIsMobileSidebarOpen(false)}
+        language={language}
       />
       
       <div className="flex-1 flex flex-col overflow-hidden relative">
@@ -450,6 +454,8 @@ function App() {
             onMenuClick={() => setIsMobileSidebarOpen(true)}
             user={user}
             onLogout={handleLogout}
+            language={language}
+            onLanguageChange={setLanguage}
         />
         <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-light-bg">
           {successMessage && (

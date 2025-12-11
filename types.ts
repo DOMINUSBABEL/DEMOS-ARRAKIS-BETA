@@ -571,3 +571,5 @@ export interface ContentCalendarResponse {
         strategy: string;
     }[];
 }
+
+export type Language = 'es' | 'en' | 'fr' | 'de' | 'ru' | 'zh' | 'ar' | 'pt';

@@ -24,7 +24,7 @@
                 primary: '#002855',   // Deep Navy Blue (Institucional)
                 secondary: '#B91C1C', // Deep Red (Acento/Alerta)
                 accent: '#0284C7',    // Sky Blue (Enlaces/Highlights)
-                glow: '#002855',      // Replaced neon glow with primary for cleanliness
+                glow: '#F59E0B',      // SPICE GLOW (Orange/Gold)
               },
               light: {
                   bg: '#F3F4F6',        // Light Gray Background (Paper feel)
@@ -46,17 +46,17 @@
             boxShadow: {
               'report': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
               'report-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-              'glow': '0 0 10px rgba(0, 40, 85, 0.1)', // Subtle shadow
+              'glow': '0 0 15px rgba(245, 158, 11, 0.4)', // Spice shadow
             },
             animation: {
               'fade-in': 'fadeIn 0.4s ease-out forwards',
               'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
               'float': 'float 6s ease-in-out infinite',
               'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              'particle-float': 'particleFloat 15s linear infinite',
-              'drift': 'drift 30s linear infinite',
-              'grid-move': 'gridMove 20s linear infinite',
-              'float-shape': 'floatShape 10s ease-in-out infinite',
+              'particle-float': 'particleFloat 20s linear infinite',
+              'drift': 'drift 60s linear infinite',
+              'grid-move': 'gridMove 40s linear infinite',
+              'float-shape': 'floatShape 15s ease-in-out infinite',
             },
             keyframes: {
               fadeIn: {
@@ -72,9 +72,10 @@
                 '50%': { transform: 'translateY(-20px)' },
               },
               particleFloat: {
-                '0%': { transform: 'translateY(100vh) scale(0)' },
-                '50%': { opacity: 0.8 },
-                '100%': { transform: 'translateY(-10vh) scale(1)', opacity: 0 }
+                '0%': { transform: 'translateY(110vh) translateX(0) scale(0.5)', opacity: 0 },
+                '10%': { opacity: 1 },
+                '90%': { opacity: 1 },
+                '100%': { transform: 'translateY(-10vh) translateX(20px) scale(1.2)', opacity: 0 }
               },
               drift: {
                 '0%': { backgroundPosition: '0% 50%' },
@@ -87,7 +88,7 @@
               },
               floatShape: {
                 '0%, 100%': { transform: 'translateY(0) rotate(0deg)' },
-                '50%': { transform: 'translateY(-20px) rotate(5deg)' }
+                '50%': { transform: 'translateY(-30px) rotate(10deg)' }
               }
             }
           }
@@ -158,44 +159,49 @@
   /* Remove scanlines */
   .scanline-overlay { display: none; }
 
-  /* Animated Background for Auth - CORPORATE EDITION */
+  /* Animated Background for Auth - CORPORATE EDITION - Deepened for contrast */
   .bg-corporate-flow {
-    background: linear-gradient(-45deg, #002855, #001f40, #023e8a, #002855);
+    background: linear-gradient(-45deg, #00152e, #002855, #003366, #001f40);
     background-size: 400% 400%;
-    animation: drift 20s ease infinite;
+    animation: drift 30s ease infinite;
   }
 
   /* Grid Animation */
   .bg-grid-pattern {
-    background-size: 40px 40px;
+    background-size: 60px 60px;
     background-image:
-      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    animation: gridMove 20s linear infinite;
-    mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+      linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    animation: gridMove 30s linear infinite;
+    mask-image: radial-gradient(circle at center, black 60%, transparent 100%);
   }
 
-  /* Data Particles (formerly Spice Motes) */
+  /* Data Particles (Spice Motes) */
   .data-particle {
     position: absolute;
-    background: #ffffff;
     border-radius: 50%;
     opacity: 0;
     animation: particleFloat linear infinite;
+    mix-blend-mode: screen; /* Enhance glow */
+    will-change: transform, opacity; /* Optimization */
   }
 
   .orbital-ring {
     position: absolute;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15); /* Increased visibility */
     border-radius: 50%;
     transform: translate(-50%, -50%);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
+    will-change: transform;
   }
   
   .floating-shape-container {
     position: absolute;
-    opacity: 0.05;
-    animation: floatShape 8s ease-in-out infinite;
+    opacity: 0.15; /* Increased visibility */
+    animation: floatShape 12s ease-in-out infinite;
     color: white;
+    filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));
+    will-change: transform;
   }
 
 </style>
