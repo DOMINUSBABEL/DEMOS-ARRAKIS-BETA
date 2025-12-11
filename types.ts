@@ -259,7 +259,7 @@ export interface TacticalContent {
 export interface TacticalCampaignResult {
     technicalJustification: string;
     psychometricProfile: PsychometricProfile; // NEW: OCEAN Model
-    narrativeWarfare: { // NEW: Attack/Defense vectors
+    narrative_virus: { // NEW: Attack/Defense vectors
         attack_vector: string;
         defense_vector: string;
     };
@@ -282,12 +282,12 @@ export interface CronopostingConfig {
     context: string;
     // New Advanced Parameters
     platforms: string[]; // Instagram, TikTok, X, LinkedIn, Facebook
-    frequency: 'Baja (Calidad)' | 'Media (Constancia)' | 'Alta (Dominancia)' | 'Enjambre (Viral)';
-    tone: 'Institucional' | 'Disruptivo' | 'Empático' | 'Autoridad' | 'Cercano';
-    contentMix: 'Educativo (70/20/10)' | 'Promocional (Agresivo)' | 'Entretenimiento (Viral)' | 'Storytelling (Marca)';
+    frequency: 'Baja (Calidad)' | 'Media (Constancia)' | 'Alta (Dominancia)' | 'Enjambre (Viral)' | 'Blitzkrieg (Saturación)' | 'Sniper (Precisión)' | 'Pulse (Latido)';
+    tone: 'Institucional' | 'Disruptivo' | 'Empático' | 'Autoridad' | 'Cercano' | 'Urgente/Alarmista' | 'Inspirador/Visionario' | 'Científico/Datos' | 'Satírico/Meme';
+    contentMix: 'Educativo (70/20/10)' | 'Promocional (Agresivo)' | 'Entretenimiento (Viral)' | 'Storytelling (Marca)' | 'Engagement (40/40/20)' | 'Conversión (30/30/40)';
     keyFormats: string[]; // Reels, Carruseles, Hilos, Historias
     kpiFocus: 'Alcance' | 'Engagement' | 'Conversión (Votos)' | 'Tráfico';
-    resourcesLevel: 'Bajo (Orgánico)' | 'Medio (Semi-Pro)' | 'Alto (Producción)';
+    resourcesLevel: 'Bajo (Orgánico)' | 'Medio (Semi-Pro)' | 'Alto (Producción)' | 'Cine (Alta Gama)' | 'Guerrilla (Low Cost)';
 }
 
 export interface CronopostingEntry {

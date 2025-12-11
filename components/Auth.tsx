@@ -26,17 +26,18 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                 throw new Error("Por favor completa todos los campos.");
             }
 
-            const validUsers = ['DEMOS', 'GENERAL', 'DEMO'];
+            const validUsers = ['DEMOS', 'ISAAC', 'BABEL'];
             const u = username.toUpperCase();
             const p = password.toUpperCase();
 
-            // Check if username is valid and password matches username (simple rule for now as requested)
+            // Check if username is valid and password matches username
             if (validUsers.includes(u) && p === u) {
-                const userData = { username: u, role: 'admin' as const };
+                const role = u === 'DEMOS' ? 'admin' : 'user';
+                const userData = { username: u, role: role as 'admin' | 'user' };
                 localStorage.setItem('demos_current_user', JSON.stringify(userData));
                 onLogin(userData);
             } else {
-                throw new Error("Credenciales inválidas.");
+                throw new Error("Credenciales inválidas o acceso denegado.");
             }
         } catch (err: any) {
             setError(err.message);
@@ -85,14 +86,14 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none transition-all"
-                                placeholder="Nombre de usuario"
+                                placeholder="ID Operativo"
                             />
                             <UserGroupIcon className="w-5 h-5 text-gray-400 absolute left-3 top-3.5" />
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Contraseña</label>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Clave de Acceso</label>
                         <input 
                             type="password" 
                             value={password}
@@ -114,14 +115,14 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                         disabled={isLoading}
                         className="w-full bg-brand-primary hover:bg-brand-primary/90 text-white font-bold py-3 rounded-lg shadow-md hover:shadow-lg transition-all transform active:scale-[0.98] flex justify-center items-center gap-2"
                     >
-                        {isLoading ? <LoadingSpinner className="w-5 h-5" /> : 'Ingresar al Sistema'}
+                        {isLoading ? <LoadingSpinner className="w-5 h-5" /> : 'Iniciar Sesión Segura'}
                     </button>
                 </form>
             </div>
             
             <div className="mt-8 text-center max-w-xs space-y-2">
                 <p className="text-[10px] text-gray-400 font-mono">
-                    SISTEMA DE USO EXCLUSIVO PARA PERSONAL AUTORIZADO. <br/>
+                    SISTEMA DE USO EXCLUSIVO PARA PERSONAL AUTORIZADO (DEMOS/ISAAC/BABEL). <br/>
                     DEMOS ARRAKIS v3.0
                 </p>
                 <p className="text-[9px] text-brand-primary/60 font-serif italic border-t border-gray-200 pt-2">

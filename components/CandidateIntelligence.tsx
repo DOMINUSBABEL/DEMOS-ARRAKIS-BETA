@@ -320,32 +320,53 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                                                 <p className="text-sm text-gray-600 leading-relaxed">{profileResult.managementAnalysis}</p>
                                             </div>
                                         </div>
-                                        <div className="p-4 bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-lg shadow-md">
-                                            <h4 className="font-bold text-yellow-400 mb-4 flex items-center gap-2"><BeakerIcon className="w-4 h-4"/> Parámetros de Simulación Sugeridos</h4>
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                                                <div>
-                                                    <p className="text-xs text-gray-400 uppercase">Base</p>
-                                                    <p className="text-xl font-bold font-mono">{profileResult.simulationParameters.suggestedVoteBase}</p>
+                                        <div className="p-6 bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-lg shadow-md">
+                                            <h4 className="font-bold text-yellow-400 mb-6 flex items-center gap-2 uppercase tracking-wider text-sm"><BeakerIcon className="w-4 h-4"/> Escenario de Guerra (Proyección Pesimista vs Óptima)</h4>
+                                            
+                                            {/* VISUAL GAP ANALYSIS */}
+                                            <div className="mb-8">
+                                                <div className="flex justify-between text-xs uppercase font-bold text-gray-400 mb-2">
+                                                    <span>Piso (Pesimista)</span>
+                                                    <span>Techo (Meta)</span>
                                                 </div>
-                                                <div>
-                                                    <p className="text-xs text-gray-400 uppercase">Techo</p>
-                                                    <p className="text-xl font-bold font-mono">{profileResult.simulationParameters.suggestedVoteCeiling}</p>
+                                                <div className="relative h-6 bg-gray-700 rounded-full overflow-hidden">
+                                                    {/* Floor Bar */}
+                                                    <div 
+                                                        className="absolute top-0 left-0 h-full bg-red-600" 
+                                                        style={{ width: `${(profileResult.simulationParameters.suggestedVoteBase / profileResult.simulationParameters.suggestedVoteCeiling) * 100}%` }}
+                                                    ></div>
+                                                    {/* Gap Bar */}
+                                                    <div 
+                                                        className="absolute top-0 h-full bg-yellow-500 opacity-50" 
+                                                        style={{ 
+                                                            left: `${(profileResult.simulationParameters.suggestedVoteBase / profileResult.simulationParameters.suggestedVoteCeiling) * 100}%`,
+                                                            width: `${((profileResult.simulationParameters.suggestedVoteCeiling - profileResult.simulationParameters.suggestedVoteBase) / profileResult.simulationParameters.suggestedVoteCeiling) * 100}%` 
+                                                        }}
+                                                    ></div>
                                                 </div>
+                                                <div className="flex justify-between mt-2">
+                                                    <span className="text-xl font-bold font-mono text-red-400">{profileResult.simulationParameters.suggestedVoteBase.toLocaleString('es-CO')}</span>
+                                                    <span className="text-sm font-bold text-yellow-400 mt-1">Gap: +{(profileResult.simulationParameters.suggestedVoteCeiling - profileResult.simulationParameters.suggestedVoteBase).toLocaleString('es-CO')}</span>
+                                                    <span className="text-xl font-bold font-mono text-green-400">{profileResult.simulationParameters.suggestedVoteCeiling.toLocaleString('es-CO')}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4 text-center border-t border-gray-700 pt-4">
                                                 <div>
                                                     <p className="text-xs text-gray-400 uppercase">Volatilidad</p>
-                                                    <p className="text-xl font-bold">{profileResult.simulationParameters.volatility}</p>
+                                                    <p className="text-lg font-bold">{profileResult.simulationParameters.volatility}</p>
                                                 </div>
                                                 <div>
                                                     <p className="text-xs text-gray-400 uppercase">Tendencia</p>
-                                                    <p className="text-xl font-bold">{profileResult.simulationParameters.growthTrend}</p>
+                                                    <p className="text-lg font-bold">{profileResult.simulationParameters.growthTrend}</p>
                                                 </div>
                                             </div>
                                             <div className="mt-4 pt-4 border-t border-gray-700 text-center">
                                                 <button 
                                                     onClick={handleSimulateInDHondt}
-                                                    className="text-xs font-bold bg-yellow-500 text-black px-4 py-2 rounded hover:bg-yellow-400 transition-colors"
+                                                    className="text-xs font-bold bg-yellow-500 text-black px-4 py-2 rounded hover:bg-yellow-400 transition-colors uppercase tracking-wide"
                                                 >
-                                                    Usar estos datos en Simulador D'Hondt
+                                                    Simular Escenario Pesimista en D'Hondt
                                                 </button>
                                             </div>
                                         </div>

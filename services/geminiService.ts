@@ -95,7 +95,11 @@ export const extractDataFromDocument = async (file: { mimeType: string; data: st
 export const generateStrategicReport = async (dataset: HistoricalDataset, partyAnalysis: Map<string, PartyAnalysisData>, targetParty: string, seats: number, focus: string, query: string): Promise<GenerateContentResponse> => {
     return await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
-        contents: `Informe estratégico electoral para "${targetParty}". Contexto: ${dataset.name}, ${seats} curules. Foco: ${focus}. Pregunta: ${query}. Estructura Markdown: Resumen, FODA, Narrativa, Geo-Táctica, Recomendaciones. Usa Google Search.`,
+        contents: `
+        DOCTRINA: El diagnóstico debe ser PESIMISTA. Asume siempre el peor escenario de votos para identificar las brechas reales.
+        TAREA: Informe estratégico para "${targetParty}". Contexto: ${dataset.name}, ${seats} curules. Foco: ${focus}. Pregunta: ${query}. 
+        Estructura Markdown: Resumen (Enfoque Pesimista), FODA, Narrativa, Geo-Táctica, Recomendaciones de Crecimiento (Delta Piso->Techo).
+        `,
         config: { tools: [{ googleSearch: {} }] }
     });
 };
@@ -131,7 +135,13 @@ export const getOpenVsClosedListAnalysis = async (partyName: string, history: an
 
 export const generateMarketingStrategy = async (targetName: string, targetType: 'candidate' | 'party', context: string): Promise<MarketingStrategyResult> => {
     const prompt = `Estrategia Marketing Político "${targetName}". Contexto: ${context}. 
-    JSON: candidateProfile, calculatedBase (number), pipeline (fases 1,2,3 array strings), voterAvatars (id, archetype, demographics, painPoint, channel), candidateAvatars (id, archetype, messaging_angle, visual_style, target_voter_ids), kpis. Match 10 avatars.`;
+    JSON: candidateProfile, calculatedBase (number), pipeline (fases 1,2,3 array strings).
+    
+    CRUCIAL: Genera 12 "voterAvatars" y 12 "candidateAvatars" que sean EXTREMADAMENTE DIVERSOS.
+    - Incluye perfiles no tradicionales (ej. Nómada Digital, Matriarca Rural, Joven Desencantado, Empresario Emergente, Líder Comunitario, Activista Ambiental, etc.).
+    - Para cada votante, define un "candidateAvatar" con un ángulo narrativo único (El Tecnócrata, El Escucha, El Rebelde, El Protector, El Visionario, etc.).
+    
+    Salida JSON Completa.`;
     
     // Schema simplified for brevity but structure maintained
     const schema: Schema = { type: Type.OBJECT, properties: { candidateProfile: { type: Type.STRING }, calculatedBase: { type: Type.INTEGER }, pipeline: { type: Type.OBJECT, properties: { phase1_extraction: {type: Type.ARRAY, items: {type: Type.STRING}}, phase2_execution: {type: Type.ARRAY, items: {type: Type.STRING}}, phase3_conversion: {type: Type.ARRAY, items: {type: Type.STRING}} } }, voterAvatars: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { id: {type: Type.INTEGER}, archetype: {type: Type.STRING}, demographics: {type: Type.STRING}, painPoint: {type: Type.STRING}, channel: {type: Type.STRING} } } }, candidateAvatars: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { id: {type: Type.INTEGER}, archetype: {type: Type.STRING}, messaging_angle: {type: Type.STRING}, visual_style: {type: Type.STRING}, target_voter_ids: {type: Type.ARRAY, items: {type: Type.INTEGER}} } } }, kpis: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { metric: {type: Type.STRING}, target: {type: Type.STRING} } } } } };
@@ -140,24 +150,26 @@ export const generateMarketingStrategy = async (targetName: string, targetType: 
     return JSON.parse(response.text || '{}');
 };
 
-// --- MILITARY GRADE PROMPTS RESTORED ---
+// --- MILITARY GRADE PROMPTS RESTORED & BOOSTED (500% Technical Depth) ---
 
 export const generateTacticalCampaign = async (candidateName: string, voterProfile: string, angleProfile: string, context: string): Promise<TacticalCampaignResult> => {
     const prompt = `
-    ROL: Comandante Estratégico Conjunto (G2/G4). TAREA: Campaña Táctica "Guerra de Guerrillas".
+    ROL: Comandante Estratégico Conjunto (G2/G4). TAREA: Campaña Táctica de Guerra Híbrida.
     ENTRADA: Candidato: ${candidateName}, Ángulo: ${angleProfile}, Votante: ${voterProfile}, Contexto: ${context}.
     
-    REQUISITOS (RIGOR MILITAR - ESPAÑOL):
-    1. Justificación Técnica (Neuro-política).
-    2. Perfil Psicométrico OCEAN.
-    3. Vectores de Guerra Narrativa (Ataque/Defensa).
-    4. Proyección Geográfica (Barrios/Zonas).
-    5. Adaptación Demográfica (Tono/Jerga).
-    6. Slogans de Combate (3).
-    7. Cargas Virales (Format, Hook, Visual Prompt, Trigger).
-    8. Redes Sociales (Platform, Copy, Visual Prompt, Objective).
-    9. Mensaje WhatsApp y Fragmento Discurso.
-    10. Eventos de Tierra.
+    REQUISITOS (RIGOR MILITAR - PSICOMETRÍA AVANZADA):
+    1. **Justificación Técnica:** Basada en Neuropolítica (Framing, Priming) y Sesgos Cognitivos específicos.
+    2. **Perfil Psicométrico OCEAN (Big 5):** Define los niveles (Alto/Medio/Bajo) de Apertura, Responsabilidad, Extroversión, Amabilidad y Neuroticismo del target.
+    3. **Vectores de Guerra Narrativa:** 
+       - Ataque: Definir el "Enemigo Común" o la falencia sistémica a atacar.
+       - Defensa: Definir el "Escudo Moral" o el atributo de inmunización.
+    4. **Proyección Geográfica:** Zonas específicas (barrios/comunas/veredas) inferidas del contexto.
+    5. **Adaptación Demográfica:** Jerga, códigos culturales, arquetipo de voz (e.g., "Paisa Serio", "Joven Disruptivo").
+    6. **Slogans de Combate:** 3 frases cortas de alto impacto emocional (max 5 palabras).
+    7. **Cargas Virales:** Conceptos específicos para Memes, Videos Verticales y Hilos. Define el "Trigger Psicológico" (Miedo, Esperanza, Ira) y el "Hook".
+    8. **Redes Sociales:** Posts tácticos para X, TikTok, IG.
+    9. **Mensaje Directo:** Script para WhatsApp/DM altamente personalizado (Marketing de Guerrilla).
+    10. **Tierra:** Eventos de alto impacto visual y bajo costo.
     `;
 
     const schema: Schema = {
@@ -182,8 +194,18 @@ export const generateTacticalCampaign = async (candidateName: string, voterProfi
 };
 
 export const autoConfigureCronoposting = async (userPrompt: string): Promise<Partial<CronopostingConfig>> => {
-    const prompt = `ROL: Analista Estrategia Digital. TAREA: Configurar campaña cronoposting basada en: "${userPrompt}".
-    Salida JSON: duration, goal, platforms (array), frequency, tone, contentMix, keyFormats (array), kpiFocus, resourcesLevel.`;
+    const prompt = `ROL: Analista Estrategia Digital G3. TAREA: Configurar parámetros técnicos de campaña cronoposting basada en intención: "${userPrompt}".
+    Salida JSON: 
+    - duration (e.g. "2 semanas (Intensiva)")
+    - goal (Objetivo táctico preciso)
+    - platforms (Array: Instagram, TikTok, etc)
+    - frequency (Baja, Media, Alta, Enjambre, Blitzkrieg, Sniper, Pulse)
+    - tone (Institucional, Disruptivo, Empático, Autoridad, Cercano, Urgente/Alarmista, Inspirador/Visionario, Científico/Datos, Satírico/Meme)
+    - contentMix (Educativo, Promocional, Entretenimiento, Storytelling, Engagement, Conversión)
+    - keyFormats (Array: Reels, Carruseles...)
+    - kpiFocus (Alcance, Engagement, Conversión, Tráfico)
+    - resourcesLevel (Bajo, Medio, Alto, Cine, Guerrilla)`;
+    
     const schema: Schema = { type: Type.OBJECT, properties: { duration: {type:Type.STRING}, goal: {type:Type.STRING}, platforms: {type:Type.ARRAY, items:{type:Type.STRING}}, frequency: {type:Type.STRING}, tone: {type:Type.STRING}, contentMix: {type:Type.STRING}, keyFormats: {type:Type.ARRAY, items:{type:Type.STRING}}, kpiFocus: {type:Type.STRING}, resourcesLevel: {type:Type.STRING} } };
     const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json", responseSchema: schema } });
     return JSON.parse(response.text || '{}');
@@ -191,11 +213,20 @@ export const autoConfigureCronoposting = async (userPrompt: string): Promise<Par
 
 export const generateCronoposting = async (config: CronopostingConfig): Promise<CronopostingResult> => {
     const prompt = `
-    ROL: Director Creativo G4 (Guerra Cognitiva). TAREA: Matriz Cronoposting Alta Frecuencia.
+    ROL: Director Creativo G4 (Guerra Cognitiva). TAREA: Generar Matriz de Cronoposting de Alta Frecuencia y Precisión.
     PARAMS: ${JSON.stringify(config)}.
-    INSTRUCCIONES (500% BOOST):
-    - Secuencia narrativa coherente (Storytelling Arc).
-    - Para CADA post: Fecha, Plataforma, Formato, Tema, Objetivo, ASSET PROMPT (Técnico Midjourney), COPY ANGLE (Psicológico), FRAMEWORK (AIDA/PAS), Hashtags, Best Time, Composición Visual.
+    
+    INSTRUCCIONES DE ALTA COMPLEJIDAD (500% BOOST):
+    1. **Estrategia Fractal:** Cada post es un nodo en una red narrativa. Deben tener coherencia secuencial.
+    2. **Asset Prompts (Midjourney v6/DALL-E 3):** Escribe prompts de ingeniería visual detallados. Incluye: estilo de cámara, iluminación, composición, paleta de colores, relación de aspecto (--ar 9:16 o --ar 4:5). Ejemplo: "Cinematic shot, low angle, hyper-realistic..."
+    3. **Copywriting Frameworks:** Para cada post, especifica la técnica usada:
+       - AIDA (Atención, Interés, Deseo, Acción)
+       - PAS (Problema, Agitación, Solución)
+       - BAB (Before, After, Bridge)
+       - 4Us (Urgent, Unique, Ultra-specific, Useful)
+       - Storybrand
+    4. **Psychological Triggers:** Identifica qué sesgo ataca (Escasez, Autoridad, Prueba Social, Enemigo Común).
+    5. **Best Time:** Hora óptima de publicación basada en comportamiento de la audiencia.
     `;
     
     const schema: Schema = {
@@ -231,7 +262,13 @@ export const generateCronoposting = async (config: CronopostingConfig): Promise<
 };
 
 export const generatePostStructure = async (entry: CronopostingEntry, candidateName: string, context: string): Promise<SocialPostResult> => {
-    const prompt = `ROL: Copywriter Político Senior. TAREA: Redactar post. Candidato: ${candidateName}. Contexto: ${context}. Entry: ${JSON.stringify(entry)}. JSON: caption, hashtags, image_prompt (refinado), strategic_notes.`;
+    const prompt = `ROL: Copywriter Político Senior. TAREA: Redactar post final. Candidato: ${candidateName}. Contexto: ${context}. Entry Planificado: ${JSON.stringify(entry)}. 
+    
+    IMPORTANTE: Genera un 'image_prompt' EXTREMADAMENTE DETALLADO Y ESTRUCTURADO (estilo Midjourney/DALL-E 3) para ser consumido por un modelo de generación de imagen Pro.
+    Incluye: Sujeto, Acción, Entorno, Iluminación, Estilo de Cámara, Paleta de Colores, Relación de Aspecto.
+    
+    JSON Output.`;
+    
     const schema: Schema = { type: Type.OBJECT, properties: { caption: {type:Type.STRING}, hashtags: {type:Type.ARRAY, items:{type:Type.STRING}}, image_prompt: {type:Type.STRING}, strategic_notes: {type:Type.STRING} } };
     const response = await ai.models.generateContent({ model: 'gemini-3-pro-preview', contents: prompt, config: { responseMimeType: "application/json", responseSchema: schema } });
     return JSON.parse(response.text || '{}');
@@ -239,14 +276,43 @@ export const generatePostStructure = async (entry: CronopostingEntry, candidateN
 
 export const generateNanoBananaImage = async (prompt: string): Promise<string> => {
     try {
-        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash-image', contents: { parts: [{ text: prompt }] } });
-        for (const part of response.candidates[0].content.parts) { if (part.inlineData) return part.inlineData.data; }
+        // Upgrade to Nano Banana Pro (gemini-3-pro-image-preview)
+        // Ensure prompt is treated as the text part
+        const response = await ai.models.generateContent({ 
+            model: 'gemini-3-pro-image-preview', 
+            contents: { parts: [{ text: prompt }] },
+            config: {
+                imageConfig: {
+                    aspectRatio: "1:1", // Default square for safety, though social media often uses 9:16
+                    imageSize: "1K"     // High quality
+                }
+            }
+        });
+        
+        // Iterate to find the image part
+        for (const candidate of response.candidates || []) {
+            for (const part of candidate.content.parts) {
+                if (part.inlineData) {
+                    return part.inlineData.data;
+                }
+            }
+        }
         throw new Error("No image generated.");
     } catch (error) { console.error(error); throw new Error("Image generation failed."); }
 };
 
 export const generateCandidateProfile = async (candidateName: string, context: string, history: any[]): Promise<CandidateProfileResult> => {
-    const prompt = `Perfil Político "${candidateName}". Contexto: ${context}. Historial: ${JSON.stringify(history)}. JSON: overview, opinionAnalysis, managementAnalysis, simulationParameters (base, floor, ceiling, volatility, trend). Usa Google Search.`;
+    const prompt = `
+    PERFIL DE INTELIGENCIA POLÍTICA: "${candidateName}".
+    
+    DOCTRINA: "PESSIMISTIC BASELINE".
+    Calcula 'suggestedVoteBase' como el PEOR ESCENARIO (PISO) posible basado en la historia y el contexto.
+    Calcula 'suggestedVoteCeiling' como el POTENCIAL MÁXIMO (TECHO) si la campaña es perfecta.
+    
+    Contexto: ${context}. Historial: ${JSON.stringify(history)}.
+    
+    JSON: overview, opinionAnalysis, managementAnalysis, simulationParameters (suggestedVoteBase, suggestedVoteFloor, suggestedVoteCeiling, volatility, growthTrend). Usa Google Search.
+    `;
     const schema: Schema = { type: Type.OBJECT, properties: { overview: {type:Type.STRING}, opinionAnalysis: {type:Type.STRING}, managementAnalysis: {type:Type.STRING}, simulationParameters: { type: Type.OBJECT, properties: { suggestedVoteBase: {type:Type.INTEGER}, suggestedVoteFloor: {type:Type.INTEGER}, suggestedVoteCeiling: {type:Type.INTEGER}, volatility: {type:Type.STRING}, growthTrend: {type:Type.STRING} } }, sources: {type:Type.ARRAY, items:{type:Type.OBJECT}} } };
     const response = await ai.models.generateContent({ model: 'gemini-3-pro-preview', contents: prompt, config: { responseMimeType: "application/json", responseSchema: schema, tools: [{ googleSearch: {} }] } });
     const res = JSON.parse(response.text || '{}');

@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import { runIntelDirector, runStrategyDirector, runCommsDirector, runCounterDirector, runOpsDirector } from '../services/geminiService';
 import { IntelReport, StrategyReport, CommsReport, CounterReport, OpsReport } from '../types';
 import { EyeIcon, UserGroupIcon, MegaphoneIcon, LoadingSpinner, SparklesIcon, ShareIcon, MapIcon, ChartBarIcon, CalendarIcon, CpuChipIcon, WarningIcon } from './Icons';
+import MemorySystem from './MemorySystem';
 
 type DirectorType = 'G2' | 'G3' | 'G4' | 'G5' | 'G1';
 
@@ -369,6 +370,17 @@ const WarRoom: React.FC = () => {
         }
     };
 
+    const handleLoadMemory = (data: any) => {
+        if (data) {
+            if (data.g2Report) setG2Report(data.g2Report);
+            if (data.g3Report) setG3Report(data.g3Report);
+            if (data.g4Report) setG4Report(data.g4Report);
+            if (data.g5Report) setG5Report(data.g5Report);
+            if (data.g1Report) setG1Report(data.g1Report);
+            if (data.context) setContext(data.context);
+        }
+    };
+
     const DirectorTab = ({ id, label, icon, color }: { id: DirectorType, label: string, icon: React.ReactNode, color: string }) => (
         <button
             onClick={() => { setActiveDirector(id); setJointMode(false); }}
@@ -390,7 +402,15 @@ const WarRoom: React.FC = () => {
                         <span className="text-[10px] text-gray-500 font-mono">ESTADO MAYOR CONJUNTO - IA</span>
                     </div>
                 </div>
-                <DefconStatus level={3} />
+                <div className="flex items-center gap-4">
+                    <MemorySystem 
+                        type="simulation" // Reusing simulation type or define a new one if strict
+                        dataToSave={{ g2Report, g3Report, g4Report, g5Report, g1Report, context }} 
+                        onLoad={handleLoadMemory} 
+                        canSave={!!(g2Report || g3Report || g4Report || g5Report || g1Report)} 
+                    />
+                    <DefconStatus level={3} />
+                </div>
             </div>
 
             {/* Main Grid */}
