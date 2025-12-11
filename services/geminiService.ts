@@ -305,23 +305,50 @@ export const generateCandidateProfile = async (candidateName: string, context: s
     const prompt = `
     PERFIL DE INTELIGENCIA POLÍTICA: "${candidateName}".
     
+    PROTOCOLO DEEP RESEARCH ACTIVADO:
+    1. Utiliza Google Search para buscar escándalos recientes, declaraciones polémicas, votaciones históricas y alianzas ocultas.
+    2. No alucines información. Si no encuentras datos exactos, infiere basándote en el partido y la región, pero márcalo como inferencia.
+    3. Busca tendencias de opinión pública recientes en noticias locales.
+
     DOCTRINA: "PESSIMISTIC BASELINE".
-    Calcula 'suggestedVoteBase' como el PEOR ESCENARIO (PISO) posible basado en la historia y el contexto.
+    Calcula 'suggestedVoteBase' como el PEOR ESCENARIO (PISO) posible basado en la historia y el contexto encontrado.
     Calcula 'suggestedVoteCeiling' como el POTENCIAL MÁXIMO (TECHO) si la campaña es perfecta.
     
-    Contexto: ${context}. Historial: ${JSON.stringify(history)}.
+    Contexto Local (Cargado por usuario): ${context}.
+    Historial Electoral Interno: ${JSON.stringify(history)}.
     
-    JSON: overview, opinionAnalysis, managementAnalysis, simulationParameters (suggestedVoteBase, suggestedVoteFloor, suggestedVoteCeiling, volatility, growthTrend). Usa Google Search.
+    JSON Output: overview, opinionAnalysis, managementAnalysis, simulationParameters (suggestedVoteBase, suggestedVoteFloor, suggestedVoteCeiling, volatility, growthTrend).
     `;
     const schema: Schema = { type: Type.OBJECT, properties: { overview: {type:Type.STRING}, opinionAnalysis: {type:Type.STRING}, managementAnalysis: {type:Type.STRING}, simulationParameters: { type: Type.OBJECT, properties: { suggestedVoteBase: {type:Type.INTEGER}, suggestedVoteFloor: {type:Type.INTEGER}, suggestedVoteCeiling: {type:Type.INTEGER}, volatility: {type:Type.STRING}, growthTrend: {type:Type.STRING} } }, sources: {type:Type.ARRAY, items:{type:Type.OBJECT}} } };
-    const response = await ai.models.generateContent({ model: 'gemini-3-pro-preview', contents: prompt, config: { responseMimeType: "application/json", responseSchema: schema, tools: [{ googleSearch: {} }] } });
+    
+    // Enable Google Search for Deep Research
+    const response = await ai.models.generateContent({ 
+        model: 'gemini-3-pro-preview', 
+        contents: prompt, 
+        config: { 
+            responseMimeType: "application/json", 
+            responseSchema: schema, 
+            tools: [{ googleSearch: {} }] 
+        } 
+    });
     const res = JSON.parse(response.text || '{}');
     res.sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
     return res;
 };
 
 export const generateCandidateComparison = async (candidates: string[], context: string): Promise<CandidateComparisonResult> => {
-    const prompt = `War Game Comparativo: ${JSON.stringify(candidates)}. Contexto: ${context}. JSON: listVerdict, partyMetrics (totalListVotes, candidateVotesSubtotal, logoVotes, logoPercentage), candidates (array), scenarios (array).`;
+    const prompt = `
+    War Game Comparativo (Deep Research): ${JSON.stringify(candidates)}. 
+    
+    TAREA:
+    1. Busca activamente las debilidades y fortalezas recientes de CADA candidato usando Google Search.
+    2. Compara maquinaria real vs opinión pública actual.
+    3. Detecta "trapos sucios" o escándalos recientes que afecten el "scandalPenalty".
+    
+    Contexto: ${context}. 
+    
+    JSON: listVerdict, partyMetrics (totalListVotes, candidateVotesSubtotal, logoVotes, logoPercentage), candidates (array), scenarios (array).
+    `;
     const schema: Schema = { 
         type: Type.OBJECT, 
         properties: { 
@@ -331,6 +358,16 @@ export const generateCandidateComparison = async (candidates: string[], context:
             scenarios: {type:Type.ARRAY, items:{type:Type.OBJECT, properties:{name:{type:Type.STRING}, description:{type:Type.STRING}, swingVotes:{type:Type.INTEGER}, winner:{type:Type.STRING}, voteProjections:{type:Type.ARRAY, items:{type:Type.OBJECT, properties:{candidateName:{type:Type.STRING}, votes:{type:Type.INTEGER}}}}}}} 
         } 
     };
-    const response = await ai.models.generateContent({ model: 'gemini-3-pro-preview', contents: prompt, config: { responseMimeType: "application/json", responseSchema: schema, tools: [{ googleSearch: {} }] } });
+    
+    // Enable Google Search for War Games
+    const response = await ai.models.generateContent({ 
+        model: 'gemini-3-pro-preview', 
+        contents: prompt, 
+        config: { 
+            responseMimeType: "application/json", 
+            responseSchema: schema, 
+            tools: [{ googleSearch: {} }] 
+        } 
+    });
     return JSON.parse(response.text || '{}');
 };

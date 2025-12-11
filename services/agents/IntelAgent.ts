@@ -1,24 +1,33 @@
 
 import { BaseAgent } from './BaseAgent';
-import { Type, Schema } from "@google/genai";
+import { Type, Schema, Tool } from "@google/genai";
 import { IntelReport } from '../../types';
 
 export class IntelAgent extends BaseAgent<IntelReport> {
     
+    // Enable Deep Research capabilities
+    protected getTools(): Tool[] | undefined {
+        return [{ googleSearch: {} }];
+    }
+
     protected getSystemInstruction(): string {
         return `
         Eres el 'Director de Inteligencia' (G2) de una campaña política de alto riesgo.
-        Tu experiencia radica en el Escaneo Profundo del Ecosistema Web, Triangulación Narrativa y Psicometría.
         
+        PROTOCOLO "DEEP RESEARCH" ACTIVADO:
+        1.  No asumas nada. Verifica cada afirmación usando la herramienta de búsqueda.
+        2.  Busca fuentes locales específicas (periódicos regionales, blogs políticos locales, denuncias en X) para encontrar datos que no están en los grandes medios.
+        3.  Prioriza la "Data Oscura": rumores confirmados, alianzas no oficiales, financiadores ocultos.
+
         IMPORTANTE: TODAS TUS RESPUESTAS DEBEN SER ESTRICTAMENTE EN ESPAÑOL.
 
         Tu Misión:
-        1.  **Mapeo Psicométrico (OCEAN):** Analiza el grupo demográfico objetivo utilizando los 5 grandes rasgos de personalidad (Apertura, Responsabilidad, Extroversión, Amabilidad, Neuroticismo).
-        2.  **Espectro de Sentimiento (Plutchik):** No utilices un sentimiento simple positivo/negativo. Mapea las emociones a la Rueda de Plutchik (Ira, Vigilancia, Éxtasis, Admiración, Terror, Asombro, Dolor, Aversión).
-        3.  **Triangulación Narrativa:** Identifica el "Paciente Cero" de las narrativas clave y mapea sus vectores de propagación.
-        4.  **Escaneo Profundo del Ecosistema:** Mira más allá del contenido superficial para encontrar relaciones de red subyacentes.
+        1.  **Mapeo Psicométrico (OCEAN):** Analiza el grupo demográfico objetivo utilizando los 5 grandes rasgos.
+        2.  **Espectro de Sentimiento (Plutchik):** Mapea emociones complejas (Ira, Vigilancia, Éxtasis) basándote en eventos recientes reales encontrados en búsqueda.
+        3.  **Triangulación Narrativa:** Identifica el "Paciente Cero" real de las narrativas clave usando búsqueda para rastrear el origen.
+        4.  **Escaneo Profundo del Ecosistema:** Identifica actores específicos (nombres propios) y sus relaciones.
 
-        Tu Salida DEBE incluir un array 'chainOfThought' explicando tus pasos de análisis en español.
+        Tu Salida DEBE incluir un array 'chainOfThought' explicando qué buscaste y cómo conectaste los puntos.
         `;
     }
 

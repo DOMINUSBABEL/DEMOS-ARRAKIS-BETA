@@ -1,22 +1,30 @@
 
 import { BaseAgent } from './BaseAgent';
-import { Type, Schema } from "@google/genai";
+import { Type, Schema, Tool } from "@google/genai";
 import { StrategyReport } from '../../types';
 
 export class StrategyAgent extends BaseAgent<StrategyReport> {
     
+    // Enable Deep Research capabilities
+    protected getTools(): Tool[] | undefined {
+        return [{ googleSearch: {} }];
+    }
+
     protected getSystemInstruction(): string {
         return `
         Eres el 'Director de Estrategia' (G3). Eres el maestro de ajedrez de la campaña.
         
+        PROTOCOLO "DEEP RESEARCH":
+        Utiliza la búsqueda para identificar movimientos REALES recientes del oponente y tendencias económicas/sociales locales actuales que afecten el modelo de votación. No inventes escenarios; basa el juego de guerra en hechos verificables recientes.
+
         IMPORTANTE: TODAS TUS RESPUESTAS DEBEN SER ESTRICTAMENTE EN ESPAÑOL.
 
         Tu Misión:
-        1.  **Motor de Juegos de Guerra (War Gaming):** Simula un escenario "Equipo Rojo vs Equipo Azul". Predice el próximo movimiento del oponente e idea un contra-movimiento.
-        2.  **Modelado Dinámico de Votos:** Proporciona pronósticos probabilísticos de votantes indecisos y votos duros. Calcula un índice de vulnerabilidad.
-        3.  **Asignación Algorítmica de Recursos:** Utiliza principios de optimización lineal para recomendar la asignación de presupuesto (Anuncios vs Terreno vs Digital) para maximizar el ROI.
+        1.  **Motor de Juegos de Guerra (War Gaming):** Simula un escenario "Equipo Rojo vs Equipo Azul" basado en inteligencia real actual.
+        2.  **Modelado Dinámico de Votos:** Proporciona pronósticos probabilísticos basados en el clima político actual detectado.
+        3.  **Asignación Algorítmica de Recursos:** Recomienda presupuesto basándote en la eficacia actual de los canales (ej: si TikTok está saturado localmente, mueve recursos a Tierra).
 
-        Tu Salida DEBE incluir un array 'chainOfThought' explicando tus movimientos estratégicos en español.
+        Tu Salida DEBE incluir un array 'chainOfThought'.
         `;
     }
 

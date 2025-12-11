@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, Type, Schema } from "@google/genai";
+import { GoogleGenAI, Type, Schema, Tool } from "@google/genai";
 
 export abstract class BaseAgent<T> {
     protected ai: GoogleGenAI;
@@ -12,6 +12,11 @@ export abstract class BaseAgent<T> {
 
     protected abstract getSystemInstruction(): string;
     protected abstract getSchema(): Schema;
+    
+    // New method to be overridden by agents needing Deep Research capabilities
+    protected getTools(): Tool[] | undefined {
+        return undefined;
+    }
 
     /**
      * Executes the agent's logic.
@@ -39,7 +44,7 @@ export abstract class BaseAgent<T> {
                     systemInstruction: this.getSystemInstruction(),
                     responseMimeType: "application/json",
                     responseSchema: this.getSchema(),
-                    // Tools like search can be enabled in concrete classes if needed by overriding
+                    tools: this.getTools(), // Inject tools here
                 }
             });
 

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import AnalysisCard from './AnalysisCard';
-import { MegaphoneIcon, LoadingSpinner, UserGroupIcon, ChartBarIcon, MapIcon, SparklesIcon, WarningIcon, CpuChipIcon, ArrowsUpDownIcon, DatabaseIcon, PencilIcon, PhotoIcon, ChatBubbleBottomCenterTextIcon, RocketLaunchIcon, CalendarIcon, ClockIcon, EyeIcon, FilePdfIcon, CloseIcon } from './Icons';
+import { MegaphoneIcon, LoadingSpinner, UserGroupIcon, ChartBarIcon, MapIcon, SparklesIcon, WarningIcon, CpuChipIcon, ArrowsUpDownIcon, DatabaseIcon, PencilIcon, PhotoIcon, ChatBubbleBottomCenterTextIcon, RocketLaunchIcon, CalendarIcon, ClockIcon, EyeIcon, FilePdfIcon, CloseIcon, ChevronDownIcon } from './Icons';
 import { generateMarketingStrategy, generateTacticalCampaign, generateCronoposting, autoConfigureCronoposting, generatePostStructure, generateNanoBananaImage } from '../services/geminiService';
 import { generateMarketingFullReportPDF } from '../services/reportGenerator';
 import { MarketingStrategyResult, TacticalCampaignResult, CronopostingResult, CronopostingConfig, CronopostingEntry, SocialPostResult } from '../types';
@@ -16,11 +16,32 @@ interface CanvasState {
     generatedImage: string | null;
 }
 
+const PRESETS = {
+    maria_teresa: {
+        label: "María Teresa Montoya (Objetivo 40k)",
+        targetName: "María Teresa Montoya Álvarez",
+        targetType: 'candidate' as const,
+        context: "Candidata Cámara Antioquia 2026 (Centro Democrático). Perfil: Rectora Colegio Horizontes (Rionegro) y Geóloga EAFIT. Base actual: ~22.000 (Voto Oriente + Opinión). Meta: 40.000 votos para asegurar la 5ta curul. Narrativa: 'La Rectora de Antioquia' - Orden, Educación y Medio Ambiente Técnico.",
+        cronoGoal: "Movilizar red de padres de familia y voto de opinión en Rionegro/Medellín para saltar de 22k a 40k votos.",
+        tone: 'Autoridad' as const,
+        mix: 'Educativo (70/20/10)' as const
+    },
+    john_berrio: {
+        label: "John Jairo Berrío (Base Norte)",
+        targetName: "John Jairo Berrío",
+        targetType: 'candidate' as const,
+        context: "Diputado de Antioquia (Centro Democrático). Base: Medellín, Bello, Norte del Valle de Aburrá. Enfoque: Seguridad y Obras.",
+        cronoGoal: "Consolidar voto popular en Bello y expandir en Norte.",
+        tone: 'Cercano' as const,
+        mix: 'Promocional (Agresivo)' as const
+    }
+};
+
 const MarketingStrategy: React.FC = () => {
-    // Initial State Pre-filled with Simulation Data for John Jairo Berrío
-    const [targetName, setTargetName] = useState('John Jairo Berrío');
-    const [targetType, setTargetType] = useState<'candidate' | 'party'>('candidate');
-    const [context, setContext] = useState('Diputado de Antioquia (Centro Democrático). Base: Medellín, Bello, Norte del Valle de Aburrá. Enfoque: Seguridad y Obras.');
+    // Initial State Pre-filled with Maria Teresa Montoya Scenario
+    const [targetName, setTargetName] = useState(PRESETS.maria_teresa.targetName);
+    const [targetType, setTargetType] = useState<'candidate' | 'party'>(PRESETS.maria_teresa.targetType);
+    const [context, setContext] = useState(PRESETS.maria_teresa.context);
     const [isLoading, setIsLoading] = useState(false);
     
     // Ref for Full Report Export
@@ -39,6 +60,7 @@ const MarketingStrategy: React.FC = () => {
     const [isAutoConfiguring, setIsAutoConfiguring] = useState(false);
     const [cronopostingResult, setCronopostingResult] = useState<CronopostingResult | null>(null);
     const [magicPrompt, setMagicPrompt] = useState('');
+    const [isPresetMenuOpen, setIsPresetMenuOpen] = useState(false);
     
     // Canvas State
     const [canvasState, setCanvasState] = useState<CanvasState>({
@@ -51,18 +73,36 @@ const MarketingStrategy: React.FC = () => {
     });
     
     const [cronoConfig, setCronoConfig] = useState<CronopostingConfig>({
-        duration: '1 semana (Intensiva)',
+        duration: '2 semanas (Intensiva)',
         startDate: new Date().toISOString().split('T')[0],
-        goal: 'Conseguir al menos la 5ta curul aumentando votos a 40.000',
+        goal: PRESETS.maria_teresa.cronoGoal,
         context: '',
-        platforms: ['Instagram', 'TikTok', 'Facebook'],
+        platforms: ['Instagram', 'WhatsApp', 'TikTok'], // WhatsApp is key for her network
         frequency: 'Alta (Dominancia)',
-        tone: 'Institucional',
-        contentMix: 'Educativo (70/20/10)',
-        keyFormats: ['Reels', 'Videos Verticales'],
-        kpiFocus: 'Alcance',
+        tone: PRESETS.maria_teresa.tone,
+        contentMix: PRESETS.maria_teresa.mix,
+        keyFormats: ['Videos Verticales', 'Hilos', 'Testimonios'],
+        kpiFocus: 'Conversión (Votos)',
         resourcesLevel: 'Medio (Semi-Pro)'
     });
+
+    const handleLoadPreset = (key: keyof typeof PRESETS) => {
+        const p = PRESETS[key];
+        setTargetName(p.targetName);
+        setTargetType(p.targetType);
+        setContext(p.context);
+        setCronoConfig(prev => ({
+            ...prev,
+            goal: p.cronoGoal,
+            tone: p.tone,
+            contentMix: p.mix
+        }));
+        setIsPresetMenuOpen(false);
+        // Reset results
+        setStrategy(null);
+        setTacticalPlan(null);
+        setCronopostingResult(null);
+    };
 
     const handleCronoConfigChange = (key: keyof CronopostingConfig, value: any) => {
         setCronoConfig(prev => ({ ...prev, [key]: value }));
@@ -158,7 +198,7 @@ const MarketingStrategy: React.FC = () => {
             Perfil Táctico Seleccionado:
             Justificación: ${tacticalPlan.technicalJustification}
             Adaptación Demográfica: ${tacticalPlan.demographicAdaptation}
-            Foco Geográfico: ${tacticalPlan.geographicFocus.join(', ')}
+            Foco Geográfico: ${tacticalPlan.geographicFocus?.join(', ') || ''}
         `;
 
         const fullConfig = { ...cronoConfig, context: enhancedContext };
@@ -255,30 +295,61 @@ const MarketingStrategy: React.FC = () => {
             </div>
 
             <AnalysisCard title="Configuración de Objetivo" explanation="Define el candidato o partido y el contexto estratégico para iniciar la generación de inteligencia de marketing." icon={<MegaphoneIcon />} fullscreenable={false} collapsible={true} defaultCollapsed={!!strategy}>
-                <form onSubmit={handleSubmit} className="p-6 grid grid-cols-1 gap-6 bg-white rounded-b-lg">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Nombre del Objetivo</label>
-                            <input type="text" value={targetName} onChange={(e) => setTargetName(e.target.value)} placeholder="Ej: Juan Pérez" className="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-3 focus:ring-2 focus:ring-brand-primary focus:border-brand-primary transition-all" />
+                <div className="p-6 grid grid-cols-1 gap-6 bg-white rounded-b-lg relative">
+                    <div className="absolute top-4 right-6 z-10">
+                        <div className="relative">
+                            <button 
+                                type="button"
+                                onClick={() => setIsPresetMenuOpen(!isPresetMenuOpen)}
+                                className="flex items-center gap-2 text-xs font-bold text-brand-primary bg-blue-50 px-3 py-1.5 rounded-full border border-blue-100 hover:bg-blue-100 transition-colors"
+                            >
+                                <SparklesIcon className="w-3 h-3" />
+                                Carga Rápida
+                                <ChevronDownIcon className="w-3 h-3" />
+                            </button>
+                            {isPresetMenuOpen && (
+                                <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-xl z-20 overflow-hidden">
+                                    <div className="py-1">
+                                        {Object.entries(PRESETS).map(([key, data]) => (
+                                            <button
+                                                key={key}
+                                                onClick={() => handleLoadPreset(key as keyof typeof PRESETS)}
+                                                className="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                            >
+                                                {data.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Tipo de Objetivo</label>
-                            <div className="flex space-x-6 mt-3">
-                                <label className="flex items-center cursor-pointer group"><input type="radio" checked={targetType === 'candidate'} onChange={() => setTargetType('candidate')} className="form-radio text-brand-primary h-4 w-4" /><span className="ml-2 text-sm text-gray-700 font-medium">Candidato</span></label>
-                                <label className="flex items-center cursor-pointer group"><input type="radio" checked={targetType === 'party'} onChange={() => setTargetType('party')} className="form-radio text-brand-primary h-4 w-4" /><span className="ml-2 text-sm text-gray-700 font-medium">Partido</span></label>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Nombre del Objetivo</label>
+                                <input type="text" value={targetName} onChange={(e) => setTargetName(e.target.value)} placeholder="Ej: Juan Pérez" className="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-3 focus:ring-2 focus:ring-brand-primary focus:border-brand-primary transition-all" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Tipo de Objetivo</label>
+                                <div className="flex space-x-6 mt-3">
+                                    <label className="flex items-center cursor-pointer group"><input type="radio" checked={targetType === 'candidate'} onChange={() => setTargetType('candidate')} className="form-radio text-brand-primary h-4 w-4" /><span className="ml-2 text-sm text-gray-700 font-medium">Candidato</span></label>
+                                    <label className="flex items-center cursor-pointer group"><input type="radio" checked={targetType === 'party'} onChange={() => setTargetType('party')} className="form-radio text-brand-primary h-4 w-4" /><span className="ml-2 text-sm text-gray-700 font-medium">Partido</span></label>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Contexto Estratégico</label>
-                        <textarea value={context} onChange={(e) => setContext(e.target.value)} placeholder="Describe la situación actual..." rows={3} className="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-3 focus:ring-2 focus:ring-brand-primary focus:border-brand-primary transition-all" />
-                    </div>
-                    <div className="flex justify-end pt-2">
-                        <button type="submit" disabled={isLoading} className="bg-brand-primary hover:bg-blue-900 text-white font-bold py-3 px-8 rounded-lg transition-all shadow-md flex items-center gap-2 disabled:opacity-50">
-                            {isLoading ? <LoadingSpinner className="w-5 h-5" /> : <SparklesIcon className="w-5 h-5" />} {isLoading ? 'Procesando...' : 'Generar Estrategia'}
-                        </button>
-                    </div>
-                </form>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Contexto Estratégico</label>
+                            <textarea value={context} onChange={(e) => setContext(e.target.value)} placeholder="Describe la situación actual..." rows={3} className="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-3 focus:ring-2 focus:ring-brand-primary focus:border-brand-primary transition-all" />
+                        </div>
+                        <div className="flex justify-end pt-2">
+                            <button type="submit" disabled={isLoading} className="bg-brand-primary hover:bg-blue-900 text-white font-bold py-3 px-8 rounded-lg transition-all shadow-md flex items-center gap-2 disabled:opacity-50">
+                                {isLoading ? <LoadingSpinner className="w-5 h-5" /> : <SparklesIcon className="w-5 h-5" />} {isLoading ? 'Procesando...' : 'Generar Estrategia'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
                 {error && <div className="mx-6 mb-6 flex items-center p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg"><WarningIcon className="w-6 h-6 mr-3 flex-shrink-0 text-red-600" /><p>{error}</p></div>}
             </AnalysisCard>
 
@@ -438,7 +509,7 @@ const MarketingStrategy: React.FC = () => {
                                                 <div>
                                                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Plataformas Activas</label>
                                                     <div className="flex flex-wrap gap-2">
-                                                        {['Instagram', 'TikTok', 'X', 'Facebook', 'LinkedIn'].map(p => (
+                                                        {['Instagram', 'TikTok', 'X', 'Facebook', 'LinkedIn', 'WhatsApp'].map(p => (
                                                             <button key={p} onClick={() => togglePlatform(p)} className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${cronoConfig.platforms.includes(p) ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-gray-500 border-gray-300'}`}>{p}</button>
                                                         ))}
                                                     </div>
@@ -505,7 +576,7 @@ const MarketingStrategy: React.FC = () => {
                                 {canvasState.isLoadingStructure ? <div className="h-full flex flex-col items-center justify-center text-gray-500"><LoadingSpinner className="w-10 h-10 text-brand-primary mb-4" /><p className="animate-pulse font-medium">Estructurando Post con Gemini 3 Pro...</p></div> : canvasState.postStructure ? (
                                     <div className="space-y-6">
                                         <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Caption Generado (Copy)</label><textarea className="w-full h-40 p-4 border border-gray-300 rounded-lg text-sm text-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent font-sans leading-relaxed" defaultValue={canvasState.postStructure.caption} /></div>
-                                        <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Hashtags Estratégicos</label><div className="bg-white p-3 border border-gray-300 rounded-lg text-xs text-blue-600 font-medium">{canvasState.postStructure.hashtags.join(' ')}</div></div>
+                                        <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Hashtags Estratégicos</label><div className="bg-white p-3 border border-gray-300 rounded-lg text-xs text-blue-600 font-medium">{canvasState.postStructure.hashtags?.join(' ') || ''}</div></div>
                                         <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200"><label className="block text-xs font-bold text-yellow-800 uppercase mb-1">Notas Estratégicas</label><p className="text-xs text-yellow-900">{canvasState.postStructure.strategic_notes}</p></div>
                                     </div>
                                 ) : null}
