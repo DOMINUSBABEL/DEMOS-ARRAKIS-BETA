@@ -1,7 +1,7 @@
 
 # DEMOS ARRAKIS - Sistema de Inteligencia y Predicción Electoral
 
-**Versión:** 2.5 (2025)
+**Versión:** 3.0 (2025)
 **Desarrollado por:** Consultora Talleyrand
 **Motor:** React + TypeScript + Google Gemini AI
 
@@ -108,5 +108,5 @@ Módulo de investigación profunda sobre individuos.
 
 ---
 
-**DEMOS ARRAKIS v2.5**
+**DEMOS ARRAKIS v3.0**
 *Desarrollado por Consultora Talleyrand © 2025*

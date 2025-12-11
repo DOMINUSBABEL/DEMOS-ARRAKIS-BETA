@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { SimulationParams, CandidateRanking, LocalSupportConfig, CampaignStrengthConfig, CoattailEffectConfig } from '../types';
 import { PlusIcon, TrashIcon, BuildingOfficeIcon, StarIcon, SpeakerWaveIcon } from './Icons';
+import MemorySystem from './MemorySystem';
 
 interface ScenarioControlsProps {
     baseRanking: CandidateRanking[];
@@ -30,7 +32,7 @@ const ScenarioControls: React.FC<ScenarioControlsProps> = ({ baseRanking, onSimu
          if (units.length > 0 && !params.coattailEffect.unit) {
             setParams(p => ({ ...p, coattailEffect: { ...p.coattailEffect, unit: units[0] } }));
         }
-    }, [baseRanking, params.fragmentationUnit, params.coattailEffect.unit]);
+    }, [baseRanking]);
 
     const handleInputChange = <K extends keyof SimulationParams>(key: K, value: SimulationParams[K]) => {
         setParams(prev => ({ ...prev, [key]: value }));
@@ -76,9 +78,25 @@ const ScenarioControls: React.FC<ScenarioControlsProps> = ({ baseRanking, onSimu
     
     const availableParties = politicalUnits.filter(p => !params.governmentParties.includes(p));
 
+    const handleLoadMemory = (data: any) => {
+        // Safe merge loaded params with current structure to avoid breaking if schema changes
+        if (data) {
+            setParams(prev => ({ ...prev, ...data }));
+        }
+    };
+
     return (
-        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl font-semibold text-white mb-4">Módulo de Simulación de Escenarios</h2>
+        <div className="bg-gray-800 p-6 rounded-lg shadow-lg relative">
+            <div className="flex justify-between items-start mb-4">
+                <h2 className="text-xl font-semibold text-white">Módulo de Simulación de Escenarios</h2>
+                <MemorySystem 
+                    type="simulation" 
+                    dataToSave={params} 
+                    onLoad={handleLoadMemory} 
+                    canSave={true} 
+                />
+            </div>
+            
             <form onSubmit={handleSubmit} className="space-y-6">
                 
                 <fieldset className="border border-gray-600 p-4 rounded-md">

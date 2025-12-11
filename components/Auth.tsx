@@ -26,9 +26,13 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                 throw new Error("Por favor completa todos los campos.");
             }
 
-            // Universal hardcoded credentials
-            if (username === 'DEMOS' && password === 'DEMOS') {
-                const userData = { username: 'DEMOS', role: 'admin' as const };
+            const validUsers = ['DEMOS', 'GENERAL', 'DEMO'];
+            const u = username.toUpperCase();
+            const p = password.toUpperCase();
+
+            // Check if username is valid and password matches username (simple rule for now as requested)
+            if (validUsers.includes(u) && p === u) {
+                const userData = { username: u, role: 'admin' as const };
                 localStorage.setItem('demos_current_user', JSON.stringify(userData));
                 onLogin(userData);
             } else {
@@ -118,7 +122,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             <div className="mt-8 text-center max-w-xs space-y-2">
                 <p className="text-[10px] text-gray-400 font-mono">
                     SISTEMA DE USO EXCLUSIVO PARA PERSONAL AUTORIZADO. <br/>
-                    DEMOS ARRAKIS v2.5
+                    DEMOS ARRAKIS v3.0
                 </p>
                 <p className="text-[9px] text-brand-primary/60 font-serif italic border-t border-gray-200 pt-2">
                     Desarrollado por Consultora Talleyrand © 2025

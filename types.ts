@@ -311,6 +311,13 @@ export interface CronopostingResult {
     strategic_rationale: string; // Explanation of the grid logic
 }
 
+export interface SocialPostResult {
+    caption: string;
+    hashtags: string[];
+    image_prompt: string;
+    strategic_notes: string;
+}
+
 // --- END NEW TYPES ---
 
 export interface CandidateProfileResult {
@@ -388,6 +395,15 @@ export interface User {
     username: string;
     password?: string; // Only used during auth, not stored in state
     role: 'admin' | 'user';
+}
+
+// STORAGE TYPES
+export interface SavedAnalysis {
+    id: string;
+    name: string;
+    type: 'simulation' | 'marketing' | 'candidate_profile' | 'candidate_comparison';
+    date: string;
+    data: any; // The payload (SimulationParams, MarketingResult, etc.)
 }
 
 // --- GENERAL STAFF AGENT TYPES (MILITARY GRADE) ---

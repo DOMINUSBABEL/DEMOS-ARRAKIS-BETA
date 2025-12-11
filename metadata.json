@@ -1,5 +1,5 @@
 {
-  "name": "DEMOS ARRAKIS v2.5",
+  "name": "DEMOS ARRAKIS v3.0",
   "description": "A political predictive model to analyze electoral data, run 'what-if' scenarios, and estimate election probabilities for political candidates and units. Developed by Consultora Talleyrand.",
   "requestFramePermissions": [
     "geolocation"
