@@ -7,6 +7,7 @@ import { generateStrategicReportPDF } from '../services/reportGenerator';
 import { CandidateProfileResult, ElectoralDataset, PartyData, ProcessedElectionData, CandidateComparisonResult, ComparisonScenario, HistoricalDataset, CandidateAnalysis } from '../types';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, Cell, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 import MemorySystem from './MemorySystem';
+import EnhancedLoader from './EnhancedLoader';
 
 interface CandidateIntelligenceProps {
     datasets: ElectoralDataset[];
@@ -14,6 +15,7 @@ interface CandidateIntelligenceProps {
     onProjectAndSimulate: (projectedParties: PartyData[]) => void;
 }
 
+// ... (LocationNode, CollapsibleNode helpers remain the same) ...
 // Helper types for the breakdown view
 interface LocationNode {
     name: string;
@@ -219,7 +221,18 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
     };
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-6 animate-fade-in relative">
+            {/* ENHANCED LOADER OVERLAY */}
+            <div className="absolute inset-0 z-50 pointer-events-none">
+                <EnhancedLoader 
+                    loading={isLoading} 
+                    messages={
+                        activeTab === 'profile' ? ["Escaneando reputación digital...", "Analizando historial de gestión...", "Calculando proyecciones de voto...", "Sintetizando perfil 360°..."] :
+                        ["Ejecutando War Game...", "Comparando estructuras...", "Calculando probabilidades de victoria...", "Analizando vulnerabilidades cruzadas..."]
+                    }
+                />
+            </div>
+
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
                     <FingerPrintIcon className="w-8 h-8 text-brand-primary" />
@@ -301,6 +314,7 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                                     </div>
                                 ) : (
                                     <div className="space-y-6">
+                                        {/* ... (Existing Profile Result Render) ... */}
                                         <div className="flex justify-end">
                                             <button onClick={handleExportPdf} className="text-xs flex items-center gap-1 text-red-600 font-bold border border-red-200 px-3 py-1 rounded hover:bg-red-50">
                                                 <FilePdfIcon className="w-4 h-4" /> PDF
@@ -322,20 +336,16 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                                         </div>
                                         <div className="p-6 bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-lg shadow-md">
                                             <h4 className="font-bold text-yellow-400 mb-6 flex items-center gap-2 uppercase tracking-wider text-sm"><BeakerIcon className="w-4 h-4"/> Escenario de Guerra (Proyección Pesimista vs Óptima)</h4>
-                                            
-                                            {/* VISUAL GAP ANALYSIS */}
                                             <div className="mb-8">
                                                 <div className="flex justify-between text-xs uppercase font-bold text-gray-400 mb-2">
                                                     <span>Piso (Pesimista)</span>
                                                     <span>Techo (Meta)</span>
                                                 </div>
                                                 <div className="relative h-6 bg-gray-700 rounded-full overflow-hidden">
-                                                    {/* Floor Bar */}
                                                     <div 
                                                         className="absolute top-0 left-0 h-full bg-red-600" 
                                                         style={{ width: `${(profileResult.simulationParameters.suggestedVoteBase / profileResult.simulationParameters.suggestedVoteCeiling) * 100}%` }}
                                                     ></div>
-                                                    {/* Gap Bar */}
                                                     <div 
                                                         className="absolute top-0 h-full bg-yellow-500 opacity-50" 
                                                         style={{ 
@@ -381,6 +391,7 @@ const CandidateIntelligence: React.FC<CandidateIntelligenceProps> = ({ datasets,
                                     <div className="text-center py-8 text-gray-500">No hay datos de rastro disponibles o no se ha generado aún.</div>
                                 ) : (
                                     <div>
+                                        {/* ... (Existing Trace Render) ... */}
                                         <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
                                             <MapIcon className="w-5 h-5 text-yellow-600 mt-0.5" />
                                             <div>

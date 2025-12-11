@@ -4,11 +4,12 @@ import { runIntelDirector, runStrategyDirector, runCommsDirector, runCounterDire
 import { IntelReport, StrategyReport, CommsReport, CounterReport, OpsReport } from '../types';
 import { EyeIcon, UserGroupIcon, MegaphoneIcon, LoadingSpinner, SparklesIcon, ShareIcon, MapIcon, ChartBarIcon, CalendarIcon, CpuChipIcon, WarningIcon } from './Icons';
 import MemorySystem from './MemorySystem';
+import EnhancedLoader from './EnhancedLoader';
 
 type DirectorType = 'G2' | 'G3' | 'G4' | 'G5' | 'G1';
 
 // --- VISUALIZATION COMPONENTS ---
-
+// (Components DefconStatus, IntelConsole, StrategyTable, CommsGrid, ThreatMonitor, OpsPanel remain unchanged)
 const DefconStatus: React.FC<{ level: number }> = ({ level }) => {
     const colors = [
         'bg-gray-500', 
@@ -391,6 +392,27 @@ const WarRoom: React.FC = () => {
         </button>
     );
 
+    // Dynamic Loading Messages based on active director
+    const getLoadingMessages = () => {
+        if (jointMode) {
+            return [
+                "Iniciando Protocolo de Estado Mayor Conjunto...",
+                "Sincronizando G2, G3, G4, G5 y G1...",
+                "Correlacionando inteligencia de múltiples fuentes...",
+                "Generando estrategia holística de guerra...",
+                "Finalizando reporte de mando unificado..."
+            ];
+        }
+        switch(activeDirector) {
+            case 'G2': return ["Escaneando fuentes abiertas (OSINT)...", "Analizando perfil psicométrico objetivo...", "Detectando patrones de sentimiento...", "Triangulando narrativas hostiles..."];
+            case 'G3': return ["Inicializando motor de juegos de guerra...", "Simulando escenarios adversarios...", "Calculando modelo de voto dinámico...", "Optimizando asignación de recursos..."];
+            case 'G4': return ["Diseñando cargas virales...", "Estructurando matriz de cronoposting...", "Analizando triggers psicológicos...", "Generando prompts de arte visual..."];
+            case 'G5': return ["Escaneando red en busca de bots...", "Analizando vectores de ataque...", "Diseñando contramedidas de inoculación...", "Evaluando nivel de amenaza..."];
+            case 'G1': return ["Mapeando calor territorial...", "Calculando logística de transporte...", "Optimizando rutas de avanzada...", "Asignando objetivos tácticos zonales..."];
+            default: return ["Procesando..."];
+        }
+    };
+
     return (
         <div className="bg-[#0f0a06] min-h-screen text-gray-200 font-sans selection:bg-brand-primary selection:text-white">
             {/* Top Bar: Status & Ticker */}
@@ -404,7 +426,7 @@ const WarRoom: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-4">
                     <MemorySystem 
-                        type="simulation" // Reusing simulation type or define a new one if strict
+                        type="simulation" 
                         dataToSave={{ g2Report, g3Report, g4Report, g5Report, g1Report, context }} 
                         onLoad={handleLoadMemory} 
                         canSave={!!(g2Report || g3Report || g4Report || g5Report || g1Report)} 
@@ -447,6 +469,11 @@ const WarRoom: React.FC = () => {
 
                 {/* Center: Command Interface */}
                 <div className="flex-1 flex flex-col bg-[#0f0a06] relative">
+                    {/* ENHANCED LOADER OVERLAY */}
+                    <div className="absolute inset-0 z-50 pointer-events-none">
+                        <EnhancedLoader loading={isProcessing} messages={getLoadingMessages()} />
+                    </div>
+
                     {/* Display Area */}
                     <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar scroll-smooth relative z-10" ref={chatEndRef}>
                         {/* Empty State */}
@@ -490,11 +517,6 @@ const WarRoom: React.FC = () => {
                                     className="w-full bg-[#0f0a06] border border-white/10 rounded-lg py-4 pl-6 pr-4 text-gray-200 placeholder-gray-600 focus:ring-1 focus:ring-brand-primary focus:border-brand-primary outline-none transition-all font-mono text-sm"
                                     placeholder={jointMode ? "Orden Ejecutiva para el Estado Mayor Conjunto..." : `Orden para Director ${activeDirector}...`}
                                 />
-                                {isProcessing && (
-                                    <div className="absolute right-4 top-4">
-                                        <LoadingSpinner className="w-5 h-5 text-brand-primary"/>
-                                    </div>
-                                )}
                             </div>
                             <button 
                                 onClick={handleExecute}

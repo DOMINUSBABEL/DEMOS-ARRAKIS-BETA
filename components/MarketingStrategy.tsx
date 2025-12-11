@@ -6,7 +6,9 @@ import { generateMarketingStrategy, generateTacticalCampaign, generateCronoposti
 import { generateMarketingFullReportPDF } from '../services/reportGenerator';
 import { MarketingStrategyResult, TacticalCampaignResult, CronopostingResult, CronopostingConfig, CronopostingEntry, SocialPostResult } from '../types';
 import MemorySystem from './MemorySystem';
+import EnhancedLoader from './EnhancedLoader';
 
+// ... (CanvasState interface and PRESETS remain the same) ...
 interface CanvasState {
     isOpen: boolean;
     entry: CronopostingEntry | null;
@@ -38,7 +40,7 @@ const PRESETS = {
 };
 
 const MarketingStrategy: React.FC = () => {
-    // Initial State Pre-filled with Maria Teresa Montoya Scenario
+    // Initial State Pre-filled with Maria Teresa Montoya Scenario by default
     const [targetName, setTargetName] = useState(PRESETS.maria_teresa.targetName);
     const [targetType, setTargetType] = useState<'candidate' | 'party'>(PRESETS.maria_teresa.targetType);
     const [context, setContext] = useState(PRESETS.maria_teresa.context);
@@ -87,21 +89,25 @@ const MarketingStrategy: React.FC = () => {
     });
 
     const handleLoadPreset = (key: keyof typeof PRESETS) => {
+        // ... (Preset loading logic logic remains the same)
         const p = PRESETS[key];
         setTargetName(p.targetName);
         setTargetType(p.targetType);
         setContext(p.context);
+        
         setCronoConfig(prev => ({
             ...prev,
             goal: p.cronoGoal,
             tone: p.tone,
             contentMix: p.mix
         }));
-        setIsPresetMenuOpen(false);
-        // Reset results
+        
         setStrategy(null);
         setTacticalPlan(null);
         setCronopostingResult(null);
+        setSelectedAvatarId(null);
+        
+        setIsPresetMenuOpen(false);
     };
 
     const handleCronoConfigChange = (key: keyof CronopostingConfig, value: any) => {
@@ -262,18 +268,31 @@ const MarketingStrategy: React.FC = () => {
 
     const handleLoadMemory = (data: any) => {
         if (data) {
-            setStrategy(data.strategy);
-            setTacticalPlan(data.tacticalPlan);
-            setCronopostingResult(data.cronopostingResult);
+            if(data.strategy) setStrategy(data.strategy);
+            if(data.tacticalPlan) setTacticalPlan(data.tacticalPlan);
+            if(data.cronopostingResult) setCronopostingResult(data.cronopostingResult);
+            
             if(data.inputs) {
-                setTargetName(data.inputs.targetName);
-                setContext(data.inputs.context);
+                setTargetName(data.inputs.targetName || '');
+                setContext(data.inputs.context || '');
             }
         }
     };
 
     return (
-        <div className="space-y-8 animate-fade-in" ref={marketingRef}>
+        <div className="space-y-8 animate-fade-in relative" ref={marketingRef}>
+            {/* ENHANCED LOADER OVERLAY */}
+            <div className="absolute inset-0 z-50 pointer-events-none">
+                <EnhancedLoader 
+                    loading={isLoading || isGeneratingTactics || isGeneratingCronoposting} 
+                    messages={
+                        isLoading ? ["Analizando contexto político...", "Definiendo arquetipos de votantes...", "Construyendo ángulos narrativos...", "Diseñando pipeline estratégico..."] :
+                        isGeneratingTactics ? ["Accediendo a Operación Cobalto...", "Sincronizando perfiles psicométricos...", "Generando vectores de ataque narrativo...", "Definiendo tácticas territoriales..."] :
+                        ["Diseñando matriz de contenidos...", "Calculando tiempos óptimos de publicación...", "Generando prompts de ingeniería visual...", "Estructurando frameworks de persuasión..."]
+                    }
+                />
+            </div>
+
             <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                 <h2 className="text-xl font-bold text-gray-800 flex items-center gap-3">
                     <MegaphoneIcon className="w-6 h-6 text-brand-primary" />
@@ -296,6 +315,7 @@ const MarketingStrategy: React.FC = () => {
 
             <AnalysisCard title="Configuración de Objetivo" explanation="Define el candidato o partido y el contexto estratégico para iniciar la generación de inteligencia de marketing." icon={<MegaphoneIcon />} fullscreenable={false} collapsible={true} defaultCollapsed={!!strategy}>
                 <div className="p-6 grid grid-cols-1 gap-6 bg-white rounded-b-lg relative">
+                    {/* ... (Existing form content - target name, type, context, buttons) ... */}
                     <div className="absolute top-4 right-6 z-10">
                         <div className="relative">
                             <button 
@@ -308,13 +328,13 @@ const MarketingStrategy: React.FC = () => {
                                 <ChevronDownIcon className="w-3 h-3" />
                             </button>
                             {isPresetMenuOpen && (
-                                <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-xl z-20 overflow-hidden">
+                                <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-20 overflow-hidden">
                                     <div className="py-1">
                                         {Object.entries(PRESETS).map(([key, data]) => (
                                             <button
                                                 key={key}
                                                 onClick={() => handleLoadPreset(key as keyof typeof PRESETS)}
-                                                className="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                                className="block w-full text-left px-4 py-3 text-xs text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
                                             >
                                                 {data.label}
                                             </button>
@@ -355,6 +375,7 @@ const MarketingStrategy: React.FC = () => {
 
             {strategy && (
                 <div className="space-y-8 animate-fade-in-up">
+                    {/* ... (Rest of the strategy display components: Avatars, Tactical Plan, Cronoposting) ... */}
                     <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-report-lg relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-2 h-full bg-brand-primary"></div>
                         <div className="flex flex-col md:flex-row justify-between items-start gap-6 relative z-10">
@@ -373,7 +394,6 @@ const MarketingStrategy: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Pipelines rendered simplified */}
                         {['Diagnóstico', 'Ejecución', 'Conversión'].map((phase, i) => (
                             <div key={i} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative">
                                 <div className={`absolute top-0 left-0 w-full h-1 ${i===0?'bg-gray-400':i===1?'bg-brand-primary':'bg-brand-secondary'}`}></div>
@@ -430,7 +450,7 @@ const MarketingStrategy: React.FC = () => {
                             <div className="p-8 space-y-8">
                                 <div className="bg-gray-50 border-l-4 border-brand-primary p-5 rounded-r-lg"><h4 className="text-xs font-bold text-brand-primary uppercase tracking-widest mb-4 flex items-center gap-2"><CpuChipIcon className="w-4 h-4"/> Justificación Técnica & Psicometría</h4><p className="text-sm text-gray-700 leading-relaxed text-justify mb-4">{tacticalPlan.technicalJustification}</p></div>
                                 
-                                {/* CRONOPOSTING GENERATOR SECTION - RESTORED FULL UI */}
+                                {/* CRONOPOSTING GENERATOR SECTION */}
                                 <div className="mt-8 border-t-2 border-gray-100 pt-8">
                                     <div className="flex items-center gap-3 mb-6"><CalendarIcon className="w-6 h-6 text-brand-primary" /><div><h3 className="text-lg font-bold font-serif text-gray-800">GENERADOR DE CRONOPOSTING (PROFESIONAL)</h3><p className="text-xs text-gray-500">Configuración Avanzada de Matriz de Contenidos - Alta Frecuencia</p></div></div>
                                     
@@ -447,6 +467,7 @@ const MarketingStrategy: React.FC = () => {
                                     </div>
 
                                     <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm">
+                                        {/* ... (Cronoposting config inputs - omitted for brevity but remain) ... */}
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                                             <div className="space-y-4">
                                                 <h5 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-1">Parámetros Temporales</h5>
@@ -525,6 +546,7 @@ const MarketingStrategy: React.FC = () => {
 
                                     {cronopostingResult && (
                                         <div className="mt-6 animate-fade-in-up">
+                                            {/* ... (Result table remains the same) ... */}
                                             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                                                 <div className="bg-brand-secondary/10 p-6 border-b border-brand-secondary/20 flex justify-between items-start">
                                                     <div>

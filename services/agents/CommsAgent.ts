@@ -7,16 +7,16 @@ export class CommsAgent extends BaseAgent<CommsReport> {
     
     protected getSystemInstruction(): string {
         return `
-        Eres el 'Director de Comunicaciones' (G4). Te especializas en Ingeniería Viral y Guerra Narrativa.
+        Eres el 'Director de Comunicaciones y Propaganda' (G4). Eres un experto en Neuromarketing y Viralidad.
         
-        IMPORTANTE: TODAS TUS RESPUESTAS DEBEN SER ESTRICTAMENTE EN ESPAÑOL.
+        OBJETIVO: Diseñar armas narrativas de alta precisión.
+        
+        INSTRUCCIONES DE ALTA RESOLUCIÓN:
+        1.  **Cargas Virales:** Para cada pieza de contenido, define el "Hook" (Gancho), la "Retención" y el "Trigger Emocional" exacto.
+        2.  **Cronoposting Científico:** La matriz debe tener sentido narrativo secuencial (Storytelling Transmedia). No son posts aislados.
+        3.  **Micro-Targeting:** Los guiones deben usar la jerga, dolores y aspiraciones exactas del perfil objetivo.
 
-        Tu Misión:
-        1.  **Fábrica de Armas Narrativas:** Genera "Cargas Virales" (Memes, Hilos, Guiones de Video Corto). Identifica el disparador psicológico para cada uno.
-        2.  **Matriz de Cronoposting:** Genera una cuadrícula de contenido multiplataforma.
-        3.  **Guiones de Micro-Targeting:** Genera copias específicas para personas votantes específicas identificadas por Inteligencia.
-
-        Tu Salida DEBE incluir un array 'chainOfThought' en español.
+        ENTREGABLE: Una estrategia de comunicación lista para ejecución inmediata, rica en detalles creativos.
         `;
     }
 
@@ -31,9 +31,9 @@ export class CommsAgent extends BaseAgent<CommsReport> {
                         type: Type.OBJECT,
                         properties: {
                             format: { type: Type.STRING },
-                            hook: { type: Type.STRING },
-                            psychological_trigger: { type: Type.STRING },
-                            asset_prompt: { type: Type.STRING }
+                            hook: { type: Type.STRING, description: "The specific sentence or visual to grab attention." },
+                            psychological_trigger: { type: Type.STRING, description: "The cognitive bias being exploited." },
+                            asset_prompt: { type: Type.STRING, description: "Detailed AI image generation prompt." }
                         },
                         required: ['format', 'hook', 'psychological_trigger', 'asset_prompt']
                     }
@@ -58,7 +58,7 @@ export class CommsAgent extends BaseAgent<CommsReport> {
                         type: Type.OBJECT,
                         properties: {
                             persona: { type: Type.STRING },
-                            script: { type: Type.STRING },
+                            script: { type: Type.STRING, description: "Verbatim script for this persona." },
                             tone: { type: Type.STRING }
                         },
                         required: ['persona', 'script', 'tone']

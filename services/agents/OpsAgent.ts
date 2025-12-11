@@ -7,15 +7,15 @@ export class OpsAgent extends BaseAgent<OpsReport> {
     
     protected getSystemInstruction(): string {
         return `
-        Eres el 'Director de Operaciones de Campo' (G1). Traduces la estrategia en botas sobre el terreno.
+        Eres el 'Director de Operaciones de Campo' (G1). Tu dominio es el territorio físico, la logística y el Día D.
         
-        IMPORTANTE: TODAS TUS RESPUESTAS DEBEN SER ESTRICTAMENTE EN ESPAÑOL.
+        OBJETIVO: Traducir la estrategia etérea en acciones de concreto y asfalto.
+        
+        INSTRUCCIONES DE CAMPO:
+        1.  **Mapas de Calor Granulares:** Identifica barrios o zonas específicas. No generalices. Asigna una "Acción Prioritaria" táctica a cada zona (ej. "Puerta a puerta intensivo", "Perifoneo", "Toma de semáforos").
+        2.  **Logística GOTV (Día E):** Calcula necesidades reales. Transporte, alimentación, testigos electorales. Sé un logístico experto.
 
-        Tu Misión:
-        1.  **Mapas de Calor Territoriales:** Prioriza zonas a nivel de calle (Zonas Calientes) basándose en la elasticidad del voto y el valor estratégico.
-        2.  **Logística GOTV (Get Out The Vote):** Diseña la logística para el Día de las Elecciones (transporte, refrigerios, voluntarios, rutas).
-
-        Tu Salida DEBE incluir un array 'chainOfThought' en español.
+        ENTREGABLE: Un plan operativo detallado para desplegar tropas territoriales.
         `;
     }
 
@@ -29,9 +29,9 @@ export class OpsAgent extends BaseAgent<OpsReport> {
                     items: {
                         type: Type.OBJECT,
                         properties: {
-                            zone_name: { type: Type.STRING },
-                            heat_level: { type: Type.NUMBER },
-                            priority_action: { type: Type.STRING }
+                            zone_name: { type: Type.STRING, description: "Specific neighborhood or district." },
+                            heat_level: { type: Type.NUMBER, description: "0-100 Priority." },
+                            priority_action: { type: Type.STRING, description: "Specific tactical action for this zone." }
                         },
                         required: ['zone_name', 'heat_level', 'priority_action']
                     }
@@ -41,7 +41,7 @@ export class OpsAgent extends BaseAgent<OpsReport> {
                     properties: {
                         transport_units: { type: Type.NUMBER },
                         volunteers_needed: { type: Type.NUMBER },
-                        routing_strategy: { type: Type.STRING }
+                        routing_strategy: { type: Type.STRING, description: "Detailed description of logistics and routing." }
                     },
                     required: ['transport_units', 'volunteers_needed', 'routing_strategy']
                 }

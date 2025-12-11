@@ -12,19 +12,16 @@ export class StrategyAgent extends BaseAgent<StrategyReport> {
 
     protected getSystemInstruction(): string {
         return `
-        Eres el 'Director de Estrategia' (G3). Eres el maestro de ajedrez de la campaña.
+        Eres el 'Director de Estrategia Global' (G3). Tu mente funciona como un motor de ajedrez avanzado.
         
-        PROTOCOLO "DEEP RESEARCH":
-        Utiliza la búsqueda para identificar movimientos REALES recientes del oponente y tendencias económicas/sociales locales actuales que afecten el modelo de votación. No inventes escenarios; basa el juego de guerra en hechos verificables recientes.
+        OBJETIVO: Generar una estrategia ganadora basada en matemáticas electorales y psicología de masas. Profundidad máxima.
 
-        IMPORTANTE: TODAS TUS RESPUESTAS DEBEN SER ESTRICTAMENTE EN ESPAÑOL.
+        PROTOCOLO "WAR ROOM":
+        1.  **Juegos de Guerra (Red vs Blue):** No imagines escenarios genéricos. Basado en las noticias de HOY (usando búsqueda), predice el movimiento exacto del oponente y diseña el Jaque Mate.
+        2.  **Cálculo de Voto Dinámico:** Justifica cada número. ¿Por qué el voto blando es X? ¿Qué evento reciente lo movió?
+        3.  **Asignación de Recursos de Precisión:** No digas "gastar más en redes". Di: "Asignar 40% a TikTok para capturar al segmento joven desencantado detectado en el análisis de inteligencia".
 
-        Tu Misión:
-        1.  **Motor de Juegos de Guerra (War Gaming):** Simula un escenario "Equipo Rojo vs Equipo Azul" basado en inteligencia real actual.
-        2.  **Modelado Dinámico de Votos:** Proporciona pronósticos probabilísticos basados en el clima político actual detectado.
-        3.  **Asignación Algorítmica de Recursos:** Recomienda presupuesto basándote en la eficacia actual de los canales (ej: si TikTok está saturado localmente, mueve recursos a Tierra).
-
-        Tu Salida DEBE incluir un array 'chainOfThought'.
+        TU RESPUESTA DEBE SER EXTENSA, DETALLADA Y TÉCNICAMENTE RIGUROSA.
         `;
     }
 
@@ -36,9 +33,9 @@ export class StrategyAgent extends BaseAgent<StrategyReport> {
                 war_game_scenario: {
                     type: Type.OBJECT,
                     properties: {
-                        red_team_move: { type: Type.STRING },
-                        blue_team_counter: { type: Type.STRING },
-                        projected_impact: { type: Type.STRING }
+                        red_team_move: { type: Type.STRING, description: "Detailed description of the opponent's likely next move." },
+                        blue_team_counter: { type: Type.STRING, description: "Comprehensive counter-strategy." },
+                        projected_impact: { type: Type.STRING, description: "Expected outcome with confidence level." }
                     },
                     required: ['red_team_move', 'blue_team_counter', 'projected_impact']
                 },
@@ -47,7 +44,7 @@ export class StrategyAgent extends BaseAgent<StrategyReport> {
                     properties: {
                         swing_voters_count: { type: Type.NUMBER },
                         hard_vote_count: { type: Type.NUMBER },
-                        vulnerability_index: { type: Type.NUMBER }
+                        vulnerability_index: { type: Type.NUMBER, description: "0-100 score of campaign vulnerability." }
                     },
                     required: ['swing_voters_count', 'hard_vote_count', 'vulnerability_index']
                 },
@@ -58,7 +55,7 @@ export class StrategyAgent extends BaseAgent<StrategyReport> {
                         properties: {
                             channel: { type: Type.STRING },
                             budget_percent: { type: Type.NUMBER },
-                            roi_projection: { type: Type.STRING }
+                            roi_projection: { type: Type.STRING, description: "Detailed justification of ROI." }
                         },
                         required: ['channel', 'budget_percent', 'roi_projection']
                     }
