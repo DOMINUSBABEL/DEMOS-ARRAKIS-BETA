@@ -29,6 +29,7 @@ const shortenPartyName = (name: string): string => {
     if (lowerName.includes('independientes')) return 'Independ.';
     if (lowerName.includes('alianza social')) return 'ASI';
     if (lowerName.includes('mira')) return 'MIRA';
+    if (lowerName.includes('nuevo liberalismo')) return 'NUEVO LIBERALISMO';
     if (lowerName.includes('justa libres')) return 'J. Libres';
     if (name.length > 12 && !name.includes(' ')) return name.substring(0, 9) + '...';
     
