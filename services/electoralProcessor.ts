@@ -6,7 +6,12 @@ const PARTY_COLORS = [
     '#6366f1', '#14b8a6', '#f59e0b', '#d946ef', '#0ea5e9', '#84cc16'
 ];
 
+const colorCache = new Map<string, string>();
+
 const getColorForParty = (partyName: string): string => {
+    const cached = colorCache.get(partyName);
+    if (cached) return cached;
+
     let hash = 0;
     if (partyName.length === 0) return PARTY_COLORS[0];
     for (let i = 0; i < partyName.length; i++) {
@@ -15,7 +20,9 @@ const getColorForParty = (partyName: string): string => {
         hash = hash & hash; // Convert to 32bit integer
     }
     const index = Math.abs(hash % PARTY_COLORS.length);
-    return PARTY_COLORS[index];
+    const color = PARTY_COLORS[index];
+    colorCache.set(partyName, color);
+    return color;
 };
 
 const normalizePartyName = (name: string): string => {
