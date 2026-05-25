@@ -279,8 +279,14 @@ export const generateMarketingFullReportPDF = async (element: HTMLElement, fileN
             windowHeight: fullHeight, // CRITICAL: Capture full height regardless of viewport
             height: fullHeight,
             onclone: (clonedDoc) => {
+                // THE FIX: Remove the 'dark' class from the cloned document's html and body tags.
+                // This forces the captured content to render in Light Mode styles.
                 clonedDoc.documentElement.classList.remove('dark');
                 clonedDoc.body.classList.remove('dark');
+
+                // Ensure background is white
+                clonedDoc.body.style.backgroundColor = '#ffffff';
+                clonedDoc.body.style.color = '#000000';
             }
         });
 
